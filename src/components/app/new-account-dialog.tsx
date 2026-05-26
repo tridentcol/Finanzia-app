@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -64,6 +65,7 @@ export function NewAccountDialog() {
 }
 
 function NewAccountForm({ onDone }: { onDone: () => void }) {
+  const router = useRouter()
   const [serverError, setServerError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
   const {
@@ -111,6 +113,7 @@ function NewAccountForm({ onDone }: { onDone: () => void }) {
       }
 
       toast.success('Cuenta creada.')
+      router.refresh()
       onDone()
     })
   }

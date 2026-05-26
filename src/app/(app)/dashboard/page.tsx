@@ -10,7 +10,9 @@ import {
   listAccountsWithBalance,
 } from '@/lib/db/queries/accounts'
 import { listTransactionsForUser } from '@/lib/db/queries/transactions'
+import { listBudgetsWithProgress } from '@/lib/db/queries/budgets'
 import { Amount } from '@/components/app/amount'
+import { BudgetProgressCard } from '@/components/app/budget-progress'
 import { EmptyState } from '@/components/app/empty-state'
 import { NewAccountTrigger } from '@/components/app/new-account-trigger'
 import { NewTransactionTrigger } from '@/components/app/new-transaction-trigger'
@@ -28,12 +30,24 @@ const kindToTone = {
 
 export default async function DashboardPage() {
   const user = await requireCurrentUser()
-  const [profile, accountsList, totalBase, recent] = await Promise.all([
+  const [profile, accountsList, totalBase, recent, budgets] = await Promise.all([
     db.query.profiles.findFirst({ where: eq(profiles.userId, user.id) }),
     listAccountsWithBalance(user.id),
     getTotalBalanceInBase(user.id),
     listTransactionsForUser(user.id, { limit: 5 }),
+    listBudgetsWithProgress(user.id),
   ])
+
+  // Presupuestos a destacar: primero exceeded, luego warning, luego safe por % desc.
+  const featuredBudgets = [...budgets]
+    .sort((a, b) => {
+      const rank = (s: typeof a.status) =>
+        s === 'exceeded' ? 0 : s === 'warning' ? 1 : 2
+      const rd = rank(a.status) - rank(b.status)
+      if (rd !== 0) return rd
+      return b.percent - a.percent
+    })
+    .slice(0, 4)
 
   const baseCurrency = (profile?.baseCurrency ?? 'COP') as CurrencyCode
   const hasAccounts = accountsList.length > 0
@@ -146,6 +160,33 @@ export default async function DashboardPage() {
               </ul>
             )}
           </section>
+
+          {featuredBudgets.length > 0 && (
+            <section className="flex flex-col gap-4">
+              <header className="flex items-baseline justify-between">
+                <h2 className="text-text text-sm font-semibold">
+                  Presupuestos del período
+                </h2>
+                <Link
+                  href="/presupuestos"
+                  className="text-text-secondary hover:text-text text-[13px] transition-colors"
+                >
+                  Ver todos
+                </Link>
+              </header>
+              <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {featuredBudgets.map((b) => (
+                  <li key={b.id}>
+                    <BudgetProgressCard
+                      budget={b}
+                      currency={baseCurrency}
+                      compact
+                    />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
         </>
       )}
     </div>

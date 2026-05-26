@@ -3,7 +3,7 @@
 > Archivo vivo. **Actualízalo al cerrar cada step o al tomar una decisión que afecte el rumbo.**
 > El builder lo lee al inicio de cada sesión para no perder continuidad.
 >
-> Última actualización: 2026-05-26 — Step 6 cerrado: CRUD de cuentas + transacciones manual end-to-end. UI base Noir (Button, Input, Select, Dialog, Field, Textarea, Label). Currency helpers + componente Amount. Saldo computado por cuenta + saldo total agregado. Próximo: Step 7 (categorías custom + presupuestos).
+> Última actualización: 2026-05-26 — Step 7 cerrado: CRUD de categorías custom (con paleta muted + picker de iconos curado) + CRUD de presupuestos con cálculo de progreso por período via `date_trunc`. Cmd+K ahora dispara 4 dialogs. Próximo: Step 8 (Import CSV con mapping inteligente).
 
 ---
 
@@ -17,7 +17,7 @@
 | 4 | Design system — tokens, fonts, theme | ✅ hecho | Tokens Noir hex en `globals.css` (light + dark). Fuentes: Inter (`--font-sans` con opsz axis), Geist Mono (`--font-mono`), Fraunces italic (`--font-editorial`). `src/lib/design/{tokens,icons}.ts` y `src/lib/motion/{easings,durations,variants}.ts`. `clerkAppearance` migrado a CSS vars. Clases utility: `.display`, `.editorial`, `.amount`. `prefers-reduced-motion` respetado. |
 | 5 | Layout principal — Rail + Cmd+K + View transitions | ✅ hecho | `Rail` 56px (client, usePathname para active state, tooltips CSS-only). `Topbar` 56px con breadcrumb + ghost button "Buscar ⌘K". `CommandPalette` con cmdk + radix Dialog: navegación + sección IA placeholder con `accent-ai`. Listener global Cmd+K via Zustand store. ViewTransitions activadas: `rail-indicator` (animación del active mark) y `app-content` (crossfade del main). Páginas placeholder en `(app)/{cuentas,transacciones,categorias,presupuestos,metas,insights,ajustes}` con `EmptyState` editorial (Fraunces italic + body Inter). `categorias` ya carga las 55 sembradas via Drizzle. |
 | 6 | CRUD cuentas + transacciones manual | ✅ hecho | UI base Noir en `src/components/ui/`. Helpers en `src/lib/currency/`. Server actions `createAccount`, `createTransaction`, `archiveAccount` con Zod + revalidatePath. Saldo computado vía CTE SQL (positive income, negative expense, transfers afectan ambos extremos). Página /cuentas con cards reales, /transacciones con tabla + filtros por kind, dashboard con saldo total agregado en moneda base. Cmd+K dispara los modales. Multi-divisa: cuenta tiene currency fija; transfers cross-currency bloqueadas hasta Step 8. amount_base mock 1:1 hasta Step 8. |
-| 7 | Categorías + presupuestos | ⏳ pendiente | |
+| 7 | Categorías + presupuestos | ✅ hecho | `createCategory`/`archiveCategory` (sistema queda read-only). Modal con icon picker (16 lucides) + paleta muted de 8 colores. `/categorias` separa "Tus categorías" vs "Sistema" con filtros por kind. `listBudgetsWithProgress` usa `date_trunc('month'/'week'/'year')` para resolver el período actual y suma `amount_base` de transacciones expense con `category_id` exacto. `BudgetProgressCard` con barra tonal (safe / warning / exceeded). Sección "Presupuestos del período" en dashboard. Cmd+K: + Nueva categoría, + Nuevo presupuesto. |
 | 8 | Import CSV con mapping inteligente | ⏳ pendiente | |
 | 9 | Auto-categorización con IA + embeddings | ⏳ pendiente | |
 | 10 | Insights engine + cron diario | ⏳ pendiente | |
@@ -28,7 +28,44 @@
 
 ## Next action
 
-**Step 7 — Categorías custom + presupuestos.**
+**Step 8 — Import CSV con mapping inteligente.**
+
+Step crítico: aquí la app pasa de "registro manual" a "ingesta real". Bancos como Bancolombia, Davivienda, Nu, etc., exportan CSV con columnas distintas y formatos sueltos. El mapping inteligente debe deducir las columnas.
+
+Por hacer:
+
+1. **Página `/importar`** (nueva ruta dentro de `(app)`):
+   - Drop zone para CSV con drag & drop.
+   - Select de cuenta destino + currency override (default = currency de la cuenta).
+2. **Parser CSV con papaparse** (ya en deps):
+   - `parseCsv(file): Promise<{ headers, rows }>` con detección de delimiter (auto-detect).
+   - Preview de las primeras 10 filas + selector de "fila de encabezado" (algunos extractos tienen 5-10 filas de metadatos arriba).
+3. **Inferencia de columnas** — heurística simple por nombre/patrón:
+   - `date | fecha | día`     → date
+   - `amount | monto | valor` → amount (detectar signo)
+   - `description | detalle | concepto` → description
+   - `merchant | establecimiento` → merchant
+   - El usuario puede sobrescribir cada mapping con un Select.
+4. **Job de ingesta** con Trigger.dev (nueva dep) o procesarlo inline si <1000 filas:
+   - Step 8a (decidir según tamaño del archivo). MVP simple: procesarlo inline en Server Action con progress en pantalla (TanStack Query polling el batch status).
+   - Crear `import_batch` con status=pending, luego processing.
+   - Por cada fila: validar, transformar, insertar transacción.
+   - Update `import_batch.imported_rows` y errors[].
+5. **Tabla `import_batches`** ya está en el schema:
+   - Listar imports en `/importar` con su estado (rows, errors).
+   - Cada transacción insertada lleva `import_batch_id` para trazabilidad.
+6. **Tasas de cambio reales** — pre-requisito para multi-divisa:
+   - Endpoint cron `/api/cron/exchange-rates` que llama exchangerate.host y popula `exchange_rates` (date, from, to, rate).
+   - `getExchangeRate(from, to, date)` query con fallback al último disponible.
+   - `createTransaction` usa esto para calcular `amount_base` correctamente.
+   - **Esto desbloquea cross-currency transfers** también.
+7. **Cmd+K acción**: "Importar CSV" → navega a `/importar`.
+
+Antes de Step 8: **commit Step 7**. Sugerido:
+
+```
+feat(categorias-y-presupuestos): crud categorías custom + presupuestos con progreso
+```
 
 Por hacer:
 
@@ -210,6 +247,12 @@ feat(auth): wire clerk + third-party auth supabase
 | **UI base Noir hecha a mano, no `shadcn add`** | El componente que vino del bootstrap (`button.tsx`) usaba tokens shadcn defaults; los reescribí siguiendo el mandato. Los demás (Input, Select, Dialog, Field, etc.) son nuevos. Si en el futuro usamos shadcn CLI, el target será sobreescribir, no añadir paralelo. |
 | **Dialogs globales gestionados por Zustand store** (`dialog-store.ts`) | Patrón uniforme: cada dialog tiene un `id`, el store guarda `active: id | null`, los triggers dispatchan `open(id)`. Permite que Cmd+K y botones de header compartan el control sin prop drilling ni context. |
 | **`(app)/layout.tsx` fetchea accounts + categories para los dialogs** | Los modales necesitan estos datos para los selects. Como el layout envuelve todo el grupo, está disponible en cualquier ruta. `revalidatePath` después de crear/archivar invalida el layout automáticamente. |
+| **Presupuestos solo sobre `kind='expense'`** | Topes en ingresos o transfers no tienen semántica obvia. Si hace falta, lo extendemos. La validación está en `createBudget` y en el filter del modal. |
+| **Period range vía `date_trunc` de Postgres** (no JS) | El cálculo del rango del período actual lo hace SQL: `date_trunc('week', CURRENT_DATE)` retorna el lunes ISO. Menos código JS, sin issues de timezone (todo se evalúa en server, en la TZ del Supabase project). Cuando el usuario tenga TZ propia (regla blueprint), se ajustará pasando un anchor explícito. |
+| **Presupuestos no agregan transacciones de subcategorías** | Un presupuesto sobre "Transporte" no suma "Combustible" automáticamente — el `category_id` se compara exacto. Si el usuario quiere agregado, debe poner el presupuesto en cada hijo o crear una categoría plana. Documentado en `listBudgetsWithProgress`. |
+| **Solo 1 nivel de jerarquía en categorías** | `createCategory` rechaza `parentId` si el parent ya tiene `parentId !== null`. Mantiene la UI predecible y evita árboles arbitrarios. Si se necesita profundidad, lo revisamos. |
+| **Icon picker curado (16 iconos) vs lista completa (~85)** | Para el modal de Nueva categoría limitamos a un subset visualmente coherente. La lista completa sigue disponible vía `icons` import para componentes que requieren más. |
+| **Paleta muted en `src/lib/design/palette.ts`** separada de `tokens.ts` | `tokens.ts` es para el sistema (bg, text, etc.). `palette.ts` es para colores que el usuario asigna (categorías, futuras tags). Separación semántica. |
 
 ---
 
@@ -230,6 +273,8 @@ feat(auth): wire clerk + third-party auth supabase
 - **Clerk `secret key` format**: empieza con `sk_test_` (dev) o `sk_live_` (prod), seguido de ~40 chars base64. Si pegas algo como `k_test_…` (sin `s`), Zod no lo detecta (es string no vacío) pero todos los requests a Clerk fallan con 401. Validar visualmente al pegar.
 - **Pooler host de Supabase varía por región Y por número de cluster**: el formato es `aws-N-<region>.pooler.supabase.com`. Para este proyecto: `aws-1-us-west-2.pooler.supabase.com`. Si la región está mal, devuelve "Tenant or user not found" (no es error de password). Si el N (`aws-0` vs `aws-1`) está mal, devuelve "(ENOTFOUND) tenant/user not found". La forma fiable de obtener la string: copiarla directo del dashboard de Supabase → Settings → Database → Connection string.
 - **Vars opcionales en `.env.local` con valor vacío (`FOO=`) requieren preprocess**: Zod `.optional()` solo ignora `undefined`, no `""`. Helper `optionalString()` en `env.ts` convierte `""` a `undefined` antes de validar.
+- **`postgres-js` devuelve columnas `date` (sin time) como `string` `'YYYY-MM-DD'`, NO como `Date`**: solo `timestamptz` se parsea a `Date`. Si tipas mal y haces `row.someDate.toISOString()`, falla en runtime con "toISOString is not a function". Aplicar siempre `period_start: string` al typing de `db.execute<T>(...)` cuando la columna sea `::date` o `date`. (Bug encontrado en `listBudgetsWithProgress` durante Step 7.)
+- **`revalidatePath('/foo')` no invalida los layouts ancestros**: solo invalida la page de `/foo`. El `(app)/layout` que fetchea accounts + categories para los selects de los dialogs queda con cache viejo. Solución aplicada: después de un mutación exitosa, llamar `router.refresh()` desde el cliente — fuerza re-fetch de TODOS los RSCs de la ruta actual incluyendo el layout. Patrón unificado en los 4 dialogs (`new-{account,transaction,category,budget}-dialog.tsx`). Alternativa más agresiva: `revalidatePath('/', 'layout')` en cada server action, pero invalida también marketing innecesariamente.
 - **Clerk URLs por env var**: `NEXT_PUBLIC_CLERK_SIGN_IN_URL`, `NEXT_PUBLIC_CLERK_SIGN_UP_URL`, `*_FALLBACK_REDIRECT_URL`. Ya están en `.env.local`. Si cambian, también hay que tocarlos en el dashboard de Clerk (Paths) para que coincidan.
 
 ---

@@ -7,7 +7,7 @@ import { Dialog } from 'radix-ui'
 
 import { icons } from '@/lib/design/icons'
 import { useCommandStore } from './command-store'
-import { useDialogStore } from './dialog-store'
+import { useDialogStore, type AppDialogId } from './dialog-store'
 
 type NavItem = {
   label: string
@@ -50,7 +50,7 @@ export function CommandPalette() {
     router.push(href)
   }
 
-  function runOpenDialog(id: 'new-account' | 'new-transaction') {
+  function runOpenDialog(id: AppDialogId) {
     setOpen(false)
     // Pequeño delay para que el cierre del cmdk no compita con la apertura del dialog.
     setTimeout(() => openDialog(id), 50)
@@ -59,6 +59,8 @@ export function CommandPalette() {
   const Ai = icons.sparkles
   const Plus = icons.plus
   const Wallet = icons.wallet
+  const Tag = icons.tag
+  const Target = icons.target
 
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
@@ -109,6 +111,22 @@ export function CommandPalette() {
                   <Wallet strokeWidth={1.5} className="h-[15px] w-[15px]" />
                   <span className="flex-1">Nueva cuenta</span>
                   <span className="text-text-tertiary text-[11px] tracking-wider">N C</span>
+                </Command.Item>
+                <Command.Item
+                  value="Nueva categoría crear"
+                  onSelect={() => runOpenDialog('new-category')}
+                  className="text-text-secondary aria-selected:bg-surface-hover aria-selected:text-text mx-2 flex h-9 cursor-pointer items-center gap-3 rounded-md px-2 text-sm transition-colors"
+                >
+                  <Tag strokeWidth={1.5} className="h-[15px] w-[15px]" />
+                  <span className="flex-1">Nueva categoría</span>
+                </Command.Item>
+                <Command.Item
+                  value="Nuevo presupuesto crear tope"
+                  onSelect={() => runOpenDialog('new-budget')}
+                  className="text-text-secondary aria-selected:bg-surface-hover aria-selected:text-text mx-2 flex h-9 cursor-pointer items-center gap-3 rounded-md px-2 text-sm transition-colors"
+                >
+                  <Target strokeWidth={1.5} className="h-[15px] w-[15px]" />
+                  <span className="flex-1">Nuevo presupuesto</span>
                 </Command.Item>
               </Command.Group>
 

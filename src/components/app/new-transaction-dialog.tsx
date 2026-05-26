@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -20,7 +21,10 @@ import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
@@ -95,6 +99,7 @@ function NewTransactionForm({
   categories,
   onDone,
 }: Props & { onDone: () => void }) {
+  const router = useRouter()
   const [serverError, setServerError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
   const defaultAccountId = accounts[0]?.id ?? ''
@@ -123,6 +128,24 @@ function NewTransactionForm({
     () => categories.filter((c) => c.kind === kind),
     [categories, kind],
   )
+  /**
+   * Agrupa categorías por padre para que el Select muestre la jerarquía:
+   * raíces con hijos van como SelectGroup; raíces sin hijos van sueltas.
+   */
+  const groupedCategories = useMemo(() => {
+    const roots = categoryOptions.filter((c) => c.parentId === null)
+    const childrenByParent = new Map<string, typeof categoryOptions>()
+    for (const c of categoryOptions) {
+      if (!c.parentId) continue
+      const list = childrenByParent.get(c.parentId) ?? []
+      list.push(c)
+      childrenByParent.set(c.parentId, list)
+    }
+    return roots.map((root) => ({
+      root,
+      children: childrenByParent.get(root.id) ?? [],
+    }))
+  }, [categoryOptions])
 
   if (accounts.length === 0) {
     return (
@@ -169,6 +192,7 @@ function NewTransactionForm({
         return
       }
       toast.success('Transacción registrada.')
+      router.refresh()
       onDone()
     })
   }
@@ -275,12 +299,29 @@ function NewTransactionForm({
                   <SelectValue placeholder="Sin categoría" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categoryOptions.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.parentId ? '· ' : ''}
-                      {c.name}
-                    </SelectItem>
-                  ))}
+                  {groupedCategories.map(({ root, children }, idx) => {
+                    if (children.length === 0) {
+                      return (
+                        <SelectItem key={root.id} value={root.id}>
+                          {root.name}
+                        </SelectItem>
+                      )
+                    }
+                    return (
+                      <SelectGroup key={root.id}>
+                        {idx > 0 && <SelectSeparator />}
+                        <SelectLabel>{root.name}</SelectLabel>
+                        <SelectItem value={root.id}>
+                          Sin subcategoría
+                        </SelectItem>
+                        {children.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.name}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    )
+                  })}
                 </SelectContent>
               </Select>
             </Field>

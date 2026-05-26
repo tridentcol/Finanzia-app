@@ -6,6 +6,9 @@ import { Topbar } from '@/components/app/topbar'
 import { CommandPalette } from '@/components/app/command-palette'
 import { NewAccountDialog } from '@/components/app/new-account-dialog'
 import { NewTransactionDialog } from '@/components/app/new-transaction-dialog'
+import { NewCategoryDialog } from '@/components/app/new-category-dialog'
+import { EditCategoryDialog } from '@/components/app/edit-category-dialog'
+import { NewBudgetDialog } from '@/components/app/new-budget-dialog'
 import {
   listAvailableCategories,
   listUserAccountsBasic,
@@ -38,6 +41,9 @@ export default async function AppLayout({
         accounts={accountsForForm}
         categories={categoriesForForm}
       />
+      <NewCategoryDialog categories={categoriesForForm} />
+      <EditCategoryDialog categories={categoriesForForm} />
+      <NewBudgetDialog categories={categoriesForForm} />
     </div>
   )
 }
