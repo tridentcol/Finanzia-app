@@ -222,18 +222,13 @@
 ::view-transition-group(*),
 ::view-transition-old(*),
 ::view-transition-new(*) {
-  animation-duration: var(--duration-base);
+  animation-duration: 180ms;
   animation-timing-function: var(--ease-smooth);
-}
-
-::view-transition-old(rail-indicator),
-::view-transition-new(rail-indicator) {
-  animation-duration: var(--duration-fast);
 }
 
 ::view-transition-old(app-content),
 ::view-transition-new(app-content) {
-  animation-duration: var(--duration-fast);
+  animation-duration: 140ms;
 }
 
 @media (prefers-reduced-motion: reduce) {

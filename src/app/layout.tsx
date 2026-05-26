@@ -54,7 +54,8 @@ export default function RootLayout({
         </ClerkProvider>
         <Toaster
           theme="dark"
-          position="bottom-right"
+          position="top-center"
+          offset={20}
           toastOptions={{
             classNames: {
               toast:

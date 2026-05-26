@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ViewTransition } from 'react'
 import { UserButton } from '@clerk/nextjs'
 
 import { icons, type IconName } from '@/lib/design/icons'
@@ -73,13 +72,11 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
       />
       <span className="flex-1 truncate">{item.label}</span>
       {active && (
-        <ViewTransition name="sidebar-indicator">
-          <span
-            aria-hidden
-            className="size-1 rounded-full"
-            style={{ background: 'var(--accent-ai)' }}
-          />
-        </ViewTransition>
+        <span
+          aria-hidden
+          className="size-1 rounded-full"
+          style={{ background: 'var(--accent-ai)' }}
+        />
       )}
     </Link>
   )

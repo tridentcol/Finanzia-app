@@ -1,7 +1,6 @@
 'use client'
 
 import { useMemo, useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
 import {
@@ -51,7 +50,6 @@ export function CategoryCell({
   aiConfidence,
   options,
 }: Props) {
-  const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [open, setOpen] = useState(false)
 
@@ -88,7 +86,6 @@ export function CategoryCell({
         return
       }
       toast.success('Categoría actualizada.')
-      router.refresh()
     })
   }
 
