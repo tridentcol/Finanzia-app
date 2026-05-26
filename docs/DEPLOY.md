@@ -2,11 +2,38 @@
 
 Guía para llevar Finanzia de localhost a producción en Vercel. Pensada para que el deploy quede igual de funcional que el dev local, sin sorpresas.
 
+> **Estado**: ya desplegado. Proyecto: `daniels-projects-8dbbaf4e/finanzia-app`. Alias prod: `https://finanzia-app-six.vercel.app`. `.vercel/` linkeado localmente (gitignored). 14 env vars en Production + Preview.
+
+---
+
+## 0. CLI (recomendado)
+
+```bash
+npm i -g vercel
+vercel login            # device-code flow
+vercel link --yes       # crea .vercel/ en el repo
+vercel ls               # lista deployments
+vercel logs <url>       # runtime logs (usa --json para mensaje completo)
+vercel env ls production
+```
+
+Para subir env vars sin pasar por el dashboard:
+
+```bash
+# production (positional 3 args opcionales)
+vercel env add NAME production --value "VAL" --yes --force
+
+# preview — OJO: en modo non-interactive (agente) hay que pasar "" como
+# tercer arg (gitbranch) para indicar "todas las preview branches", si no
+# el CLI exige una branch específica y falla con git_branch_required.
+vercel env add NAME preview "" --value "VAL" --yes --force
+```
+
 ---
 
 ## 1. Variables de entorno
 
-Pegar en **Vercel Dashboard → Project Settings → Environment Variables**. Marcar `Production` y `Preview` (excepto las que indique).
+Pegar via CLI (sección 0) o en **Vercel Dashboard → Project Settings → Environment Variables**. Marcar `Production` y `Preview` (excepto las que indique).
 
 > **Importante**: el cliente Supabase REST se autentica con `NEXT_PUBLIC_SUPABASE_ANON_KEY`. El servidor (Drizzle + Server Actions) usa `DATABASE_URL` / `DIRECT_URL` con el password del usuario `postgres.<ref>`. RLS depende de Third-Party Auth con Clerk — ya configurado.
 
@@ -82,12 +109,9 @@ Para el primer deploy con dev keys: el setup actual funciona tal cual.
 
 ## 5. Configuración Vercel
 
-`vercel.json` ya está en el repo:
-- Region: `pdx1` (Portland) para minimizar latencia a Supabase us-west-2.
-- Build/install: `pnpm`.
-- Security headers: X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy, Permissions-Policy.
+**No usamos `vercel.json`** — Vercel autodetecta Next.js + pnpm. Los security headers (X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy, Permissions-Policy) viven en `next.config.ts` bajo `async headers()`.
 
-No necesitas tocar nada de eso desde el dashboard.
+Region default: `iad1` (Washington). Si en algún momento se nota latencia con Supabase us-west-2, evaluamos mover a `pdx1` desde Project Settings → Functions → Region.
 
 ---
 
@@ -118,6 +142,12 @@ No necesitas tocar nada de eso desde el dashboard.
 
 ## 8. Troubleshooting
 
+**La URL del deploy descarga un archivo binario en vez de renderizar**: la app está crasheando en runtime. Vercel devuelve `Internal Server Error` con body plano y sin `Content-Type`; combinado con `X-Content-Type-Options: nosniff`, Chrome lo trata como octet-stream y lo baja con el nombre del host. La causa real más probable: alguna env var requerida no está configurada y un import crashea (típicamente `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` en el middleware Clerk). Diagnóstico:
+
+```bash
+vercel logs <deployment-url> --json | tail -5
+```
+
 **Build falla con `Variables de entorno inválidas`**: alguna env var requerida está vacía o mal formada. Revisar la lista de §1. Las opcionales aceptan `""` (preprocess en `env.ts`).
 
 **Tenant or user not found en Postgres**: el host del pooler está mal. El correcto para este proyecto: `aws-1-us-west-2.pooler.supabase.com`. No `aws-0`, no otra región.
@@ -127,3 +157,8 @@ No necesitas tocar nada de eso desde el dashboard.
 **Webhook devuelve 503**: `CLERK_WEBHOOK_SECRET` no está configurado. Pegarlo en Vercel y redeploy.
 
 **Errores `category not found` después de editar**: el cache del `(app)/layout` no se invalidó. Los dialogs llaman `router.refresh()` después de un éxito — si no ves los cambios, hard-refresh la página.
+
+**`vercel env add NAME preview` falla con `git_branch_required` en non-interactive**: pasar `""` como tercer arg para indicar "todas las preview branches":
+```bash
+vercel env add NAME preview "" --value "VAL" --yes --force
+```
