@@ -15,7 +15,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "db:bootstrap": "tsx --env-file=.env.local scripts/db-setup.ts",
-    "db:seed": "tsx --env-file=.env.local scripts/seed-categories.ts"
+    "db:seed": "tsx --env-file=.env.local scripts/seed-categories.ts",
+    "rates:fetch": "tsx --env-file=.env.local scripts/fetch-rates.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.79",

@@ -6,9 +6,10 @@ import { and, eq } from 'drizzle-orm'
 
 import { requireCurrentUser } from '@/lib/auth'
 import { db } from '@/lib/db/client'
-import { accounts, importBatches, transactions } from '@/lib/db/schema'
+import { accounts, importBatches, profiles, transactions } from '@/lib/db/schema'
 import { parseRow, type ParseRowError } from '@/lib/import/parse-row'
 import type { ColumnMapping } from '@/lib/import/infer-columns'
+import { convertAmount, getRate } from '@/lib/currency/rates'
 
 const importSchema = z.object({
   accountId: z.string().uuid(),
@@ -73,6 +74,25 @@ export async function runImport(input: ImportInput): Promise<ImportResult> {
     }
   }
 
+  const profile = await db.query.profiles.findFirst({
+    where: eq(profiles.userId, user.id),
+  })
+  const baseCurrency = profile?.baseCurrency ?? 'COP'
+  const accountCurrency = account.currency
+  const sameCurrency = accountCurrency === baseCurrency
+
+  // Cache de tasas por fecha para evitar N queries idénticas.
+  const rateCache = new Map<string, string>()
+  async function rateFor(date: string): Promise<string> {
+    if (sameCurrency) return '1.000000'
+    const cached = rateCache.get(date)
+    if (cached) return cached
+    const rate = await getRate(accountCurrency, baseCurrency, date)
+    const resolved = rate ?? '1.000000'
+    rateCache.set(date, resolved)
+    return resolved
+  }
+
   const errors: ParseRowError[] = []
   const toInsert: typeof transactions.$inferInsert[] = []
 
@@ -82,7 +102,22 @@ export async function runImport(input: ImportInput): Promise<ImportResult> {
       errors.push(result)
       continue
     }
-    // TODO Step 8b: si account.currency !== baseCurrency, usar exchange rate real.
+    let amountBase = result.amount
+    let exchangeRate: string = '1.000000'
+    if (!sameCurrency) {
+      const conv = await convertAmount(
+        result.amount,
+        account.currency,
+        baseCurrency,
+        result.date,
+        { fallbackToOne: true },
+      )
+      amountBase = conv.amount
+      exchangeRate = conv.rate
+    } else {
+      // Persistimos también la tasa cached por consistencia (1.000000).
+      exchangeRate = await rateFor(result.date)
+    }
     toInsert.push({
       userId: user.id,
       accountId: account.id,
@@ -90,8 +125,8 @@ export async function runImport(input: ImportInput): Promise<ImportResult> {
       date: result.date,
       amountOriginal: result.amount,
       currency: account.currency,
-      amountBase: result.amount,
-      exchangeRate: '1.000000',
+      amountBase,
+      exchangeRate,
       description: result.description,
       merchant: result.merchant,
       kind: result.kind,

@@ -3,6 +3,7 @@ import { sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db/client'
 import type { CurrencyCode } from '@/lib/currency/currencies'
+import { convertAmount } from '@/lib/currency/rates'
 
 export type AccountListItem = {
   id: string
@@ -29,11 +30,15 @@ export type AccountListItem = {
 /**
  * Lista cuentas del usuario con saldo computado a partir de las transacciones.
  *
- * Reglas de cómputo (todas usan amount_original; se asume que cada transacción
- * en una cuenta está en la misma moneda que la cuenta):
- *  - income      → suma amount.
- *  - expense     → resta amount.
- *  - transfer    → resta de account_id, suma en transfer_account_id.
+ * Reglas de cómputo (siempre sobre amount_original; el filtro
+ * `currency = a.currency` ignora deltas en moneda distinta a la cuenta):
+ *  - income → suma.
+ *  - expense → resta.
+ *  - transfer same-currency (transfer_account_id ≠ null, transfer_group_id IS NULL)
+ *    → resta de account_id, suma en transfer_account_id (fila única).
+ *  - transfer cross-currency (transfer_group_id ≠ null) → dos filas espejo;
+ *    la origen tiene transfer_account_id seteado (resta), la destino lo deja
+ *    null (suma). Cada fila aporta su propia moneda a su propio account_id.
  *
  * Las transacciones con deleted_at NOT NULL se excluyen.
  */
@@ -62,7 +67,9 @@ export async function listAccountsWithBalance(
         CASE
           WHEN kind = 'income' THEN amount_original
           WHEN kind = 'expense' THEN -amount_original
-          WHEN kind = 'transfer' THEN -amount_original
+          WHEN kind = 'transfer' AND transfer_account_id IS NOT NULL THEN -amount_original
+          WHEN kind = 'transfer' AND transfer_account_id IS NULL AND transfer_group_id IS NOT NULL THEN amount_original
+          ELSE 0
         END AS delta,
         currency
       FROM transactions
@@ -80,6 +87,7 @@ export async function listAccountsWithBalance(
         AND deleted_at IS NULL
         AND kind = 'transfer'
         AND transfer_account_id IS NOT NULL
+        AND transfer_group_id IS NULL
     )
     SELECT
       a.id,
@@ -117,33 +125,35 @@ export async function listAccountsWithBalance(
 }
 
 /**
- * Saldo total agregado en la moneda base del perfil del usuario.
- * Usa amount_base para sumar a través de cuentas con monedas distintas.
+ * Saldo total agregado en la moneda base del usuario.
+ *
+ * Convierte el saldo de cada cuenta (en su moneda nativa) al baseCurrency
+ * usando la última tasa disponible vía `convertAmount`. Esto es robusto frente
+ * a multi-divisa siempre que el cron de exchange_rates haya corrido al menos
+ * una vez. Si una cuenta queda sin tasa (provider caído o cron sin correr),
+ * el helper cae a 1:1 y el total queda mock, pero no rompe.
+ *
+ * Para la fecha de conversión usamos `today` — el saldo es un snapshot
+ * presente, no histórico.
  */
-export async function getTotalBalanceInBase(userId: string): Promise<string> {
-  const rows = await db.execute<{ total: string }>(sql`
-    WITH deltas AS (
-      SELECT
-        CASE
-          WHEN kind = 'income' THEN amount_base
-          WHEN kind = 'expense' THEN -amount_base
-          WHEN kind = 'transfer' THEN 0
-        END AS delta
-      FROM transactions
-      WHERE user_id = ${userId}
-        AND deleted_at IS NULL
-    ),
-    initials AS (
-      SELECT COALESCE(SUM(initial_balance), 0) AS total
-      FROM accounts
-      WHERE user_id = ${userId}
-        AND archived = false
-    )
-    SELECT (
-      (SELECT total FROM initials) + COALESCE(SUM(delta), 0)
-    )::text AS total
-    FROM deltas
-  `)
-
-  return rows[0]?.total ?? '0'
+export async function getTotalBalanceInBase(
+  userId: string,
+  baseCurrency: string,
+): Promise<{ total: string; partial: boolean }> {
+  const list = await listAccountsWithBalance(userId)
+  const today = new Date().toISOString().slice(0, 10)
+  let total = 0
+  let partial = false
+  for (const acc of list) {
+    if (acc.currency === baseCurrency) {
+      total += Number.parseFloat(acc.currentBalance)
+      continue
+    }
+    const conv = await convertAmount(acc.currentBalance, acc.currency, baseCurrency, today, {
+      fallbackToOne: true,
+    })
+    if (conv.missing) partial = true
+    total += Number.parseFloat(conv.amount)
+  }
+  return { total: total.toFixed(2), partial }
 }

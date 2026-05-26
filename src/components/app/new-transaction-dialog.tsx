@@ -202,8 +202,8 @@ function NewTransactionForm({
       <DialogHeader>
         <DialogTitle>Nueva transacción</DialogTitle>
         <DialogDescription>
-          Registra un movimiento manual. Las transferencias entre cuentas
-          requieren misma moneda por ahora.
+          Registra un movimiento manual. En transferencias cross-currency
+          calculamos la conversión con la tasa del día.
         </DialogDescription>
       </DialogHeader>
 

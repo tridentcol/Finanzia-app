@@ -244,6 +244,12 @@ export const transactions = pgTable(
     transferAccountId: uuid('transfer_account_id').references(() => accounts.id, {
       onDelete: 'set null',
     }),
+    /**
+     * Para transferencias cross-currency (dos asientos espejo, uno en cada
+     * cuenta y moneda), ambas filas comparten este UUID. Para transfers
+     * same-currency (fila única con `transfer_account_id` no nulo) queda nulo.
+     */
+    transferGroupId: uuid('transfer_group_id'),
     notes: text('notes'),
     tags: text('tags').array(),
     recurringRuleId: uuid('recurring_rule_id').references(() => recurringRules.id, {
@@ -264,6 +270,7 @@ export const transactions = pgTable(
     index('idx_transactions_user_date').on(t.userId, t.date.desc()),
     index('idx_transactions_user_category').on(t.userId, t.categoryId),
     index('idx_transactions_account').on(t.accountId),
+    index('idx_transactions_transfer_group').on(t.transferGroupId),
     index('idx_transactions_embedding').using('hnsw', t.embedding.op('vector_cosine_ops')),
   ],
 )

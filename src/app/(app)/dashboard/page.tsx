@@ -30,13 +30,17 @@ const kindToTone = {
 
 export default async function DashboardPage() {
   const user = await requireCurrentUser()
-  const [profile, accountsList, totalBase, recent, budgets] = await Promise.all([
-    db.query.profiles.findFirst({ where: eq(profiles.userId, user.id) }),
+  const profile = await db.query.profiles.findFirst({
+    where: eq(profiles.userId, user.id),
+  })
+  const baseCurrency = (profile?.baseCurrency ?? 'COP') as CurrencyCode
+  const [accountsList, totalSnapshot, recent, budgets] = await Promise.all([
     listAccountsWithBalance(user.id),
-    getTotalBalanceInBase(user.id),
+    getTotalBalanceInBase(user.id, baseCurrency),
     listTransactionsForUser(user.id, { limit: 5 }),
     listBudgetsWithProgress(user.id),
   ])
+  const totalBase = totalSnapshot.total
 
   // Presupuestos a destacar: primero exceeded, luego warning, luego safe por % desc.
   const featuredBudgets = [...budgets]
@@ -49,7 +53,6 @@ export default async function DashboardPage() {
     })
     .slice(0, 4)
 
-  const baseCurrency = (profile?.baseCurrency ?? 'COP') as CurrencyCode
   const hasAccounts = accountsList.length > 0
 
   return (
@@ -67,6 +70,7 @@ export default async function DashboardPage() {
           Suma de {accountsList.length}{' '}
           {accountsList.length === 1 ? 'cuenta' : 'cuentas'} · expresado en{' '}
           {baseCurrency}
+          {totalSnapshot.partial && ' · conversión parcial'}
         </p>
       </header>
 
