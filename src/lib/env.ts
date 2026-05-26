@@ -63,6 +63,18 @@ const publicSchema = z.object({
 
 const isServer = typeof window === 'undefined'
 
+/**
+ * Durante el build de Next.js (`next build`, `phase-production-build`), las env
+ * vars de Vercel pueden no estar disponibles todavía si el deploy se hizo antes
+ * de configurarlas. Saltamos validación estricta en ese caso para que el build
+ * pase y el deploy quede listo; el runtime sí valida al primer acceso.
+ *
+ * También se respeta `SKIP_ENV_VALIDATION=1` (convención Next.js).
+ */
+const skipValidation =
+  process.env.SKIP_ENV_VALIDATION === '1' ||
+  process.env.NEXT_PHASE === 'phase-production-build'
+
 const publicEnv = {
   NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
   NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -72,7 +84,7 @@ const publicEnv = {
 
 const publicParsed = publicSchema.safeParse(publicEnv)
 
-if (!publicParsed.success) {
+if (!publicParsed.success && !skipValidation) {
   console.error('Variables públicas inválidas:', z.treeifyError(publicParsed.error))
   throw new Error('Variables públicas inválidas. Revisa .env.local.')
 }
@@ -86,22 +98,35 @@ let serverParsed: ServerEnv | null = null
 if (isServer) {
   const result = serverSchema.safeParse(process.env)
   if (!result.success) {
-    console.error('Variables de entorno inválidas:', z.treeifyError(result.error))
-    throw new Error('Variables de entorno inválidas. Revisa .env.local.')
+    if (!skipValidation) {
+      console.error('Variables de entorno inválidas:', z.treeifyError(result.error))
+      throw new Error('Variables de entorno inválidas. Revisa .env.local.')
+    }
+    // Build-time: log y continúa con `process.env` crudo. El runtime fallará
+    // si alguna se usa sin estar definida — pero el build NO bloquea el deploy.
+    console.warn('[env] Validación saltada (build phase). Verifica las env vars en Vercel.')
+  } else {
+    serverParsed = result.data
   }
-  serverParsed = result.data
 }
 
 export const env: Env = new Proxy({} as Env, {
   get(_target, key: string) {
     if (key.startsWith('NEXT_PUBLIC_')) {
-      return publicParsed.data[key as keyof PublicEnv]
+      if (publicParsed.success) {
+        return publicParsed.data[key as keyof PublicEnv]
+      }
+      return process.env[key] as string | undefined
     }
     if (!isServer) {
       throw new Error(
         `Intento de leer la variable de servidor "${key}" desde el cliente.`,
       )
     }
-    return serverParsed?.[key as keyof ServerEnv]
+    if (serverParsed) {
+      return serverParsed[key as keyof ServerEnv]
+    }
+    // Fallback build-time: lee directo de process.env sin validación.
+    return process.env[key]
   },
 })
