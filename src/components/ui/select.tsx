@@ -40,18 +40,58 @@ function SelectTrigger({
   )
 }
 
+function SelectScrollUpButton({
+  className,
+  ...props
+}: React.ComponentProps<typeof RadixSelect.ScrollUpButton>) {
+  const ChevronUp = icons['chevron-up']
+  return (
+    <RadixSelect.ScrollUpButton
+      className={cn(
+        'text-text-tertiary flex h-6 cursor-default items-center justify-center',
+        className,
+      )}
+      {...props}
+    >
+      <ChevronUp strokeWidth={1.5} className="size-4" />
+    </RadixSelect.ScrollUpButton>
+  )
+}
+
+function SelectScrollDownButton({
+  className,
+  ...props
+}: React.ComponentProps<typeof RadixSelect.ScrollDownButton>) {
+  const ChevronDown = icons['chevron-down']
+  return (
+    <RadixSelect.ScrollDownButton
+      className={cn(
+        'text-text-tertiary flex h-6 cursor-default items-center justify-center',
+        className,
+      )}
+      {...props}
+    >
+      <ChevronDown strokeWidth={1.5} className="size-4" />
+    </RadixSelect.ScrollDownButton>
+  )
+}
+
 function SelectContent({
   className,
   children,
   position = 'popper',
+  sideOffset = 6,
+  collisionPadding = 12,
   ...props
 }: React.ComponentProps<typeof RadixSelect.Content>) {
   return (
     <RadixSelect.Portal>
       <RadixSelect.Content
         position={position}
+        sideOffset={sideOffset}
+        collisionPadding={collisionPadding}
         className={cn(
-          'border-border-default bg-surface-elevated text-text relative z-50 min-w-[var(--radix-select-trigger-width)] overflow-hidden rounded-[12px] border',
+          'border-border-default bg-surface-elevated text-text relative z-[60] flex max-h-[var(--radix-select-content-available-height)] min-w-[var(--radix-select-trigger-width)] flex-col overflow-hidden rounded-[12px] border shadow-lg',
           'data-[state=open]:animate-in data-[state=closed]:animate-out',
           'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
           'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
@@ -60,7 +100,11 @@ function SelectContent({
         )}
         {...props}
       >
-        <RadixSelect.Viewport className="p-1">{children}</RadixSelect.Viewport>
+        <SelectScrollUpButton />
+        <RadixSelect.Viewport className="flex-1 overflow-y-auto p-1">
+          {children}
+        </RadixSelect.Viewport>
+        <SelectScrollDownButton />
       </RadixSelect.Content>
     </RadixSelect.Portal>
   )
@@ -126,4 +170,6 @@ export {
   SelectItem,
   SelectLabel,
   SelectSeparator,
+  SelectScrollUpButton,
+  SelectScrollDownButton,
 }
