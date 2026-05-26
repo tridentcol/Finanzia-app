@@ -94,16 +94,69 @@ export default async function CuentasPage() {
                     />
                   </div>
 
-                  {a.creditLimit && (
-                    <div className="border-border-default/60 flex items-baseline justify-between gap-2 border-t pt-3 text-[12px]">
-                      <span className="text-text-tertiary">Cupo</span>
-                      <Amount
-                        value={a.creditLimit}
-                        currency={a.currency}
-                        className="text-text-secondary text-[12px]"
-                      />
-                    </div>
-                  )}
+                  {a.type === 'credit_card' && a.creditLimit && (() => {
+                    const limit = parseFloat(a.creditLimit)
+                    const balance = parseFloat(a.currentBalance)
+                    // Para tarjetas: si balance es negativo (deuda), el utilizado = abs(balance).
+                    const used = balance < 0 ? -balance : 0
+                    const available = limit - used
+                    const utilization = limit > 0 ? Math.min(1, used / limit) : 0
+                    const tone =
+                      utilization >= 0.9
+                        ? 'bg-negative'
+                        : utilization >= 0.6
+                          ? 'bg-warning'
+                          : 'bg-text'
+                    const todayDay = new Date().getUTCDate()
+                    const daysTo = (target: number | null): number | null => {
+                      if (!target) return null
+                      const diff = target - todayDay
+                      return diff >= 0 ? diff : diff + 30
+                    }
+                    return (
+                      <div className="border-border-default/60 flex flex-col gap-3 border-t pt-3 text-[12px]">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="text-text-tertiary">Utilizado</span>
+                          <span className="text-text-secondary tabular">
+                            {Math.round(utilization * 100)}%
+                          </span>
+                        </div>
+                        <div className="bg-surface-hover h-1 overflow-hidden rounded-full">
+                          <div
+                            aria-hidden
+                            className={`h-full rounded-full transition-all ${tone}`}
+                            style={{ width: `${utilization * 100}%` }}
+                          />
+                        </div>
+                        <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                          <dt className="text-text-tertiary">Disponible</dt>
+                          <dd className="text-text-secondary text-right tabular">
+                            {available.toFixed(0)} {a.currency}
+                          </dd>
+                          <dt className="text-text-tertiary">Cupo</dt>
+                          <dd className="text-text-secondary text-right tabular">
+                            {limit.toFixed(0)} {a.currency}
+                          </dd>
+                          {a.statementDay && (
+                            <>
+                              <dt className="text-text-tertiary">Corte</dt>
+                              <dd className="text-text-secondary text-right tabular">
+                                día {a.statementDay} · faltan {daysTo(a.statementDay)} días
+                              </dd>
+                            </>
+                          )}
+                          {a.paymentDay && (
+                            <>
+                              <dt className="text-text-tertiary">Pago</dt>
+                              <dd className="text-text-secondary text-right tabular">
+                                día {a.paymentDay} · faltan {daysTo(a.paymentDay)} días
+                              </dd>
+                            </>
+                          )}
+                        </dl>
+                      </div>
+                    )
+                  })()}
                 </article>
               </li>
             )

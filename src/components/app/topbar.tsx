@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import { icons } from '@/lib/design/icons'
 import { useCommandStore } from './command-store'
 import { useDialogStore } from './dialog-store'
+import { AlertsBell } from './alerts-bell'
 
 const titles: Record<string, string> = {
   '/dashboard': 'Resumen',
@@ -32,7 +33,7 @@ function resolveTitle(pathname: string): string {
  *  - >=lg: título a la izquierda + buscador estilo Linear + ⌘K + ⌘J + avatar.
  *  - <lg: brand mark + título compacto + botón buscador icon-only + spark IA.
  */
-export function Topbar() {
+export function Topbar({ unreadAlerts = 0 }: { unreadAlerts?: number }) {
   const pathname = usePathname()
   const title = resolveTitle(pathname)
   const setOpen = useCommandStore((s) => s.setOpen)
@@ -60,6 +61,7 @@ export function Topbar() {
       </h1>
 
       <div className="flex items-center gap-2">
+        <AlertsBell initialCount={unreadAlerts} />
         <button
           type="button"
           onClick={() => openDialog('copilot')}

@@ -6,7 +6,11 @@ import { insights, profiles, transactions, users } from '@/lib/db/schema'
 import { detectAnomalies } from './anomaly'
 import { detectTrends } from './trend'
 import { detectForecasts } from './forecast'
+import { detectSavingsRate } from './savings-rate'
+import { detectDormancy } from './dormancy'
+import { detectRecurring } from './recurring-detection'
 import { generateRecommendations } from './recommendation'
+import { mirrorAlertsForInsights } from './alert-mirror'
 import type { DetectedInsight, InsightContext } from './types'
 
 export type RunResult = {
@@ -35,7 +39,15 @@ export async function runDetectorsForUser(userId: string): Promise<RunResult> {
   }
 
   const detected: DetectedInsight[] = []
-  for (const detector of [detectAnomalies, detectTrends, detectForecasts]) {
+  const detectors = [
+    detectAnomalies,
+    detectTrends,
+    detectForecasts,
+    detectSavingsRate,
+    detectDormancy,
+    detectRecurring,
+  ]
+  for (const detector of detectors) {
     try {
       const items = await detector(ctx)
       detected.push(...items)
@@ -87,6 +99,14 @@ export async function runDetectorsForUser(userId: string): Promise<RunResult> {
   }
 
   await db.insert(insights).values(toInsert)
+
+  // Mirroring a alerts (canal de notificación). Tolerante a errores.
+  try {
+    await mirrorAlertsForInsights(userId, detected)
+  } catch (err) {
+    console.error('[insights] alert mirror falló:', err)
+  }
+
   return {
     userId,
     generated: toInsert.length,

@@ -9,6 +9,8 @@ export type AppDialogId =
   | 'edit-category'
   | 'new-budget'
   | 'copilot'
+  | 'new-goal'
+  | 'new-recurring'
 
 type DialogStore = {
   active: AppDialogId | null

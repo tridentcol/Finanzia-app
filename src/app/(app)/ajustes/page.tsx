@@ -6,6 +6,7 @@ import { db } from '@/lib/db/client'
 import { profiles } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 import { listUserIntegrations } from '@/lib/integrations/store'
+import { countUnreadAlerts } from '@/lib/db/queries/alerts'
 import { icons } from '@/lib/design/icons'
 
 export const metadata: Metadata = {
@@ -14,11 +15,13 @@ export const metadata: Metadata = {
 
 export default async function AjustesPage() {
   const user = await requireCurrentUser()
-  const [profile, integrations] = await Promise.all([
+  const [profile, integrations, unreadAlerts] = await Promise.all([
     db.query.profiles.findFirst({ where: eq(profiles.userId, user.id) }),
     listUserIntegrations(user.id),
+    countUnreadAlerts(user.id),
   ])
   const Spark = icons.sparkles
+  const Bell = icons.bell
 
   return (
     <div className="flex flex-col gap-10">
@@ -39,33 +42,89 @@ export default async function AjustesPage() {
 
       <section className="flex flex-col gap-3">
         <h2 className="text-text text-sm font-semibold">Configuración</h2>
-        <Link
-          href="/ajustes/integraciones"
-          className="border-border-default bg-surface hover:bg-surface-hover/60 flex items-center justify-between gap-4 rounded-[12px] border p-5 transition-colors"
-        >
-          <div className="flex items-start gap-3">
-            <Spark
-              strokeWidth={1.5}
-              className="mt-0.5 size-4"
-              style={{ color: 'var(--accent-ai)' }}
-            />
-            <div className="flex flex-col gap-1">
-              <span className="text-text text-sm font-semibold">
-                Integraciones IA
-              </span>
-              <span className="text-text-secondary text-[13px]">
-                {integrations.length === 0
-                  ? 'Sin claves configuradas — operando en modo heurístico.'
-                  : `${integrations.length} ${
-                      integrations.length === 1
-                        ? 'integración activa'
-                        : 'integraciones activas'
-                    }.`}
-              </span>
+        <div className="flex flex-col gap-3">
+          <Link
+            href="/ajustes/integraciones"
+            className="border-border-default bg-surface hover:bg-surface-hover/60 flex items-center justify-between gap-4 rounded-[12px] border p-5 transition-colors"
+          >
+            <div className="flex items-start gap-3">
+              <Spark
+                strokeWidth={1.5}
+                className="mt-0.5 size-4"
+                style={{ color: 'var(--accent-ai)' }}
+              />
+              <div className="flex flex-col gap-1">
+                <span className="text-text text-sm font-semibold">Integraciones IA</span>
+                <span className="text-text-secondary text-[13px]">
+                  {integrations.length === 0
+                    ? 'Sin claves configuradas — operando en modo heurístico.'
+                    : `${integrations.length} ${
+                        integrations.length === 1
+                          ? 'integración activa'
+                          : 'integraciones activas'
+                      }.`}
+                </span>
+              </div>
             </div>
-          </div>
-          <span className="text-text-tertiary text-sm">→</span>
-        </Link>
+            <span className="text-text-tertiary text-sm">→</span>
+          </Link>
+
+          <Link
+            href="/ajustes/recurring"
+            className="border-border-default bg-surface hover:bg-surface-hover/60 flex items-center justify-between gap-4 rounded-[12px] border p-5 transition-colors"
+          >
+            <div className="flex items-start gap-3">
+              {(() => {
+                const Repeat = icons.repeat
+                return (
+                  <Repeat
+                    strokeWidth={1.5}
+                    className="text-text-tertiary mt-0.5 size-4"
+                  />
+                )
+              })()}
+              <div className="flex flex-col gap-1">
+                <span className="text-text text-sm font-semibold">
+                  Reglas recurrentes
+                </span>
+                <span className="text-text-secondary text-[13px]">
+                  Suscripciones, salario, arriendo. Finanzia los crea solos.
+                </span>
+              </div>
+            </div>
+            <span className="text-text-tertiary text-sm">→</span>
+          </Link>
+
+          <Link
+            href="/ajustes/alertas"
+            className="border-border-default bg-surface hover:bg-surface-hover/60 flex items-center justify-between gap-4 rounded-[12px] border p-5 transition-colors"
+          >
+            <div className="flex items-start gap-3">
+              <Bell
+                strokeWidth={1.5}
+                className={`mt-0.5 size-4 ${unreadAlerts > 0 ? 'text-text' : 'text-text-tertiary'}`}
+              />
+              <div className="flex flex-col gap-1">
+                <span className="text-text text-sm font-semibold">Alertas</span>
+                <span className="text-text-secondary text-[13px]">
+                  {unreadAlerts === 0
+                    ? 'Bandeja al día.'
+                    : `${unreadAlerts} ${unreadAlerts === 1 ? 'alerta sin leer' : 'alertas sin leer'}.`}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {unreadAlerts > 0 && (
+                <span
+                  aria-hidden
+                  className="bg-accent-ai size-1.5 rounded-full"
+                  style={{ background: 'var(--accent-ai)' }}
+                />
+              )}
+              <span className="text-text-tertiary text-sm">→</span>
+            </div>
+          </Link>
+        </div>
       </section>
     </div>
   )

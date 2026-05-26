@@ -10,11 +10,14 @@ import { NewTransactionDialog } from '@/components/app/new-transaction-dialog'
 import { NewCategoryDialog } from '@/components/app/new-category-dialog'
 import { EditCategoryDialog } from '@/components/app/edit-category-dialog'
 import { NewBudgetDialog } from '@/components/app/new-budget-dialog'
+import { NewGoalDialog } from '@/components/app/new-goal-dialog'
+import { NewRecurringDialog } from '@/components/app/new-recurring-dialog'
 import { CopilotDialog } from '@/components/app/copilot-dialog'
 import {
   listAvailableCategories,
   listUserAccountsBasic,
 } from '@/lib/db/queries/transactions'
+import { countUnreadAlerts } from '@/lib/db/queries/alerts'
 
 export default async function AppLayout({
   children,
@@ -23,16 +26,17 @@ export default async function AppLayout({
 }>) {
   const user = await requireCurrentUser()
 
-  const [accountsForForm, categoriesForForm] = await Promise.all([
+  const [accountsForForm, categoriesForForm, unreadAlerts] = await Promise.all([
     listUserAccountsBasic(user.id),
     listAvailableCategories(user.id),
+    countUnreadAlerts(user.id),
   ])
 
   return (
     <div className="bg-background text-text min-h-svh">
       <Sidebar />
       <div className="lg:pl-[240px]">
-        <Topbar />
+        <Topbar unreadAlerts={unreadAlerts} />
         <main className="mx-auto w-full max-w-[1120px] px-4 pt-6 pb-[80px] sm:px-6 lg:px-8 lg:py-10 lg:pb-10">
           <ViewTransition name="app-content">{children}</ViewTransition>
         </main>
@@ -47,6 +51,11 @@ export default async function AppLayout({
       <NewCategoryDialog categories={categoriesForForm} />
       <EditCategoryDialog categories={categoriesForForm} />
       <NewBudgetDialog categories={categoriesForForm} />
+      <NewGoalDialog accounts={accountsForForm} />
+      <NewRecurringDialog
+        accounts={accountsForForm}
+        categories={categoriesForForm.map((c) => ({ id: c.id, name: c.name, kind: c.kind }))}
+      />
       <CopilotDialog />
     </div>
   )

@@ -19,6 +19,8 @@ export type AccountListItem = {
   currency: CurrencyCode
   initialBalance: string
   creditLimit: string | null
+  statementDay: number | null
+  paymentDay: number | null
   archived: boolean
   color: string | null
   icon: string | null
@@ -55,6 +57,8 @@ export async function listAccountsWithBalance(
     currency: string
     initial_balance: string
     credit_limit: string | null
+    statement_day: number | null
+    payment_day: number | null
     archived: boolean
     color: string | null
     icon: string | null
@@ -96,6 +100,8 @@ export async function listAccountsWithBalance(
       a.currency,
       a.initial_balance,
       a.credit_limit,
+      a.statement_day,
+      a.payment_day,
       a.archived,
       a.color,
       a.icon,
@@ -116,6 +122,8 @@ export async function listAccountsWithBalance(
     currency: r.currency as CurrencyCode,
     initialBalance: r.initial_balance,
     creditLimit: r.credit_limit,
+    statementDay: r.statement_day,
+    paymentDay: r.payment_day,
     archived: r.archived,
     color: r.color,
     icon: r.icon,
