@@ -3,7 +3,7 @@
 > Archivo vivo. **Actualízalo al cerrar cada step o al tomar una decisión que afecte el rumbo.**
 > El builder lo lee al inicio de cada sesión para no perder continuidad.
 >
-> Última actualización: 2026-05-26 — Step 4 cerrado: tokens Noir hex, Inter + Geist Mono + Fraunces italic cargadas, motion system inicial, lista curada de iconos. Próximo: Step 5 (Rail + Cmd+K + View transitions).
+> Última actualización: 2026-05-26 — Step 5 cerrado: shell (app) con Rail 56px + Topbar 56px + Cmd+K palette (cmdk + radix Dialog) + View Transitions (rail-indicator, app-content). 7 páginas placeholder con empty states editoriales. Próximo: Step 6 (CRUD cuentas + transacciones manual).
 
 ---
 
@@ -15,7 +15,7 @@
 | 2 | Database — schema + migración + RLS + seed | ✅ hecho | DB aplicada al proyecto Supabase `anyinryjupznpouaxhtp` vía MCP. 55 categorías sistema sembradas. |
 | 3 | Auth — Clerk + Third-Party Auth Supabase | ✅ hecho | Clerk con Sign in with Apple. Integración Third-Party Auth verificada (`/api/auth-check` mostró `sub` correcto, `iss=https://natural-doberman-90.clerk.accounts.dev`, `role=authenticated`, RLS filtra 1 fila). Usuario semilla: `78f6tpjfw5@privaterelay.appleid.com` con profile default COP/es-CO/America/Bogota. Webhook secret aún no configurado (se hace cuando haya dominio público); el `getCurrentUser()` lazy upsert cubre el gap. |
 | 4 | Design system — tokens, fonts, theme | ✅ hecho | Tokens Noir hex en `globals.css` (light + dark). Fuentes: Inter (`--font-sans` con opsz axis), Geist Mono (`--font-mono`), Fraunces italic (`--font-editorial`). `src/lib/design/{tokens,icons}.ts` y `src/lib/motion/{easings,durations,variants}.ts`. `clerkAppearance` migrado a CSS vars. Clases utility: `.display`, `.editorial`, `.amount`. `prefers-reduced-motion` respetado. |
-| 5 | Layout principal — Rail + Cmd+K + View transitions | ⏳ pendiente | |
+| 5 | Layout principal — Rail + Cmd+K + View transitions | ✅ hecho | `Rail` 56px (client, usePathname para active state, tooltips CSS-only). `Topbar` 56px con breadcrumb + ghost button "Buscar ⌘K". `CommandPalette` con cmdk + radix Dialog: navegación + sección IA placeholder con `accent-ai`. Listener global Cmd+K via Zustand store. ViewTransitions activadas: `rail-indicator` (animación del active mark) y `app-content` (crossfade del main). Páginas placeholder en `(app)/{cuentas,transacciones,categorias,presupuestos,metas,insights,ajustes}` con `EmptyState` editorial (Fraunces italic + body Inter). `categorias` ya carga las 55 sembradas via Drizzle. |
 | 6 | CRUD cuentas + transacciones manual | ⏳ pendiente | |
 | 7 | Categorías + presupuestos | ⏳ pendiente | |
 | 8 | Import CSV con mapping inteligente | ⏳ pendiente | |
@@ -28,7 +28,45 @@
 
 ## Next action
 
-**Step 5 — Layout principal: Rail + Cmd+K + View Transitions.**
+**Step 6 — CRUD de cuentas + registro manual de transacciones.**
+
+Es el primer step donde la app produce datos reales del usuario. Cuidado especial con el manejo de dinero (mandato regla 4 y 5).
+
+Por hacer:
+
+1. **Modal "Nueva cuenta"** disparable desde la página Cuentas (botón header) y desde Cmd+K.
+   - Formulario: nombre, tipo (`account_type` enum), moneda (COP/USD/EUR/MXN inicialmente), saldo inicial, opcional crédito límite/statement_day/payment_day si type=credit_card, color, icon (del set curado).
+   - Validación Zod, Server Action `createAccount`.
+2. **Lista de cuentas** en `(app)/cuentas/page.tsx`:
+   - RSC query con Drizzle. Card por cuenta con: nombre, tipo, saldo computado (suma de transactions.amount_base WHERE account_id), saldo en moneda original.
+   - Estados loading/empty/error.
+   - Click → drawer con detalle + movimientos recientes.
+3. **Modal "Nueva transacción"** disparable desde Transacciones, dashboard, Cmd+K.
+   - Formulario: tipo (income/expense/transfer), cuenta origen, cuenta destino (si transfer), monto, moneda, fecha, descripción, categoría, notes.
+   - Calcular `amount_base` con la tasa del día (mock tasa 1:1 hasta step de exchange rates).
+   - Server Action `createTransaction`. Por ahora sin embedding (Step 9).
+4. **Lista de transacciones** en `(app)/transacciones/page.tsx`:
+   - Tabla simple con date, descripción, categoría, cuenta, monto (color por kind).
+   - Filtros básicos (kind, cuenta, rango de fecha) via `nuqs` (search params).
+5. **Componentes UI base** que faltan:
+   - `Button` (shadcn-style pero Noir).
+   - `Input`, `Select`, `Textarea`.
+   - `Dialog` wrapper sobre radix.
+   - `Amount` que recibe `{ value, currency }` y formatea con Dinero.js.
+6. **Helpers en `src/lib/currency/`**:
+   - `format.ts` — formato según locale del usuario.
+   - `dinero.ts` — wrapper de Dinero.js para conversión amount ↔ cents.
+
+Notas:
+- Dinero ya está en deps (`dinero.js@2.0.2`).
+- Tasas de cambio reales son Step 8 (cron exchange_rates). Hasta entonces, `amount_base = amount_original` cuando `currency === baseCurrency`, sino mock 1:1 con warning.
+- Subscripciones de Server Actions: cada uno revalidatePath de la página afectada.
+
+**Antes de empezar Step 6: commit Step 5.** Sugerido:
+
+```
+feat(shell): rail + topbar + cmdk + view transitions
+```
 
 Por hacer:
 
@@ -137,6 +175,10 @@ feat(auth): wire clerk + third-party auth supabase
 | **Usar `<Show when="signed-in/out">` en lugar de `<SignedIn>`/`<SignedOut>`** | Patrón oficial Clerk v7. Reemplaza a los componentes deprecados; funciona server-side. Aplicado en `app/page.tsx` con `<SignInButton mode="modal">`, `<SignUpButton mode="modal">`, `<UserButton>`. |
 | **`@clerk/localizations` con `esES`** | UI de Clerk en español. El paquete pesa ~150KB tree-shakable, vale la pena por consistencia editorial. |
 | **`env.ts` aflojado**: AI / Upstash / Trigger / `CLERK_WEBHOOK_SECRET` ahora son `.optional()` | Para arrancar `pnpm dev` durante Step 3 sin tener todas las claves listas. El webhook handler ahora hace guard: si `CLERK_WEBHOOK_SECRET` falta, devuelve 503. Cuando los steps que las consumen lleguen, el código que dependa de cada var debe hacer su propio guard. |
+| **Cmd+K state vive en Zustand, no Context** (`src/components/app/command-store.ts`) | El trigger del Topbar y el CommandPalette montado en el layout están en árboles separados. Zustand evita pasar props o crear un Context. Costo: 1 nueva dependencia ya en deps. |
+| **`<ViewTransition>` desde `react`** + `experimental.viewTransition: true` | Patrón oficial Next 16. Requiere triple-slash reference a `react/canary` en `src/types/react-experimental.d.ts` para que TS reconozca el export. Animations duration y easing aplicadas globalmente vía `::view-transition-*` en `globals.css`. |
+| **Páginas placeholder con `EmptyState` editorial** | Regla 14 del mandato: empty states son una oportunidad, no un bug. Fraunces italic en el headline, body Inter, sin ilustración. |
+| **Cmd+K acción IA "Preguntar a Finanzia"** disabled con `próximamente` | Mostrar la ranura desde el inicio comunica intención del producto. Activar en Step 11 (copiloto). El icono usa `accent-ai` — única excepción al cero-color en este step. |
 
 ---
 

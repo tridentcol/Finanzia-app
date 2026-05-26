@@ -213,3 +213,33 @@
     }
   }
 }
+
+/* ============================================================
+   View Transitions — animaciones spatiales entre rutas (app)/*.
+   Easing global = smooth (mandato regla 11).
+   ============================================================ */
+
+::view-transition-group(*),
+::view-transition-old(*),
+::view-transition-new(*) {
+  animation-duration: var(--duration-base);
+  animation-timing-function: var(--ease-smooth);
+}
+
+::view-transition-old(rail-indicator),
+::view-transition-new(rail-indicator) {
+  animation-duration: var(--duration-fast);
+}
+
+::view-transition-old(app-content),
+::view-transition-new(app-content) {
+  animation-duration: var(--duration-fast);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
