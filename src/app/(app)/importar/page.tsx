@@ -21,10 +21,10 @@ export default async function ImportarPage() {
   ])
 
   return (
-    <div className="flex flex-col gap-10">
-      <header className="flex flex-col gap-1">
+    <div className="flex min-w-0 flex-col gap-10">
+      <header className="flex min-w-0 flex-col gap-1">
         <p className="text-text-secondary text-sm">Importar</p>
-        <h1 className="text-text text-3xl font-semibold tracking-[-0.02em]">
+        <h1 className="text-text text-2xl font-semibold tracking-[-0.02em] sm:text-3xl">
           Extracto bancario
         </h1>
         <p className="text-text-tertiary mt-3 max-w-xl text-sm leading-relaxed">
@@ -43,25 +43,55 @@ export default async function ImportarPage() {
             body="Cuando importes uno, aparecerá aquí con el conteo de filas procesadas y omitidas."
           />
         ) : (
-          <div className="border-border-default bg-surface overflow-hidden rounded-[12px] border">
-            <table className="w-full">
-              <thead>
-                <tr className="border-border-default text-text-tertiary border-b text-[11px] uppercase tracking-[0.08em]">
-                  <th className="px-5 py-3 text-left font-medium">Fecha</th>
-                  <th className="px-5 py-3 text-left font-medium">Archivo</th>
-                  <th className="px-5 py-3 text-left font-medium">Cuenta</th>
-                  <th className="px-5 py-3 text-right font-medium">Filas</th>
-                  <th className="px-5 py-3 text-right font-medium">Omitidas</th>
-                  <th className="px-5 py-3 text-right font-medium">Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {batches.map((b) => (
-                  <BatchRow key={b.id} batch={b} />
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <>
+            {/* Mobile (<md): cards apiladas */}
+            <ul className="flex flex-col gap-2 md:hidden">
+              {batches.map((b) => (
+                <li
+                  key={b.id}
+                  className="border-border-default bg-surface flex min-w-0 flex-col gap-2 rounded-[12px] border p-4"
+                >
+                  <div className="flex min-w-0 items-start justify-between gap-3">
+                    <span className="text-text truncate text-[14px]">{b.filename}</span>
+                    <StatusBadge status={b.status} />
+                  </div>
+                  <div className="text-text-tertiary flex items-center justify-between gap-3 text-[11px]">
+                    <span className="truncate">
+                      {formatDate(b.createdAt)} · {b.accountName}
+                    </span>
+                    <span className="tabular shrink-0">
+                      {b.importedRows.toLocaleString('es-CO')} / {b.totalRows.toLocaleString('es-CO')}
+                      {b.totalRows - b.importedRows > 0 && (
+                        <span className="text-warning ml-1">
+                          ({(b.totalRows - b.importedRows).toLocaleString('es-CO')} omitidas)
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            {/* Desktop (>=md): tabla */}
+            <div className="border-border-default bg-surface hidden overflow-hidden rounded-[12px] border md:block">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-border-default text-text-tertiary border-b text-[11px] uppercase tracking-[0.08em]">
+                    <th className="px-5 py-3 text-left font-medium">Fecha</th>
+                    <th className="px-5 py-3 text-left font-medium">Archivo</th>
+                    <th className="px-5 py-3 text-left font-medium">Cuenta</th>
+                    <th className="px-5 py-3 text-right font-medium">Filas</th>
+                    <th className="px-5 py-3 text-right font-medium">Omitidas</th>
+                    <th className="px-5 py-3 text-right font-medium">Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {batches.map((b) => (
+                    <BatchRow key={b.id} batch={b} />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </section>
     </div>

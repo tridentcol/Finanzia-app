@@ -65,23 +65,23 @@ export function GoalCard({ goal }: Props) {
           : 'Sin fecha'
 
   return (
-    <article className="border-border-default bg-surface flex flex-col gap-3 rounded-[12px] border p-4">
+    <article className="border-border-default bg-surface flex min-w-0 flex-col gap-3 rounded-[12px] border p-4">
       <header className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 items-center gap-2">
           <Target
             strokeWidth={1.5}
-            className="text-text-tertiary size-4"
+            className="text-text-tertiary size-4 shrink-0"
           />
-          <span className="text-text text-[14px] font-semibold">{goal.name}</span>
+          <span className="text-text truncate text-[14px] font-semibold">{goal.name}</span>
         </div>
-        <span className="text-text-tertiary text-[11px]">{statusLabel}</span>
+        <span className="text-text-tertiary shrink-0 text-[11px]">{statusLabel}</span>
       </header>
 
-      <div className="flex items-end justify-between">
+      <div className="flex flex-wrap items-end justify-between gap-x-3 gap-y-1">
         <Amount value={goal.currentAmount} currency={goal.currency as CurrencyCode} className="text-base" />
         <span className="text-text-tertiary text-[11px]">
-          de <Amount value={goal.targetAmount} currency={goal.currency as CurrencyCode} className="text-[11px] inline" /> · faltan{' '}
-          <Amount value={remaining} currency={goal.currency as CurrencyCode} className="text-[11px] inline" />
+          de <Amount value={goal.targetAmount} currency={goal.currency as CurrencyCode} className="inline text-[11px]" /> · faltan{' '}
+          <Amount value={remaining} currency={goal.currency as CurrencyCode} className="inline text-[11px]" />
         </span>
       </div>
 

@@ -16,11 +16,11 @@ export default async function MetasPage() {
   const active = list.filter((g) => g.status !== 'abandoned')
 
   return (
-    <div className="flex flex-col gap-10">
-      <header className="flex items-end justify-between gap-4">
-        <div className="flex flex-col gap-1">
+    <div className="flex min-w-0 flex-col gap-10">
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div className="flex min-w-0 flex-col gap-1">
           <p className="text-text-secondary text-sm">Metas</p>
-          <h1 className="text-text text-3xl font-semibold tracking-[-0.02em]">
+          <h1 className="text-text text-2xl font-semibold tracking-[-0.02em] sm:text-3xl">
             Hacia dónde
           </h1>
         </div>

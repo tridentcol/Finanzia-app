@@ -89,11 +89,11 @@ export default async function CategoriasPage({
   const totalUserChildren = rows.filter((r) => r.userId !== null && r.parentId !== null).length
 
   return (
-    <div className="flex flex-col gap-10">
-      <header className="flex items-end justify-between gap-4">
-        <div className="flex flex-col gap-1">
+    <div className="flex min-w-0 flex-col gap-10">
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div className="flex min-w-0 flex-col gap-1">
           <p className="text-text-secondary text-sm">Categorías</p>
-          <h1 className="text-text text-3xl font-semibold tracking-[-0.02em]">
+          <h1 className="text-text text-2xl font-semibold tracking-[-0.02em] sm:text-3xl">
             Sistema y propias
           </h1>
           <p className="text-text-tertiary mt-1 text-xs">
@@ -107,7 +107,7 @@ export default async function CategoriasPage({
 
       <nav
         aria-label="Filtros"
-        className="border-border-default flex items-center gap-1 rounded-[8px] border p-0.5 self-start"
+        className="border-border-default -mx-1 flex items-center gap-1 overflow-x-auto rounded-[8px] border p-0.5 self-start"
       >
         {kindFilters.map((f) => {
           const selected = (f.value ?? null) === (kindFilter ?? null)
@@ -116,7 +116,7 @@ export default async function CategoriasPage({
               key={f.label}
               href={`/categorias${kindParam(f.value)}`}
               className={cn(
-                'rounded-[6px] px-3 py-1.5 text-[13px] transition-colors',
+                'rounded-[6px] px-3 py-1.5 text-[13px] whitespace-nowrap transition-colors',
                 selected
                   ? 'bg-surface-hover text-text'
                   : 'text-text-secondary hover:text-text hover:bg-surface-hover/60',
@@ -138,23 +138,23 @@ export default async function CategoriasPage({
             const children = childrenByParent.get(p.id) ?? []
             const isOwn = p.userId !== null
             return (
-              <li key={p.id}>
-                <article className="border-border-default bg-surface flex flex-col gap-3 rounded-[12px] border p-5">
+              <li key={p.id} className="min-w-0">
+                <article className="border-border-default bg-surface flex min-w-0 flex-col gap-3 rounded-[12px] border p-5">
                   <header className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
                       <span
-                        className="border-border-default flex h-9 w-9 items-center justify-center rounded-[8px] border"
+                        className="border-border-default flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] border"
                         style={p.color ? { color: p.color } : undefined}
                       >
                         <Icon strokeWidth={1.5} className="h-4 w-4" />
                       </span>
-                      <div className="flex flex-col">
-                        <div className="flex items-center gap-2">
-                          <span className="text-text text-sm font-semibold">
+                      <div className="flex min-w-0 flex-col">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-text truncate text-sm font-semibold">
                             {p.name}
                           </span>
                           {isOwn && (
-                            <span className="border-border-emphasis text-text-secondary rounded-[4px] border px-1.5 py-0 text-[10px] uppercase tracking-wider">
+                            <span className="border-border-emphasis text-text-secondary shrink-0 rounded-[4px] border px-1.5 py-0 text-[10px] uppercase tracking-wider">
                               Tuya
                             </span>
                           )}
@@ -164,7 +164,7 @@ export default async function CategoriasPage({
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex shrink-0 items-center gap-2">
                       {!isOwn && (
                         <span className="text-text-tertiary border-border-default rounded-[4px] border px-1.5 py-0.5 text-[10px] uppercase tracking-wider">
                           Sistema

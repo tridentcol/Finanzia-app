@@ -79,23 +79,23 @@ export function AlertList({ alerts }: { alerts: AlertListItem[] }) {
           <li
             key={a.id}
             className={cn(
-              'border-border-default bg-surface group flex items-start justify-between gap-3 rounded-[12px] border p-4',
+              'border-border-default bg-surface group flex min-w-0 items-start justify-between gap-3 rounded-[12px] border p-4',
               !a.read && 'ring-1 ring-[color:var(--accent-ai)]/30',
             )}
           >
-            <div className="flex items-start gap-3">
+            <div className="flex min-w-0 items-start gap-3">
               <Bell
                 strokeWidth={1.5}
                 className={cn(
-                  'mt-0.5 size-4',
+                  'mt-0.5 size-4 shrink-0',
                   a.read ? 'text-text-tertiary' : 'text-text',
                 )}
               />
-              <div className="flex flex-col gap-1">
+              <div className="flex min-w-0 flex-col gap-1">
                 <span className="text-text-tertiary text-[11px] uppercase tracking-[0.08em]">
                   {kindLabel[a.kind]}
                 </span>
-                <p className={cn('text-sm', a.read ? 'text-text-secondary' : 'text-text')}>
+                <p className={cn('text-sm break-words', a.read ? 'text-text-secondary' : 'text-text')}>
                   {a.message}
                 </p>
                 <span className="text-text-tertiary text-[11px]">
@@ -108,7 +108,7 @@ export function AlertList({ alerts }: { alerts: AlertListItem[] }) {
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex shrink-0 items-center gap-1">
               {!a.read && (
                 <Button
                   type="button"

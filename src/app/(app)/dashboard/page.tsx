@@ -59,15 +59,15 @@ export default async function DashboardPage() {
   const hasAccounts = accountsList.length > 0
 
   return (
-    <div className="flex flex-col gap-10 lg:gap-12">
-      <header className="flex flex-col gap-1.5">
+    <div className="flex min-w-0 flex-col gap-10 lg:gap-12">
+      <header className="flex min-w-0 flex-col gap-1.5">
         <p className="text-text-secondary text-sm">Saldo total</p>
         <Amount
           value={totalBase}
           currency={baseCurrency}
           display
           kind={parseFloat(totalBase) < 0 ? 'negative' : 'neutral'}
-          className="text-[40px] sm:text-5xl lg:text-6xl"
+          className="block truncate text-[28px] sm:text-4xl md:text-5xl lg:text-6xl"
         />
         <p className="text-text-tertiary text-xs">
           Suma de {accountsList.length}{' '}

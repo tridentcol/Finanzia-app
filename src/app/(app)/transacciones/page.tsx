@@ -80,15 +80,15 @@ export default async function TransaccionesPage({
   }))
 
   return (
-    <div className="flex flex-col gap-10">
-      <header className="flex items-end justify-between gap-4">
-        <div className="flex flex-col gap-1">
+    <div className="flex min-w-0 flex-col gap-10">
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div className="flex min-w-0 flex-col gap-1">
           <p className="text-text-secondary text-sm">Transacciones</p>
-          <h1 className="text-text text-3xl font-semibold tracking-[-0.02em]">
+          <h1 className="text-text text-2xl font-semibold tracking-[-0.02em] sm:text-3xl">
             Bitácora
           </h1>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <RecategorizeButton pending={unclassified} />
           <NewTransactionTrigger />
         </div>
@@ -96,7 +96,7 @@ export default async function TransaccionesPage({
 
       <nav
         aria-label="Filtros"
-        className="border-border-default flex items-center gap-1 rounded-[8px] border p-0.5 self-start"
+        className="border-border-default -mx-1 flex items-center gap-1 overflow-x-auto rounded-[8px] border p-0.5 self-start"
       >
         {kindFilters.map((f) => {
           const selected = (f.value ?? null) === (kind ?? null)
@@ -105,7 +105,7 @@ export default async function TransaccionesPage({
               key={f.label}
               href={`/transacciones${kindParam(f.value)}`}
               className={cn(
-                'rounded-[6px] px-3 py-1.5 text-[13px] transition-colors',
+                'rounded-[6px] px-3 py-1.5 text-[13px] whitespace-nowrap transition-colors',
                 selected
                   ? 'bg-surface-hover text-text'
                   : 'text-text-secondary hover:text-text hover:bg-surface-hover/60',
@@ -134,12 +134,12 @@ export default async function TransaccionesPage({
             {list.map((tx) => (
               <li
                 key={tx.id}
-                className="border-border-default bg-surface flex flex-col gap-2 rounded-[12px] border p-4"
+                className="border-border-default bg-surface flex min-w-0 flex-col gap-2 rounded-[12px] border p-4"
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-text text-[14px]">{tx.description}</span>
-                    <span className="text-text-tertiary text-[11px]">
+                <div className="flex min-w-0 items-start justify-between gap-3">
+                  <div className="flex min-w-0 flex-col gap-0.5">
+                    <span className="text-text truncate text-[14px]">{tx.description}</span>
+                    <span className="text-text-tertiary truncate text-[11px]">
                       {formatRelativeDate(tx.date)} · {tx.account.name}
                       {tx.kind === 'transfer' && tx.transferAccount &&
                         ` → ${tx.transferAccount.name}`}
@@ -150,7 +150,7 @@ export default async function TransaccionesPage({
                     currency={tx.currency}
                     kind={kindToTone[tx.kind]}
                     showPositiveSign={tx.kind === 'income'}
-                    className="text-[14px] shrink-0"
+                    className="shrink-0 text-[14px]"
                   />
                 </div>
                 <CategoryCell

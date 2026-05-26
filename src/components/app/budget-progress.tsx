@@ -33,20 +33,20 @@ export function BudgetProgressCard({
   return (
     <article
       className={cn(
-        'border-border-default bg-surface flex flex-col gap-4 rounded-[12px] border',
+        'border-border-default bg-surface flex min-w-0 flex-col gap-4 rounded-[12px] border',
         compact ? 'p-4' : 'p-5',
       )}
     >
       <header className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           <span
-            className="border-border-default flex h-8 w-8 items-center justify-center rounded-[8px] border"
+            className="border-border-default flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] border"
             style={budget.categoryColor ? { color: budget.categoryColor } : undefined}
           >
             <Icon strokeWidth={1.5} className="h-4 w-4" />
           </span>
-          <div className="flex flex-col">
-            <span className="text-text text-sm font-semibold">
+          <div className="flex min-w-0 flex-col">
+            <span className="text-text truncate text-sm font-semibold">
               {budget.categoryName}
             </span>
             <span className="text-text-tertiary text-[11px] uppercase tracking-[0.08em]">
@@ -54,7 +54,9 @@ export function BudgetProgressCard({
             </span>
           </div>
         </div>
-        <StatusBadge status={status} />
+        <div className="shrink-0">
+          <StatusBadge status={status} />
+        </div>
       </header>
 
       <div className="flex flex-col gap-2">

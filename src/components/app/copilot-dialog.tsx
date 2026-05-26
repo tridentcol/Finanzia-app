@@ -123,13 +123,14 @@ function CopilotChat({ onClose }: { onClose: () => void }) {
       <form
         onSubmit={onSubmit}
         className="border-border-default flex items-center gap-2 border-t px-3 py-2"
+        style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom, 0px))' }}
       >
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Pregunta cualquier cosa sobre tus finanzas"
-          className="text-text placeholder:text-text-tertiary flex-1 bg-transparent px-2 py-2 text-sm outline-none"
+          className="text-text placeholder:text-text-tertiary min-h-[44px] flex-1 bg-transparent px-2 py-2 text-sm outline-none"
           autoFocus
           disabled={false}
         />

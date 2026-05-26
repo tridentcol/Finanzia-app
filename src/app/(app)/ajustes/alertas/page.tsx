@@ -15,8 +15,8 @@ export default async function AlertsPage() {
   const list = await listAlertsForUser(user.id, { limit: 60 })
 
   return (
-    <div className="flex flex-col gap-10">
-      <header className="flex flex-col gap-2">
+    <div className="flex min-w-0 flex-col gap-10">
+      <header className="flex min-w-0 flex-col gap-2">
         <div className="flex items-center gap-2">
           <Link
             href="/ajustes"
@@ -27,7 +27,7 @@ export default async function AlertsPage() {
           <span className="text-text-tertiary text-[13px]">/</span>
           <span className="text-text-secondary text-[13px]">Alertas</span>
         </div>
-        <h1 className="text-text text-3xl font-semibold tracking-[-0.02em]">
+        <h1 className="text-text text-2xl font-semibold tracking-[-0.02em] sm:text-3xl">
           Notificaciones
         </h1>
         <p className="text-text-secondary editorial max-w-prose text-base italic">

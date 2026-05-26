@@ -64,12 +64,12 @@ export function RecurringList({ rules }: { rules: RecurringRuleListItem[] }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-text-secondary text-[13px]">
           {rules.filter((r) => r.active).length} activas · {rules.length} total
         </span>
         <Button variant="outline" size="sm" onClick={onRunNow} disabled={pending}>
-          Procesar vencidas ahora
+          Procesar vencidas
         </Button>
       </div>
 
@@ -78,20 +78,20 @@ export function RecurringList({ rules }: { rules: RecurringRuleListItem[] }) {
           <li
             key={r.id}
             className={cn(
-              'border-border-default bg-surface flex items-start justify-between gap-3 rounded-[12px] border p-4',
+              'border-border-default bg-surface flex min-w-0 flex-col gap-3 rounded-[12px] border p-4 sm:flex-row sm:items-start sm:justify-between',
               !r.active && 'opacity-60',
             )}
           >
-            <div className="flex items-start gap-3">
+            <div className="flex min-w-0 items-start gap-3">
               <Repeat
                 strokeWidth={1.5}
                 className={cn(
-                  'mt-0.5 size-4',
+                  'mt-0.5 size-4 shrink-0',
                   r.kind === 'income' ? 'text-positive' : 'text-text-tertiary',
                 )}
               />
-              <div className="flex flex-col gap-1">
-                <span className="text-text text-sm font-semibold">{r.description}</span>
+              <div className="flex min-w-0 flex-col gap-1">
+                <span className="text-text truncate text-sm font-semibold">{r.description}</span>
                 <span className="text-text-tertiary text-[11px]">
                   {freqLabel[r.frequency]} · {r.kind === 'income' ? 'Ingreso' : 'Gasto'} de {r.amount} {r.currency}
                 </span>
@@ -103,7 +103,7 @@ export function RecurringList({ rules }: { rules: RecurringRuleListItem[] }) {
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex shrink-0 items-center gap-1 sm:self-start">
               <Button
                 type="button"
                 variant="ghost"

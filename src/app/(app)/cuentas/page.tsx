@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/app/empty-state'
 import { Amount } from '@/components/app/amount'
 import { NewAccountTrigger } from '@/components/app/new-account-trigger'
 import { icons, type IconName } from '@/lib/design/icons'
+import { formatMoney } from '@/lib/currency/format'
 
 export const metadata: Metadata = {
   title: 'Cuentas',
@@ -35,11 +36,11 @@ export default async function CuentasPage() {
   const accountsList = await listAccountsWithBalance(user.id)
 
   return (
-    <div className="flex flex-col gap-10">
-      <header className="flex items-end justify-between gap-4">
-        <div className="flex flex-col gap-1">
+    <div className="flex min-w-0 flex-col gap-10">
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div className="flex min-w-0 flex-col gap-1">
           <p className="text-text-secondary text-sm">Cuentas</p>
-          <h1 className="text-text text-3xl font-semibold tracking-[-0.02em]">
+          <h1 className="text-text text-2xl font-semibold tracking-[-0.02em] sm:text-3xl">
             Todas tus cuentas
           </h1>
         </div>
@@ -58,18 +59,18 @@ export default async function CuentasPage() {
             const meta = typeMeta[a.type]
             const Icon = icons[a.icon as IconName] ?? icons[meta.icon]
             return (
-              <li key={a.id}>
-                <article className="border-border-default bg-surface group relative flex flex-col gap-5 rounded-[12px] border p-5">
+              <li key={a.id} className="min-w-0">
+                <article className="border-border-default bg-surface group relative flex min-w-0 flex-col gap-5 rounded-[12px] border p-5">
                   <header className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
                       <span
-                        className="border-border-default flex h-9 w-9 items-center justify-center rounded-md border"
+                        className="border-border-default flex h-9 w-9 shrink-0 items-center justify-center rounded-md border"
                         style={a.color ? { color: a.color } : undefined}
                       >
                         <Icon strokeWidth={1.5} className="h-4 w-4" />
                       </span>
-                      <div className="flex flex-col">
-                        <span className="text-text text-sm font-semibold">
+                      <div className="flex min-w-0 flex-col">
+                        <span className="text-text truncate text-sm font-semibold">
                           {a.name}
                         </span>
                         <span className="text-text-tertiary text-[11px] uppercase tracking-[0.08em]">
@@ -77,7 +78,7 @@ export default async function CuentasPage() {
                         </span>
                       </div>
                     </div>
-                    <span className="text-text-tertiary text-[11px] tracking-wider">
+                    <span className="text-text-tertiary shrink-0 text-[11px] tracking-wider">
                       {a.currency}
                     </span>
                   </header>
@@ -113,6 +114,8 @@ export default async function CuentasPage() {
                       const diff = target - todayDay
                       return diff >= 0 ? diff : diff + 30
                     }
+                    const stD = daysTo(a.statementDay)
+                    const pyD = daysTo(a.paymentDay)
                     return (
                       <div className="border-border-default/60 flex flex-col gap-3 border-t pt-3 text-[12px]">
                         <div className="flex items-baseline justify-between gap-2">
@@ -128,28 +131,28 @@ export default async function CuentasPage() {
                             style={{ width: `${utilization * 100}%` }}
                           />
                         </div>
-                        <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                        <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5">
                           <dt className="text-text-tertiary">Disponible</dt>
-                          <dd className="text-text-secondary text-right tabular">
-                            {available.toFixed(0)} {a.currency}
+                          <dd className="text-text-secondary truncate text-right tabular">
+                            {formatMoney(available, { currency: a.currency, compact: true })}
                           </dd>
                           <dt className="text-text-tertiary">Cupo</dt>
-                          <dd className="text-text-secondary text-right tabular">
-                            {limit.toFixed(0)} {a.currency}
+                          <dd className="text-text-secondary truncate text-right tabular">
+                            {formatMoney(limit, { currency: a.currency, compact: true })}
                           </dd>
                           {a.statementDay && (
                             <>
                               <dt className="text-text-tertiary">Corte</dt>
-                              <dd className="text-text-secondary text-right tabular">
-                                día {a.statementDay} · faltan {daysTo(a.statementDay)} días
+                              <dd className="text-text-secondary truncate text-right tabular">
+                                día {a.statementDay} · en {stD}d
                               </dd>
                             </>
                           )}
                           {a.paymentDay && (
                             <>
                               <dt className="text-text-tertiary">Pago</dt>
-                              <dd className="text-text-secondary text-right tabular">
-                                día {a.paymentDay} · faltan {daysTo(a.paymentDay)} días
+                              <dd className="text-text-secondary truncate text-right tabular">
+                                día {a.paymentDay} · en {pyD}d
                               </dd>
                             </>
                           )}
