@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { createUIMessageStream, createUIMessageStreamResponse } from 'ai'
 
@@ -15,17 +15,25 @@ export const dynamic = 'force-dynamic'
 // 60s tope — incluye múltiples tool calls + texto final.
 export const maxDuration = 60
 
-const bodySchema = z.object({
-  id: z.string().uuid().optional(),
-  messages: z.array(z.any()).min(1),
-})
+// useChat de @ai-sdk/react v6 manda `id` como nanoid (no uuid) y puede
+// añadir campos extra como `trigger`, `messageId`. Usamos `passthrough` y
+// no validamos tipos estrictos del `id` para no romper.
+const bodySchema = z
+  .object({
+    id: z.string().min(1).optional(),
+    messages: z.array(z.unknown()).min(1, 'Necesito al menos un mensaje.'),
+  })
+  .passthrough()
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 /**
- * Endpoint del copiloto. Recibe `{ id?, messages }` desde `useChat` y
+ * Endpoint del copiloto. Recibe `{ id?, messages, ... }` desde `useChat` y
  * devuelve un `UIMessageStream`. Persiste el turno completo (user input +
  * respuesta completa) en `conversations` + `messages` al finalizar.
  *
- * Auth: Clerk en middleware. Si no hay `ANTHROPIC_API_KEY`, devuelve 503.
+ * Auth: Clerk en middleware. Si no hay LLM disponible, enruta a heurístico.
  */
 export async function POST(req: Request) {
   let user
@@ -43,8 +51,10 @@ export async function POST(req: Request) {
     const raw = await req.json()
     const parsed = bodySchema.safeParse(raw)
     if (!parsed.success) {
+      const detail =
+        parsed.error.issues[0]?.message ?? 'Estructura del body inesperada.'
       return NextResponse.json(
-        { ok: false, error: { code: 'validation', message: 'Body inválido.' } },
+        { ok: false, error: { code: 'validation', message: detail } },
         { status: 400 },
       )
     }
@@ -61,7 +71,20 @@ export async function POST(req: Request) {
   })
   const baseCurrency = profile?.baseCurrency ?? 'COP'
 
-  let conversationId = parsedBody.id
+  // `parsedBody.id` viene del client (nanoid de useChat). Sólo lo reutilizamos
+  // como conversation_id si es un UUID válido y existe ya en DB (turnos
+  // anteriores). En otro caso creamos una conversación nueva.
+  let conversationId: string | undefined
+  if (parsedBody.id && UUID_RE.test(parsedBody.id)) {
+    const existing = await db
+      .select({ id: conversations.id })
+      .from(conversations)
+      .where(
+        and(eq(conversations.id, parsedBody.id), eq(conversations.userId, user.id)),
+      )
+      .limit(1)
+    if (existing[0]) conversationId = existing[0].id
+  }
   if (!conversationId) {
     const [row] = await db
       .insert(conversations)
@@ -78,7 +101,10 @@ export async function POST(req: Request) {
 
   // Persistimos sólo el ÚLTIMO mensaje del usuario antes de invocar el LLM
   // — el historial previo ya está en DB de turnos anteriores.
-  const incoming = parsedBody.messages
+  const incoming = parsedBody.messages as Array<{
+    role?: string
+    parts?: Array<{ type?: string; text?: string }>
+  }>
   const lastUserMessage = [...incoming].reverse().find((m) => m?.role === 'user')
   if (lastUserMessage) {
     await db.insert(messages).values({
@@ -118,9 +144,7 @@ export async function POST(req: Request) {
     // emitimos un UIMessageStream con un único text part. El cliente no
     // distingue — solo ve el mensaje formateado.
     const lastText =
-      (lastUserMessage as { parts?: Array<{ type: string; text?: string }> })?.parts?.find(
-        (p) => p.type === 'text',
-      )?.text ?? ''
+      lastUserMessage?.parts?.find((p) => p?.type === 'text')?.text ?? ''
 
     const heuristic = await runHeuristic(lastText, {
       userId: user.id,
