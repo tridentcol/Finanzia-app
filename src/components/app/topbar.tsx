@@ -1,9 +1,9 @@
 'use client'
 
-import { UserButton } from '@clerk/nextjs'
 import { usePathname } from 'next/navigation'
 
 import { icons } from '@/lib/design/icons'
+import { SidebarTrigger } from '@/components/ui/sidebar'
 import { useCommandStore } from './command-store'
 import { useDialogStore } from './dialog-store'
 import { AlertsBell } from './alerts-bell'
@@ -44,21 +44,12 @@ export function Topbar({ unreadAlerts = 0 }: { unreadAlerts?: number }) {
 
   return (
     <header className="border-border-default bg-background sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b px-4 lg:px-6">
-      <div className="flex items-center gap-2.5 lg:hidden">
-        <span
-          aria-hidden
-          className="grid size-6 place-items-center rounded-[6px]"
-          style={{ background: 'var(--accent-ai)' }}
-        >
-          <span className="text-[12px] font-semibold text-black">F</span>
-        </span>
-        <h1 className="text-text text-[14px] font-semibold tracking-tight">
+      <div className="flex items-center gap-2">
+        <SidebarTrigger className="-ml-1" />
+        <h1 className="text-text text-[14px] font-semibold tracking-tight lg:text-[15px]">
           {title}
         </h1>
       </div>
-      <h1 className="text-text hidden text-[15px] font-semibold tracking-tight lg:block">
-        {title}
-      </h1>
 
       <div className="flex items-center gap-2">
         <AlertsBell initialCount={unreadAlerts} />
@@ -89,15 +80,6 @@ export function Topbar({ unreadAlerts = 0 }: { unreadAlerts?: number }) {
           </span>
         </button>
 
-        <div className="lg:hidden">
-          <UserButton
-            appearance={{
-              elements: {
-                userButtonAvatarBox: { width: '28px', height: '28px' },
-              },
-            }}
-          />
-        </div>
       </div>
     </header>
   )

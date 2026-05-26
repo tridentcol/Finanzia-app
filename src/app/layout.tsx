@@ -6,6 +6,7 @@ import { Toaster } from 'sonner'
 
 import './globals.css'
 import { clerkAppearance } from '@/lib/clerk-appearance'
+import { TooltipProvider } from '@/components/ui/tooltip'
 
 const inter = Inter({
   variable: '--font-sans',
@@ -50,7 +51,7 @@ export default function RootLayout({
     >
       <body className="bg-background text-foreground flex min-h-full flex-col">
         <ClerkProvider appearance={clerkAppearance} localization={esES}>
-          {children}
+          <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
         </ClerkProvider>
         <Toaster
           theme="dark"

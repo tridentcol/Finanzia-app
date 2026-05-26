@@ -1,8 +1,8 @@
-import { ViewTransition } from 'react'
+import { cookies } from 'next/headers'
 
 import { requireCurrentUser } from '@/lib/auth'
-import { Sidebar } from '@/components/app/sidebar'
-import { MobileNav } from '@/components/app/mobile-nav'
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import { AppSidebar } from '@/components/app/app-sidebar'
 import { Topbar } from '@/components/app/topbar'
 import { CommandPalette } from '@/components/app/command-palette'
 import { NewAccountDialog } from '@/components/app/new-account-dialog'
@@ -26,22 +26,24 @@ export default async function AppLayout({
 }>) {
   const user = await requireCurrentUser()
 
-  const [accountsForForm, categoriesForForm, unreadAlerts] = await Promise.all([
-    listUserAccountsBasic(user.id),
-    listAvailableCategories(user.id),
-    countUnreadAlerts(user.id),
-  ])
+  const [accountsForForm, categoriesForForm, unreadAlerts, cookieStore] =
+    await Promise.all([
+      listUserAccountsBasic(user.id),
+      listAvailableCategories(user.id),
+      countUnreadAlerts(user.id),
+      cookies(),
+    ])
+  const sidebarDefault = cookieStore.get('sidebar_state')?.value !== 'false'
 
   return (
-    <div className="bg-background text-text min-h-svh">
-      <Sidebar />
-      <div className="lg:pl-[240px]">
+    <SidebarProvider defaultOpen={sidebarDefault}>
+      <AppSidebar />
+      <SidebarInset>
         <Topbar unreadAlerts={unreadAlerts} />
-        <main className="mx-auto w-full max-w-[1120px] px-4 pt-6 pb-[80px] sm:px-6 lg:px-8 lg:py-10 lg:pb-10">
-          <ViewTransition name="app-content">{children}</ViewTransition>
+        <main className="mx-auto w-full max-w-[1120px] px-4 pt-6 pb-10 sm:px-6 lg:px-8 lg:py-10">
+          {children}
         </main>
-      </div>
-      <MobileNav />
+      </SidebarInset>
       <CommandPalette />
       <NewAccountDialog />
       <NewTransactionDialog
@@ -54,9 +56,13 @@ export default async function AppLayout({
       <NewGoalDialog accounts={accountsForForm} />
       <NewRecurringDialog
         accounts={accountsForForm}
-        categories={categoriesForForm.map((c) => ({ id: c.id, name: c.name, kind: c.kind }))}
+        categories={categoriesForForm.map((c) => ({
+          id: c.id,
+          name: c.name,
+          kind: c.kind,
+        }))}
       />
       <CopilotDialog />
-    </div>
+    </SidebarProvider>
   )
 }

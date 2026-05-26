@@ -32,6 +32,14 @@
   --color-negative: var(--negative);
   --color-warning: var(--warning);
 
+  /* shadcn sidebar mapped to Noir */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
   /* Mapeo a tokens shadcn para que componentes existentes hereden Noir */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -117,6 +125,14 @@
   --border: var(--border-default);
   --input: var(--border-default);
   --ring: var(--accent-ai);
+
+  /* Sidebar (shadcn) — Noir light */
+  --sidebar: var(--surface);
+  --sidebar-foreground: var(--text-secondary);
+  --sidebar-accent: var(--surface-hover);
+  --sidebar-accent-foreground: var(--text);
+  --sidebar-border: var(--border-default);
+  --sidebar-ring: var(--accent-ai);
 }
 
 /* ============================================================
@@ -156,6 +172,14 @@
   --border: var(--border-default);
   --input: var(--border-default);
   --ring: var(--accent-ai);
+
+  /* Sidebar (shadcn) — Noir dark */
+  --sidebar: var(--surface);
+  --sidebar-foreground: var(--text-secondary);
+  --sidebar-accent: var(--surface-hover);
+  --sidebar-accent-foreground: var(--text);
+  --sidebar-border: var(--border-default);
+  --sidebar-ring: var(--accent-ai);
 }
 
 /* ============================================================
@@ -214,27 +238,5 @@
   }
 }
 
-/* ============================================================
-   View Transitions — animaciones spatiales entre rutas (app)/*.
-   Easing global = smooth (mandato regla 11).
-   ============================================================ */
-
-::view-transition-group(*),
-::view-transition-old(*),
-::view-transition-new(*) {
-  animation-duration: 180ms;
-  animation-timing-function: var(--ease-smooth);
-}
-
-::view-transition-old(app-content),
-::view-transition-new(app-content) {
-  animation-duration: 140ms;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  ::view-transition-group(*),
-  ::view-transition-old(*),
-  ::view-transition-new(*) {
-    animation: none !important;
-  }
-}
+/* View Transitions removidas — añadían lag perceptible entre rutas. La
+   navegación queda plana, dependiendo del prefetch de Next/Link. */
