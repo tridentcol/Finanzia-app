@@ -1,19 +1,31 @@
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
+import { Inter, Geist_Mono, Fraunces } from 'next/font/google'
 import { ClerkProvider } from '@clerk/nextjs'
 import { esES } from '@clerk/localizations'
 
 import './globals.css'
 import { clerkAppearance } from '@/lib/clerk-appearance'
 
-const geistSans = Geist({
+const inter = Inter({
   variable: '--font-sans',
   subsets: ['latin'],
+  display: 'swap',
+  axes: ['opsz'],
 })
 
 const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
+  variable: '--font-mono',
   subsets: ['latin'],
+  display: 'swap',
+})
+
+// Fraunces italic — uso parsimonioso. Solo para empty states y onboarding.
+const fraunces = Fraunces({
+  variable: '--font-editorial',
+  subsets: ['latin'],
+  display: 'swap',
+  style: ['italic'],
+  weight: ['400', '500'],
 })
 
 export const metadata: Metadata = {
@@ -32,7 +44,7 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`dark ${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`dark ${inter.variable} ${geistMono.variable} ${fraunces.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="bg-background text-foreground flex min-h-full flex-col">

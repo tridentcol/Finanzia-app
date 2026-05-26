@@ -10,19 +10,25 @@ export default async function DashboardPage() {
   const user = await requireCurrentUser()
 
   return (
-    <div className="flex flex-col gap-12">
-      <header className="flex flex-col gap-2">
-        <p className="text-foreground/50 text-sm">Bienvenido</p>
-        <h1 className="text-foreground text-3xl font-semibold tracking-[-0.02em]">
-          {user.name ?? user.email}
+    <div className="flex flex-col gap-16">
+      <header className="flex flex-col gap-1.5">
+        <p className="text-text-secondary text-sm">Resumen</p>
+        <h1 className="display text-text text-6xl">
+          <span className="amount">$0</span>
         </h1>
+        <p className="text-text-tertiary text-xs">
+          Saldo total · {user.email}
+        </p>
       </header>
 
-      <section className="border-border bg-card text-foreground rounded-xl border p-8">
-        <p className="text-foreground/60 text-sm">
-          La sesión está activa. El esquema de datos está aplicado y las
-          categorías sistema sembradas. El siguiente paso construye el sistema
-          de diseño definitivo y el shell con rail lateral.
+      <section className="border-border-default bg-surface flex flex-col gap-4 rounded-[12px] border p-10">
+        <p className="editorial text-text-secondary text-lg leading-relaxed">
+          Aún no hay movimientos registrados.
+        </p>
+        <p className="text-text-tertiary max-w-md text-sm leading-relaxed">
+          Cuando agregues tu primera cuenta y empieces a registrar
+          transacciones, Finanzia construirá tu bitácora aquí. Multi-divisa,
+          asistida, ordenada.
         </p>
       </section>
     </div>

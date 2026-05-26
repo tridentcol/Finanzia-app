@@ -3,7 +3,7 @@
 > Archivo vivo. **Actualízalo al cerrar cada step o al tomar una decisión que afecte el rumbo.**
 > El builder lo lee al inicio de cada sesión para no perder continuidad.
 >
-> Última actualización: 2026-05-26 — Step 3 cerrado: auth Clerk + Third-Party Auth con Supabase verificado end-to-end (sub matchea, role=authenticated, RLS filtra 1 fila). Próximo: Step 4 (design system).
+> Última actualización: 2026-05-26 — Step 4 cerrado: tokens Noir hex, Inter + Geist Mono + Fraunces italic cargadas, motion system inicial, lista curada de iconos. Próximo: Step 5 (Rail + Cmd+K + View transitions).
 
 ---
 
@@ -14,7 +14,7 @@
 | 1 | Scaffolding & base infra | ✅ hecho | Commit `chore: bootstrap finanzia repo (steps 1-2)` |
 | 2 | Database — schema + migración + RLS + seed | ✅ hecho | DB aplicada al proyecto Supabase `anyinryjupznpouaxhtp` vía MCP. 55 categorías sistema sembradas. |
 | 3 | Auth — Clerk + Third-Party Auth Supabase | ✅ hecho | Clerk con Sign in with Apple. Integración Third-Party Auth verificada (`/api/auth-check` mostró `sub` correcto, `iss=https://natural-doberman-90.clerk.accounts.dev`, `role=authenticated`, RLS filtra 1 fila). Usuario semilla: `78f6tpjfw5@privaterelay.appleid.com` con profile default COP/es-CO/America/Bogota. Webhook secret aún no configurado (se hace cuando haya dominio público); el `getCurrentUser()` lazy upsert cubre el gap. |
-| 4 | Design system — tokens, fonts, theme | ⏳ pendiente | |
+| 4 | Design system — tokens, fonts, theme | ✅ hecho | Tokens Noir hex en `globals.css` (light + dark). Fuentes: Inter (`--font-sans` con opsz axis), Geist Mono (`--font-mono`), Fraunces italic (`--font-editorial`). `src/lib/design/{tokens,icons}.ts` y `src/lib/motion/{easings,durations,variants}.ts`. `clerkAppearance` migrado a CSS vars. Clases utility: `.display`, `.editorial`, `.amount`. `prefers-reduced-motion` respetado. |
 | 5 | Layout principal — Rail + Cmd+K + View transitions | ⏳ pendiente | |
 | 6 | CRUD cuentas + transacciones manual | ⏳ pendiente | |
 | 7 | Categorías + presupuestos | ⏳ pendiente | |
@@ -28,7 +28,47 @@
 
 ## Next action
 
-**Step 4 — Design system Noir definitivo.**
+**Step 5 — Layout principal: Rail + Cmd+K + View Transitions.**
+
+Por hacer:
+
+1. **Rail lateral 56px** en `src/app/(app)/layout.tsx`:
+   - Items: Resumen, Cuentas, Transacciones, Categorías, Presupuestos, Metas, Insights. Footer: Settings + UserButton.
+   - Active state: fill sutil con `--surface-hover` + border-left de 2px en `--text`. Sin color saturado.
+   - Tooltip lucide a la derecha al hacer hover (delay 500ms).
+   - Componente `src/components/app/rail.tsx`.
+2. **Topbar 56px** con breadcrumb + Cmd+K trigger ghost button "Buscar… ⌘K".
+3. **Cmd+K (Command palette)** en `src/components/app/command.tsx`:
+   - cmdk lib (ya en deps).
+   - Acciones: navegar a páginas, agregar transacción, agregar cuenta, abrir copiloto.
+   - Pinta IA section con `--accent-ai` (única excepción al mandato de cero color).
+   - Modal 640px, border-radius `--radius-modal`, blur muy sutil del backdrop (NO glow).
+4. **View Transitions API** activadas en `(app)/*`:
+   - `viewTransition: true` ya está en next.config (experimento activado).
+   - `<Link>` con `unstable_viewTransition` o el patrón moderno.
+   - `view-transition-name` en elementos clave del rail (el item activo).
+5. **Sidebar collapse-by-shortcut** (`Cmd+\`)? Opcional. Por ahora rail fijo 56px.
+6. **Layout grid base**: `grid grid-cols-[56px_1fr]` con topbar arriba.
+
+Antes de empezar Step 5: **commit Step 4**.
+
+Sugerido:
+
+```
+feat(design): noir design system — tokens, fonts, motion, icons
+```
+
+---
+
+(Step 4 task list para referencia, ya completado:)
+
+- Inter + Inter Display + Fraunces cargadas
+- globals.css con hex Noir
+- tokens.ts TS
+- motion/ con easings, durations, variants
+- icons.ts curada
+- clerkAppearance con CSS vars
+- dashboard placeholder con display + editorial + amount
 
 El shadcn por default está cableado en `globals.css` con grises neutros oklch, pero no es Noir todavía. Hay que reescribir tokens, cargar fuentes y refinar al mandato estético.
 

@@ -45,10 +45,10 @@ export default function Home() {
         </nav>
       </header>
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-6 pb-24">
-        <h1 className="text-foreground text-5xl font-semibold tracking-[-0.03em] sm:text-6xl">
+        <h1 className="display text-text text-5xl sm:text-7xl">
           Tus finanzas, con sentido.
         </h1>
-        <p className="text-foreground/60 mt-6 max-w-xl text-base leading-relaxed">
+        <p className="text-text-secondary mt-8 max-w-xl text-base leading-relaxed">
           Una bitácora editorial de tu dinero. Multi-divisa, multi-cuenta,
           asistida por inteligencia que no se mete donde no debe.
         </p>
