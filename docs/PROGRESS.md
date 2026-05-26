@@ -3,7 +3,7 @@
 > Archivo vivo. **Actualízalo al cerrar cada step o al tomar una decisión que afecte el rumbo.**
 > El builder lo lee al inicio de cada sesión para no perder continuidad.
 >
-> Última actualización: 2026-05-26 — Step 7 cerrado: CRUD de categorías custom (con paleta muted + picker de iconos curado) + CRUD de presupuestos con cálculo de progreso por período via `date_trunc`. Cmd+K ahora dispara 4 dialogs. Próximo: Step 8 (Import CSV con mapping inteligente).
+> Última actualización: 2026-05-26 — Step 7 ✅. Step 8 wip (helpers + server action listos, falta `/importar/page.tsx`). **Deploy en Vercel rompió** (servía un archivo descargable en vez de la página) — fix aplicado: removido `vercel.json` agresivo y movidos headers a `next.config.ts`. Pendiente: verificar redeploy + cerrar Step 8 + seguir 9-12.
 
 ---
 
@@ -18,7 +18,7 @@
 | 5 | Layout principal — Rail + Cmd+K + View transitions | ✅ hecho | `Rail` 56px (client, usePathname para active state, tooltips CSS-only). `Topbar` 56px con breadcrumb + ghost button "Buscar ⌘K". `CommandPalette` con cmdk + radix Dialog: navegación + sección IA placeholder con `accent-ai`. Listener global Cmd+K via Zustand store. ViewTransitions activadas: `rail-indicator` (animación del active mark) y `app-content` (crossfade del main). Páginas placeholder en `(app)/{cuentas,transacciones,categorias,presupuestos,metas,insights,ajustes}` con `EmptyState` editorial (Fraunces italic + body Inter). `categorias` ya carga las 55 sembradas via Drizzle. |
 | 6 | CRUD cuentas + transacciones manual | ✅ hecho | UI base Noir en `src/components/ui/`. Helpers en `src/lib/currency/`. Server actions `createAccount`, `createTransaction`, `archiveAccount` con Zod + revalidatePath. Saldo computado vía CTE SQL (positive income, negative expense, transfers afectan ambos extremos). Página /cuentas con cards reales, /transacciones con tabla + filtros por kind, dashboard con saldo total agregado en moneda base. Cmd+K dispara los modales. Multi-divisa: cuenta tiene currency fija; transfers cross-currency bloqueadas hasta Step 8. amount_base mock 1:1 hasta Step 8. |
 | 7 | Categorías + presupuestos | ✅ hecho | `createCategory`/`archiveCategory` (sistema queda read-only). Modal con icon picker (16 lucides) + paleta muted de 8 colores. `/categorias` separa "Tus categorías" vs "Sistema" con filtros por kind. `listBudgetsWithProgress` usa `date_trunc('month'/'week'/'year')` para resolver el período actual y suma `amount_base` de transacciones expense con `category_id` exacto. `BudgetProgressCard` con barra tonal (safe / warning / exceeded). Sección "Presupuestos del período" en dashboard. Cmd+K: + Nueva categoría, + Nuevo presupuesto. |
-| 8 | Import CSV con mapping inteligente | ⏳ pendiente | |
+| 8 | Import CSV con mapping inteligente | ⚠ wip | Helpers `src/lib/import/{infer-columns,parse-row}.ts` listos. Server action `runImport` en `src/app/(app)/importar/actions.ts` lista (crea `import_batch`, parsea filas, inserta en chunks de 200, actualiza estado del batch). Cliente `importer-client.tsx` con drop zone, mapping UI auto-inferido, preview, headerRow ajustable. Query `listImportBatchesForUser` lista. **FALTA**: el server component `src/app/(app)/importar/page.tsx` que fetcha accounts + batches y monta el cliente, item "Importar CSV" en Cmd+K, y verificar que `papaparse` esté en deps (ya está, ^5.5.3). |
 | 9 | Auto-categorización con IA + embeddings | ⏳ pendiente | |
 | 10 | Insights engine + cron diario | ⏳ pendiente | |
 | 11 | Copiloto Finanzia con tool-calling | ⏳ pendiente | |
@@ -28,7 +28,41 @@
 
 ## Next action
 
-**Step 8 — Import CSV con mapping inteligente.**
+**Antes de tocar código: verificar el redeploy de Vercel.**
+
+1. Abrir el dashboard del proyecto en Vercel → ver el último deployment (debe corresponder al commit `fix(vercel)` que está en `main`).
+2. Si el build aún falla:
+   - Revisar logs en Vercel.
+   - Verificar que todas las env vars de §1 de `docs/DEPLOY.md` estén pegadas como Production + Preview. **Especial**: `NEXT_PUBLIC_APP_URL` debe apuntar al dominio Vercel asignado (no `localhost:3000`).
+3. Si el build pasa pero la URL se sigue descargando como archivo: probablemente el caché del browser. Hard refresh + verificar en incógnito.
+4. Validar end-to-end igual que `/api/auth-check` hizo en Step 3 (sign-in → /dashboard → ver fila en Supabase).
+
+**Luego: cerrar Step 8 — Import CSV con mapping inteligente.**
+
+Estado wip:
+- ✅ `src/lib/import/infer-columns.ts` — heurística regex.
+- ✅ `src/lib/import/parse-row.ts` — normaliza fecha (ISO, DD/MM/YYYY), monto (LATAM y EU), kind (signed o split columns).
+- ✅ `src/app/(app)/importar/actions.ts` — `runImport` con chunks de 200, crea `import_batches`, atualiza estado.
+- ✅ `src/lib/db/queries/imports.ts` — `listImportBatchesForUser`.
+- ✅ `src/app/(app)/importar/importer-client.tsx` — drop zone, mapping UI, preview, header row picker.
+- ⏳ **`src/app/(app)/importar/page.tsx`** — server component pendiente. Estructura sugerida:
+  ```tsx
+  import { requireCurrentUser } from '@/lib/auth'
+  import { listUserAccountsBasic } from '@/lib/db/queries/transactions'
+  import { listImportBatchesForUser } from '@/lib/db/queries/imports'
+  import { ImporterClient } from './importer-client'
+  // header con título, ImporterClient con accounts, sección "Imports recientes" con batches
+  ```
+- ⏳ Cmd+K: agregar item "Importar CSV" que navegue a `/importar`.
+- ⏳ Smoke test con un CSV real de algún banco.
+
+**Después de Step 8: Step 8b (exchange rates cron) → Step 9 (IA + embeddings) → Step 10 (insights) → Step 11 (copiloto) → Step 12 (metas/recurring/alertas/deploy prod).**
+
+---
+
+## Decisiones tomadas para Deploy / Vercel
+
+(Sección posterior por trazabilidad)
 
 Step crítico: aquí la app pasa de "registro manual" a "ingesta real". Bancos como Bancolombia, Davivienda, Nu, etc., exportan CSV con columnas distintas y formatos sueltos. El mapping inteligente debe deducir las columnas.
 
@@ -273,6 +307,8 @@ feat(auth): wire clerk + third-party auth supabase
 - **Clerk `secret key` format**: empieza con `sk_test_` (dev) o `sk_live_` (prod), seguido de ~40 chars base64. Si pegas algo como `k_test_…` (sin `s`), Zod no lo detecta (es string no vacío) pero todos los requests a Clerk fallan con 401. Validar visualmente al pegar.
 - **Pooler host de Supabase varía por región Y por número de cluster**: el formato es `aws-N-<region>.pooler.supabase.com`. Para este proyecto: `aws-1-us-west-2.pooler.supabase.com`. Si la región está mal, devuelve "Tenant or user not found" (no es error de password). Si el N (`aws-0` vs `aws-1`) está mal, devuelve "(ENOTFOUND) tenant/user not found". La forma fiable de obtener la string: copiarla directo del dashboard de Supabase → Settings → Database → Connection string.
 - **Vars opcionales en `.env.local` con valor vacío (`FOO=`) requieren preprocess**: Zod `.optional()` solo ignora `undefined`, no `""`. Helper `optionalString()` en `env.ts` convierte `""` a `undefined` antes de validar.
+- **Build de Vercel falla si env vars faltan al primer deploy**: `env.ts` arrojaba al import. Fix aplicado (commit `e733e0e`): `env.ts` detecta `NEXT_PHASE === 'phase-production-build'` o `SKIP_ENV_VALIDATION=1` y NO arroja durante el build. En runtime sigue estricto. Esto permite que el primer deploy pase aunque las env vars no estén configuradas todavía. Tras pegarlas en Vercel, redeploy y la app funciona normal.
+- **Vercel servía `finanzia-app-six.vercel` (archivo descargable) en vez de la página**: causa probable — `vercel.json` con `framework`, `installCommand`, `buildCommand` y `regions: pdx1` interfería con la autodetección de Vercel. Fix: removido `vercel.json` completamente, headers movidos a `next.config.ts` con `async headers()`. Vercel ahora autodetecta Next.js + pnpm automáticamente.
 - **`postgres-js` devuelve columnas `date` (sin time) como `string` `'YYYY-MM-DD'`, NO como `Date`**: solo `timestamptz` se parsea a `Date`. Si tipas mal y haces `row.someDate.toISOString()`, falla en runtime con "toISOString is not a function". Aplicar siempre `period_start: string` al typing de `db.execute<T>(...)` cuando la columna sea `::date` o `date`. (Bug encontrado en `listBudgetsWithProgress` durante Step 7.)
 - **`revalidatePath('/foo')` no invalida los layouts ancestros**: solo invalida la page de `/foo`. El `(app)/layout` que fetchea accounts + categories para los selects de los dialogs queda con cache viejo. Solución aplicada: después de un mutación exitosa, llamar `router.refresh()` desde el cliente — fuerza re-fetch de TODOS los RSCs de la ruta actual incluyendo el layout. Patrón unificado en los 4 dialogs (`new-{account,transaction,category,budget}-dialog.tsx`). Alternativa más agresiva: `revalidatePath('/', 'layout')` en cada server action, pero invalida también marketing innecesariamente.
 - **Clerk URLs por env var**: `NEXT_PUBLIC_CLERK_SIGN_IN_URL`, `NEXT_PUBLIC_CLERK_SIGN_UP_URL`, `*_FALLBACK_REDIRECT_URL`. Ya están en `.env.local`. Si cambian, también hay que tocarlos en el dashboard de Clerk (Paths) para que coincidan.
