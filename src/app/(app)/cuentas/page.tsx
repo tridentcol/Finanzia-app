@@ -5,8 +5,10 @@ import { listAccountsWithBalance } from '@/lib/db/queries/accounts'
 import { EmptyState } from '@/components/app/empty-state'
 import { Amount } from '@/components/app/amount'
 import { NewAccountTrigger } from '@/components/app/new-account-trigger'
+import { CardVisual } from '@/components/cards/card-visual'
 import { icons, type IconName } from '@/lib/design/icons'
 import { formatMoney } from '@/lib/currency/format'
+import type { CardKind } from '@/lib/cards/catalog'
 
 export const metadata: Metadata = {
   title: 'Cuentas',
@@ -58,9 +60,28 @@ export default async function CuentasPage() {
           {accountsList.map((a) => {
             const meta = typeMeta[a.type]
             const Icon = icons[a.icon as IconName] ?? icons[meta.icon]
+            const cardKind: CardKind | null =
+              a.type === 'credit_card'
+                ? 'credit'
+                : a.type === 'checking' || a.type === 'savings'
+                  ? 'debit'
+                  : null
+            const hasCardVisual = Boolean(a.bankSlug && cardKind)
             return (
               <li key={a.id} className="min-w-0">
                 <article className="border-border-default bg-surface group relative flex min-w-0 flex-col gap-5 rounded-[12px] border p-5">
+                  {hasCardVisual && cardKind && (
+                    <CardVisual
+                      bankSlug={a.bankSlug}
+                      kind={cardKind}
+                      cardProductSlug={a.cardProductSlug}
+                      cardBrand={a.cardBrand}
+                      cardLastFour={a.cardLastFour}
+                      cardHolderName={a.cardHolderName}
+                      showMeta={false}
+                    />
+                  )}
+
                   <header className="flex items-start justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-3">
                       <span
@@ -75,6 +96,7 @@ export default async function CuentasPage() {
                         </span>
                         <span className="text-text-tertiary text-[11px] uppercase tracking-[0.08em]">
                           {meta.label}
+                          {a.cardLastFour && ` · ···· ${a.cardLastFour}`}
                         </span>
                       </div>
                     </div>

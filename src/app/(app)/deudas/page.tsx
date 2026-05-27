@@ -10,6 +10,7 @@ import { listDebts, getDebtsSummary } from '@/lib/db/queries/debts'
 import { Amount } from '@/components/app/amount'
 import { EmptyState } from '@/components/app/empty-state'
 import { NewDebtTrigger } from '@/components/app/new-debt-trigger'
+import { CardVisual } from '@/components/cards/card-visual'
 import { formatMoney } from '@/lib/currency/format'
 import { icons, type IconName } from '@/lib/design/icons'
 import type { CurrencyCode } from '@/lib/currency/currencies'
@@ -173,9 +174,21 @@ export default async function DeudasPage() {
                   const used = balance < 0 ? -balance : 0
                   const utilization =
                     limit > 0 ? Math.min(1, used / limit) : 0
+                  const hasCardVisual = Boolean(c.bankSlug)
                   return (
                     <li key={c.id}>
                       <article className="border-border-default bg-surface flex flex-col gap-3 rounded-[12px] border p-4">
+                        {hasCardVisual && (
+                          <CardVisual
+                            bankSlug={c.bankSlug}
+                            kind="credit"
+                            cardProductSlug={c.cardProductSlug}
+                            cardBrand={c.cardBrand}
+                            cardLastFour={c.cardLastFour}
+                            cardHolderName={c.cardHolderName}
+                            showMeta={false}
+                          />
+                        )}
                         <header className="flex items-center gap-3">
                           <span className="border-border-default flex h-8 w-8 items-center justify-center rounded-md border">
                             <Icon strokeWidth={1.5} className="h-4 w-4" />
@@ -186,6 +199,7 @@ export default async function DeudasPage() {
                             </span>
                             <span className="text-text-tertiary text-[11px] tracking-wider">
                               {c.currency}
+                              {c.cardLastFour && ` · ···· ${c.cardLastFour}`}
                             </span>
                           </div>
                         </header>

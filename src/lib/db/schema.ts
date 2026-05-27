@@ -158,6 +158,16 @@ export const accounts = pgTable(
     creditLimit: numeric('credit_limit', { precision: 15, scale: 2 }),
     statementDay: smallint('statement_day'),
     paymentDay: smallint('payment_day'),
+    // Identidad visual de la tarjeta (todos opcionales, decorativos).
+    // bankSlug + cardProductSlug indexan el catálogo en src/lib/cards/catalog.ts
+    // para resolver la imagen y el wordmark del banco. cardBrand identifica la
+    // red (visa/mastercard/amex). cardLastFour y cardHolderName son metadata
+    // del usuario que se renderiza junto a (no sobre) la imagen del banco.
+    bankSlug: text('bank_slug'),
+    cardProductSlug: text('card_product_slug'),
+    cardBrand: text('card_brand'),
+    cardLastFour: text('card_last_four'),
+    cardHolderName: text('card_holder_name'),
     color: text('color'),
     icon: text('icon'),
     archived: boolean('archived').notNull().default(false),

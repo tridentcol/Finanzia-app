@@ -27,6 +27,12 @@ export type AccountListItem = {
   createdAt: Date
   /** Saldo computado en la moneda original de la cuenta. */
   currentBalance: string
+  /** Identidad visual de la tarjeta (todo opcional). */
+  bankSlug: string | null
+  cardProductSlug: string | null
+  cardBrand: string | null
+  cardLastFour: string | null
+  cardHolderName: string | null
 }
 
 /**
@@ -64,6 +70,11 @@ export async function listAccountsWithBalance(
     icon: string | null
     created_at: Date
     current_balance: string
+    bank_slug: string | null
+    card_product_slug: string | null
+    card_brand: string | null
+    card_last_four: string | null
+    card_holder_name: string | null
   }>(sql`
     WITH deltas AS (
       SELECT
@@ -106,6 +117,11 @@ export async function listAccountsWithBalance(
       a.color,
       a.icon,
       a.created_at,
+      a.bank_slug,
+      a.card_product_slug,
+      a.card_brand,
+      a.card_last_four,
+      a.card_holder_name,
       (a.initial_balance + COALESCE(SUM(d.delta) FILTER (WHERE d.currency = a.currency), 0))::text AS current_balance
     FROM accounts a
     LEFT JOIN deltas d ON d.account_id = a.id
@@ -129,6 +145,11 @@ export async function listAccountsWithBalance(
     icon: r.icon,
     createdAt: r.created_at,
     currentBalance: r.current_balance,
+    bankSlug: r.bank_slug,
+    cardProductSlug: r.card_product_slug,
+    cardBrand: r.card_brand,
+    cardLastFour: r.card_last_four,
+    cardHolderName: r.card_holder_name,
   }))
 }
 
