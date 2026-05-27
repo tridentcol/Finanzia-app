@@ -1,13 +1,17 @@
 import Link from 'next/link'
 import { Show, SignInButton, SignUpButton, UserButton } from '@clerk/nextjs'
 
+import { BrandMark } from '@/components/brand/brand-mark'
+import { BrandWordmark } from '@/components/brand/brand-wordmark'
+
 export default function Home() {
   return (
     <div className="bg-background flex min-h-svh flex-col">
       <header className="flex items-center justify-between px-8 py-6">
-        <span className="text-foreground text-sm font-semibold tracking-tight">
-          Finanzia
-        </span>
+        <Link href="/" aria-label="finanzia" className="flex items-center gap-2">
+          <BrandMark size={28} />
+          <BrandWordmark size={20} className="text-foreground" />
+        </Link>
         <nav className="flex items-center gap-6 text-sm">
           <Show when="signed-out">
             <SignInButton mode="modal">

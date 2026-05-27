@@ -15,6 +15,7 @@
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
   --font-editorial: var(--font-editorial);
+  --font-brand: var(--font-brand);
   --font-heading: var(--font-sans);
 
   /* Colores semánticos Noir */
@@ -106,6 +107,19 @@
   --negative: #B57167;
   --warning: #B5945F;
 
+  /* Brand purples (Horizonte) — solo para detalles de marca y selección.
+     No reemplazan al accent-ai (que sigue siendo IA). */
+  --brand-purple-strong: #7C3AED;
+  --brand-purple-deep: #4C1D95;
+  --brand-purple-soft: #A78BFA;
+  --brand-mark-ring: var(--brand-purple-strong);
+  --brand-mark-center: var(--brand-purple-deep);
+
+  /* Estados sidebar/nav con tinte de marca — sutiles. */
+  --nav-hover-bg: color-mix(in oklab, var(--brand-purple-strong) 6%, transparent);
+  --nav-active-bg: color-mix(in oklab, var(--brand-purple-strong) 12%, transparent);
+  --nav-active-fg: var(--text);
+
   /* shadcn aliases */
   --background: var(--bg);
   --foreground: var(--text);
@@ -153,6 +167,20 @@
   --positive: #7FB89F;
   --negative: #D4938A;
   --warning: #D4B58A;
+
+  /* Brand purples — variantes adaptadas a dark.
+     El símbolo usa el morado más claro en anillos para legibilidad sobre #0A0A0B,
+     reservando el morado base para el disco central. */
+  --brand-purple-strong: #7C3AED;
+  --brand-purple-deep: #4C1D95;
+  --brand-purple-soft: #A78BFA;
+  --brand-mark-ring: var(--brand-purple-soft);
+  --brand-mark-center: var(--brand-purple-strong);
+
+  /* Estados sidebar/nav con tinte de marca — sutiles, calibrados para dark. */
+  --nav-hover-bg: color-mix(in oklab, var(--brand-purple-strong) 10%, transparent);
+  --nav-active-bg: color-mix(in oklab, var(--brand-purple-strong) 18%, transparent);
+  --nav-active-fg: var(--text);
 
   --background: var(--bg);
   --foreground: var(--text);

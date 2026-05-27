@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation'
 
 import { icons } from '@/lib/design/icons'
 import { SidebarTrigger } from '@/components/ui/sidebar'
+import { BrandMark } from '@/components/brand/brand-mark'
 import { useCommandStore } from './command-store'
 import { useDialogStore } from './dialog-store'
 import { AlertsBell } from './alerts-bell'
@@ -47,13 +48,7 @@ export function Topbar({ unreadAlerts = 0 }: { unreadAlerts?: number }) {
     <header className="border-border-default bg-background sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b px-4 lg:px-6">
       <div className="flex items-center gap-2">
         <SidebarTrigger className="-ml-1 hidden md:inline-flex" />
-        <span
-          aria-hidden
-          className="grid size-6 shrink-0 place-items-center rounded-[6px] md:hidden"
-          style={{ background: 'var(--accent-ai)' }}
-        >
-          <span className="text-[12px] font-semibold text-black">F</span>
-        </span>
+        <BrandMark size={22} className="md:hidden" />
         <h1 className="text-text text-[14px] font-semibold tracking-tight lg:text-[15px]">
           {title}
         </h1>

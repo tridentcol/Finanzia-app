@@ -23,6 +23,7 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     "drizzle/**",
+    "design_handoff_finanzia_brand/**",
   ]),
 ]);
 

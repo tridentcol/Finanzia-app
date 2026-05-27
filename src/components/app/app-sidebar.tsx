@@ -18,6 +18,13 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar'
 import { icons, type IconName } from '@/lib/design/icons'
+import { BrandMark } from '@/components/brand/brand-mark'
+import { BrandWordmark } from '@/components/brand/brand-wordmark'
+
+// Hover y active del sidebar tintados con el morado de marca — detalle sutil.
+// Override del hover/active default del shadcn (que es bg-sidebar-accent neutro).
+const navItemClass =
+  'hover:!bg-[var(--nav-hover-bg)] data-[active=true]:!bg-[var(--nav-active-bg)] data-[active=true]:!text-[var(--nav-active-fg)] data-[active=true]:!font-medium'
 
 type NavItem = { label: string; href: string; icon: IconName }
 type NavSection = { id: string; label: string; items: NavItem[] }
@@ -69,19 +76,14 @@ export function AppSidebar() {
       <SidebarHeader>
         <Link
           href="/dashboard"
-          aria-label="Finanzia"
+          aria-label="finanzia"
           className="flex h-10 items-center gap-2 px-2"
         >
-          <span
-            aria-hidden
-            className="grid size-6 shrink-0 place-items-center rounded-[6px]"
-            style={{ background: 'var(--accent-ai)' }}
-          >
-            <span className="text-[13px] font-semibold text-black">F</span>
-          </span>
-          <span className="text-text truncate text-[14px] font-semibold tracking-tight group-data-[collapsible=icon]:hidden">
-            Finanzia
-          </span>
+          <BrandMark size={24} />
+          <BrandWordmark
+            size={18}
+            className="text-text truncate group-data-[collapsible=icon]:hidden"
+          />
         </Link>
       </SidebarHeader>
 
@@ -100,6 +102,7 @@ export function AppSidebar() {
                         asChild
                         isActive={active}
                         tooltip={item.label}
+                        className={navItemClass}
                       >
                         <Link href={item.href} prefetch>
                           <Icon strokeWidth={1.5} />
@@ -126,6 +129,7 @@ export function AppSidebar() {
                   asChild
                   isActive={active}
                   tooltip={item.label}
+                  className={navItemClass}
                 >
                   <Link href={item.href} prefetch>
                     <Icon strokeWidth={1.5} />

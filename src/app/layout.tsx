@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Inter, Geist_Mono, Fraunces } from 'next/font/google'
+import { Inter, Geist_Mono, Fraunces, Sora } from 'next/font/google'
 import { ClerkProvider } from '@clerk/nextjs'
 import { esES } from '@clerk/localizations'
 import { Toaster } from 'sonner'
@@ -30,10 +30,18 @@ const fraunces = Fraunces({
   weight: ['400', '500'],
 })
 
+// Sora — exclusiva para el wordmark de marca. No usar fuera del lockup.
+const sora = Sora({
+  variable: '--font-brand',
+  subsets: ['latin'],
+  display: 'swap',
+  weight: ['500'],
+})
+
 export const metadata: Metadata = {
   title: {
-    default: 'Finanzia',
-    template: '%s · Finanzia',
+    default: 'finanzia',
+    template: '%s · finanzia',
   },
   description: 'Finanzas personales con IA.',
 }
@@ -46,7 +54,7 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`dark ${inter.variable} ${geistMono.variable} ${fraunces.variable} h-full antialiased`}
+      className={`dark ${inter.variable} ${geistMono.variable} ${fraunces.variable} ${sora.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="bg-background text-foreground flex min-h-full flex-col">

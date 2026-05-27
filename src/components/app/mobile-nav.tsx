@@ -72,7 +72,7 @@ export function MobileNav() {
                 <span
                   aria-hidden
                   className="absolute top-0 h-0.5 w-7 rounded-full"
-                  style={{ background: 'var(--accent-ai)' }}
+                  style={{ background: 'var(--brand-purple-strong)' }}
                 />
               )}
             </Link>
