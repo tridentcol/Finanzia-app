@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { UserButton } from '@clerk/nextjs'
 
 import {
@@ -59,12 +59,26 @@ type Props = {
  */
 export function MobileMoreSheet({ open, onOpenChange }: Props) {
   const pathname = usePathname()
+  const router = useRouter()
 
   // Cierra el sheet automáticamente cuando cambia la ruta (al tocar un Link).
   useEffect(() => {
     if (open) onOpenChange(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname])
+
+  // Cuando se abre el sheet, calienta las rutas listadas — el IntersectionObserver
+  // del <Link prefetch> no las ve hasta que el Dialog las monta visibles, así
+  // que un loop directo de prefetch en el momento del open garantiza que para
+  // cuando el usuario toque un item, el RSC ya esté en cache.
+  useEffect(() => {
+    if (!open) return
+    for (const section of SECTIONS) {
+      for (const item of section.items) {
+        router.prefetch(item.href)
+      }
+    }
+  }, [open, router])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -88,6 +102,8 @@ export function MobileMoreSheet({ open, onOpenChange }: Props) {
                     <Link
                       key={item.href}
                       href={item.href}
+                      prefetch
+                      onTouchStart={() => router.prefetch(item.href)}
                       onClick={() => onOpenChange(false)}
                       aria-label={item.label}
                       className={cn(

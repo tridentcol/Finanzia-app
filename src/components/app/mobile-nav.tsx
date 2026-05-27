@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 
 import { icons, type IconName } from '@/lib/design/icons'
 import { cn } from '@/lib/utils'
@@ -37,8 +37,18 @@ function isActive(pathname: string, href: string): boolean {
  */
 export function MobileNav() {
   const pathname = usePathname()
+  const router = useRouter()
   const [moreOpen, setMoreOpen] = useState(false)
   const More = icons['more-horizontal'] ?? icons.settings
+
+  // Warmup eager de las 4 rutas primarias al montar el bottom-nav. Next
+  // limita el viewport-prefetch en conexiones lentas; este loop fuerza la
+  // descarga del RSC (full prefetch) en cuanto la app es interactiva.
+  useEffect(() => {
+    for (const item of ITEMS) {
+      router.prefetch(item.href)
+    }
+  }, [router])
 
   return (
     <>
@@ -54,6 +64,8 @@ export function MobileNav() {
             <Link
               key={item.href}
               href={item.href}
+              prefetch
+              onTouchStart={() => router.prefetch(item.href)}
               aria-current={active ? 'page' : undefined}
               aria-label={item.label}
               className={cn(
