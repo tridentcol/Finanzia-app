@@ -125,6 +125,7 @@ import {
   Building,
   Wrench,
   ParkingCircle,
+  Mail,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -238,6 +239,7 @@ export const icons = {
   building: Building,
   wrench: Wrench,
   parking: ParkingCircle,
+  mail: Mail,
 } as const satisfies Record<string, LucideIcon>
 
 export type IconName = keyof typeof icons

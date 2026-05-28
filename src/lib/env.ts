@@ -51,6 +51,9 @@ const serverSchema = z.object({
   // Observability — opcional.
   SENTRY_DSN: optionalString(z.string()),
 
+  // Email inbound (Resend) — opcional hasta configurar dominio.
+  RESEND_WEBHOOK_SECRET: optionalString(),
+
   // Cron — requerido.
   CRON_SECRET: z.string().min(32),
 })

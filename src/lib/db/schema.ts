@@ -580,6 +580,32 @@ export const userIntegrations = pgTable(
 )
 
 // ============================================================
+// email_inbox_aliases  (parseo de alertas bancarias por email)
+// ============================================================
+
+export const emailInboxAliases = pgTable(
+  'email_inbox_aliases',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    /** Parte local del alias, ej. "a1b2c3d4". El dominio lo pone la app. */
+    aliasSlug: text('alias_slug').notNull(),
+    /** Banco al que está asociado este alias (ej. "bancolombia"). */
+    bank: text('bank').notNull(),
+    /** Cuenta destino donde se crearán las transacciones parseadas. */
+    accountId: uuid('account_id').references(() => accounts.id, { onDelete: 'set null' }),
+    active: boolean('active').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex('idx_email_aliases_slug').on(t.aliasSlug),
+    index('idx_email_aliases_user').on(t.userId),
+  ],
+)
+
+// ============================================================
 // credit_card_profiles  (perfil financiero por tarjeta de crédito)
 // ============================================================
 
@@ -662,6 +688,14 @@ export const accountsRelations = relations(accounts, ({ one, many }) => ({
 export const creditCardProfilesRelations = relations(creditCardProfiles, ({ one }) => ({
   user: one(users, { fields: [creditCardProfiles.userId], references: [users.id] }),
   account: one(accounts, { fields: [creditCardProfiles.accountId], references: [accounts.id] }),
+}))
+
+export const emailInboxAliasesRelations = relations(emailInboxAliases, ({ one }) => ({
+  user: one(users, { fields: [emailInboxAliases.userId], references: [users.id] }),
+  account: one(accounts, {
+    fields: [emailInboxAliases.accountId],
+    references: [accounts.id],
+  }),
 }))
 
 export const debtsRelations = relations(debts, ({ one }) => ({
@@ -795,3 +829,5 @@ export type UserIntegration = typeof userIntegrations.$inferSelect
 export type NewUserIntegration = typeof userIntegrations.$inferInsert
 export type CreditCardProfile = typeof creditCardProfiles.$inferSelect
 export type NewCreditCardProfile = typeof creditCardProfiles.$inferInsert
+export type EmailInboxAlias = typeof emailInboxAliases.$inferSelect
+export type NewEmailInboxAlias = typeof emailInboxAliases.$inferInsert

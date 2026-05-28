@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<title>finanzia — Sistema de marca</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; background: #f0eee9; font-family: "Sora", system-ui, sans-serif; }
+  #root { width: 100vw; height: 100vh; }
+</style>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="logos-final.jsx"></script>
+
+<script type="text/babel">
+  const App = () => (
+    <DesignCanvas>
+      <DCSection
+        id="brand"
+        title="finanzia — Sistema de marca"
+        subtitle="Mark: Horizonte abierto. Wordmark: Sora 500. Paleta morada profunda."
+      >
+        <DCArtboard id="hero" label="Hero" width={620} height={520}>
+          <HeroFinal idx="01 · Marca completa" label="Hero · vertical lockup" />
+        </DCArtboard>
+
+        <DCArtboard id="mark" label="Símbolo" width={460} height={460}>
+          <MarkOnly idx="02 · Símbolo" label="Aislado · color brand" />
+        </DCArtboard>
+
+        <DCArtboard id="mono" label="Mono" width={460} height={460}>
+          <MarkOnly idx="03 · Mono" label="Una tinta · profundo"
+                    color={PF.deep} />
+        </DCArtboard>
+
+        <DCArtboard id="inverse" label="Inverso" width={460} height={460}>
+          <MarkOnly idx="04 · Inverso" label="Sobre morado"
+                    bg={PF.deep} color="#FFFFFF" dark />
+        </DCArtboard>
+
+        <DCArtboard id="palette" label="Paleta" width={500} height={520}>
+          <Palette idx="05 · Paleta" label="Colores del sistema" />
+        </DCArtboard>
+
+        <DCArtboard id="type" label="Tipografía" width={680} height={420}>
+          <Typography idx="06 · Tipografía" label="Wordmark · Sora 500" />
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection
+        id="apps"
+        title="Aplicaciones"
+        subtitle="La marca puesta a trabajar: app icon, favicon, lockup, header web, firma de email."
+      >
+        <DCArtboard id="appicon" label="App icon" width={460} height={460}>
+          <AppIcon idx="07 · App icon" label="iOS · 240px · esquinas 56" />
+        </DCArtboard>
+
+        <DCArtboard id="scale" label="Escala" width={700} height={400}>
+          <ScaleLadder idx="08 · Escala" label="16 → 72 px · sobrevive a favicon" />
+        </DCArtboard>
+
+        <DCArtboard id="lockup" label="Lockup" width={620} height={500}>
+          <Lockup idx="09 · Lockup horizontal" label="Hero · body · nav" />
+        </DCArtboard>
+
+        <DCArtboard id="web" label="Web header" width={920} height={500}>
+          <WebHeader idx="10 · Web" label="Header de producto" />
+        </DCArtboard>
+
+        <DCArtboard id="signature" label="Firma" width={620} height={460}>
+          <Signature idx="11 · Firma" label="Email signature / business card" />
+        </DCArtboard>
+      </DCSection>
+    </DesignCanvas>
+  );
+
+  ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

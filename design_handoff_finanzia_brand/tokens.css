@@ -1,0 +1,42 @@
+/* finanzia — design tokens */
+/* Import this file (or copy the :root block) into the global CSS. */
+
+:root {
+  /* ─── Brand purples (primary palette) ─── */
+  --purple-deepest: #2D1370;
+  --purple-deeper:  #3B1781;
+  --purple-deep:    #4C1D95;  /* mark center, primary buttons, dark surfaces */
+  --purple-mid:     #6D28D9;
+  --purple-base:    #7C3AED;  /* mark rings, links, focus */
+  --purple-light:   #A78BFA;
+  --purple-pale:    #DDD6FE;
+  --purple-cream:   #F2EDFF;
+
+  /* ─── Neutrals ─── */
+  --ink:       #15102A;  /* primary text */
+  --graphite:  #3A2F58;  /* secondary text */
+  --muted:     #8478A0;  /* tertiary text, captions */
+  --rule:      #EFEAF7;  /* dividers, borders */
+  --paper:     #FFFFFF;  /* primary background */
+  --warm-grey: #FAFAFC;  /* alt background */
+
+  /* ─── Brand typography ─── */
+  --font-brand: "Sora", system-ui, -apple-system, sans-serif;
+  --wordmark-weight: 500;
+  --wordmark-tracking: -0.05em;
+  --wordmark-line-height: 1;
+
+  /* ─── Brand radii (used in app icon, cards, buttons) ─── */
+  --radius-button: 6px;
+  --radius-card: 10px;
+  --radius-app-icon: 56px; /* on 240px tile — keep aspect when resizing */
+
+  /* ─── Shadows ─── */
+  --shadow-app-icon:
+    0 18px 48px rgba(76,29,149,0.32),
+    0 4px 12px rgba(20,15,40,0.06);
+  --shadow-card:
+    0 12px 32px rgba(20,15,40,0.05);
+  --shadow-tile-soft:
+    0 1px 2px rgba(20,15,40,0.04);
+}

@@ -59,6 +59,12 @@ export default async function AjustesPage() {
       icon: 'repeat',
     },
     {
+      href: '/ajustes/integraciones-bancarias',
+      label: 'Alertas bancarias por email',
+      description: 'Recibe movimientos en tiempo real via email. Sin scraping.',
+      icon: 'mail',
+    },
+    {
       href: '/ajustes/alertas',
       label: 'Alertas',
       description:
