@@ -46,22 +46,20 @@ function PeriodRow({ period, baseCurrency }: { period: SavingsPeriodRow; baseCur
   const { text, positive } = deltaLabel(achieved, target)
 
   return (
-    <div className="flex items-center justify-between gap-4 py-3 border-b border-[--border] last:border-0">
+    <div className="flex items-center justify-between gap-4 py-3 border-b border-border-default last:border-0">
       <div className="flex flex-col gap-0.5 min-w-0">
-        <p className="text-sm font-medium text-[--text] truncate">{periodLabel(period.periodEnd)}</p>
+        <p className="text-sm font-medium text-text truncate">{periodLabel(period.periodEnd)}</p>
         {target > 0 && (
-          <p className="text-xs text-[--text-tertiary]">
+          <p className="text-xs text-text-tertiary">
             Meta: {formatMoney(target, { currency: baseCurrency as CurrencyCode })}
           </p>
         )}
       </div>
       <div className="flex flex-col items-end gap-0.5 shrink-0">
-        <p className="font-mono text-sm font-medium text-[--text]">
+        <p className="font-mono text-sm font-medium text-text">
           {formatMoney(achieved, { currency: baseCurrency as CurrencyCode })}
         </p>
-        <p
-          className={`text-xs font-medium ${positive ? 'text-[--positive]' : 'text-[--negative]'}`}
-        >
+        <p className={`text-xs font-medium ${positive ? 'text-positive' : 'text-negative'}`}>
           {text}
         </p>
       </div>
@@ -86,9 +84,9 @@ export default async function AhorroPage() {
     return (
       <div className="flex flex-col gap-8">
         <header className="flex flex-col gap-1">
-          <h1 className="text-xl font-semibold text-[--text] sm:text-2xl">Ahorro</h1>
+          <h1 className="text-xl font-semibold text-text sm:text-2xl">Ahorro</h1>
           {activePlan && (
-            <p className="text-sm text-[--text-secondary]">
+            <p className="text-sm text-text-secondary">
               Plan:{' '}
               {activePlan.method === 'percentage_income'
                 ? `${(activePlan.params as { percent?: number } | null)?.percent ?? 10}% del ingreso`
@@ -110,7 +108,7 @@ export default async function AhorroPage() {
             !hasPlan ? (
               <Link
                 href="/ajustes/perfil-financiero"
-                className="text-sm font-medium text-[--text] hover:text-[--text-secondary] underline underline-offset-4 transition-colors"
+                className="text-sm font-medium text-text hover:text-text-secondary underline underline-offset-4 transition-colors"
               >
                 Configurar plan
               </Link>
@@ -124,9 +122,9 @@ export default async function AhorroPage() {
   return (
     <div className="flex flex-col gap-10">
       <header className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold text-[--text] sm:text-2xl">Ahorro</h1>
+        <h1 className="text-xl font-semibold text-text sm:text-2xl">Ahorro</h1>
         {activePlan && activePlan.method !== 'none' && activePlan.method !== 'other' && (
-          <p className="text-sm text-[--text-secondary]">
+          <p className="text-sm text-text-secondary">
             Plan activo:{' '}
             {activePlan.method === 'percentage_income'
               ? `${(activePlan.params as { percent?: number } | null)?.percent ?? 10}% del ingreso`
@@ -137,21 +135,21 @@ export default async function AhorroPage() {
 
       {/* Hero */}
       <section className="flex flex-col gap-1">
-        <p className="text-xs uppercase tracking-[0.06em] text-[--text-tertiary]">
+        <p className="text-xs uppercase tracking-[0.06em] text-text-tertiary">
           Total acumulado ({hero.periodsCount} {hero.periodsCount === 1 ? 'mes' : 'meses'})
         </p>
-        <p className="font-mono text-4xl font-semibold tabular-nums text-[--text] sm:text-5xl tracking-tight">
+        <p className="font-mono text-4xl font-semibold tabular-nums text-text sm:text-5xl tracking-tight">
           {formatMoney(hero.totalAchieved, { currency: baseCurrency as CurrencyCode })}
         </p>
       </section>
 
       {/* Bar chart histórico */}
-      <section className="flex flex-col gap-3 rounded-[12px] border border-[--border] bg-[--surface] p-4">
+      <section className="flex flex-col gap-3 rounded-[12px] border border-border-default bg-surface p-4">
         <div className="flex items-center justify-between">
-          <p className="text-xs uppercase tracking-[0.06em] text-[--text-tertiary]">
+          <p className="text-xs uppercase tracking-[0.06em] text-text-tertiary">
             Ahorro por mes
           </p>
-          <div className="flex items-center gap-3 text-[10px] text-[--text-tertiary]">
+          <div className="flex items-center gap-3 text-[10px] text-text-tertiary">
             <span className="flex items-center gap-1">
               <span className="inline-block h-2 w-2 rounded-[2px] bg-[#7FB89F]" />
               Meta cumplida
@@ -167,12 +165,12 @@ export default async function AhorroPage() {
 
       {/* Proyección */}
       {hasPlan && (
-        <section className="flex flex-col gap-3 rounded-[12px] border border-[--border] bg-[--surface] p-4">
+        <section className="flex flex-col gap-3 rounded-[12px] border border-border-default bg-surface p-4">
           <div className="flex flex-col gap-0.5">
-            <p className="text-xs uppercase tracking-[0.06em] text-[--text-tertiary]">
+            <p className="text-xs uppercase tracking-[0.06em] text-text-tertiary">
               Proyección — próximos 12 meses
             </p>
-            <p className="text-[11px] text-[--text-tertiary]">
+            <p className="text-[11px] text-text-tertiary">
               Basada en tu promedio reciente. La banda muestra variabilidad histórica.
             </p>
           </div>
@@ -182,20 +180,20 @@ export default async function AhorroPage() {
 
       {/* Lista editorial */}
       <section className="flex flex-col gap-3">
-        <h2 className="text-xs uppercase tracking-[0.06em] text-[--text-tertiary]">
+        <h2 className="text-xs uppercase tracking-[0.06em] text-text-tertiary">
           Historial de períodos
         </h2>
-        <div className="rounded-[12px] border border-[--border] bg-[--surface] px-4">
+        <div className="rounded-[12px] border border-border-default bg-surface px-4">
           {periods.map((p) => (
             <PeriodRow key={p.id} period={p} baseCurrency={baseCurrency} />
           ))}
         </div>
       </section>
 
-      <div className="text-xs text-[--text-tertiary]">
+      <div className="text-xs text-text-tertiary">
         <Link
           href="/ajustes/perfil-financiero"
-          className="underline underline-offset-4 hover:text-[--text-secondary] transition-colors"
+          className="underline underline-offset-4 hover:text-text-secondary transition-colors"
         >
           Cambiar plan de ahorro
         </Link>

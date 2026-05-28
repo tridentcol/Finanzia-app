@@ -59,7 +59,7 @@ export function EditCardVisualDialog({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="text-text-tertiary hover:text-text-secondary absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-md transition-colors"
+        className="text-text-tertiary hover:text-text-secondary hover:bg-surface-hover absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-md transition-colors"
         aria-label="Editar identidad visual"
       >
         {(() => {

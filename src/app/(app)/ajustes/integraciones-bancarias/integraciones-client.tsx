@@ -103,7 +103,7 @@ export function IntegracionesBancariasClient({ aliases, accounts }: Props) {
                         void navigator.clipboard.writeText(email)
                         toast.success('Email copiado.')
                       }}
-                      className="text-text-tertiary hover:text-text-secondary text-[12px] transition-colors"
+                      className="rounded-[6px] border border-border-default px-2.5 py-1 text-[12px] text-text-tertiary transition-colors hover:border-border-emphasis hover:bg-surface-hover hover:text-text-secondary"
                     >
                       Copiar
                     </button>

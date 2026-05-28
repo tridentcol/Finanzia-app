@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { completeOnboarding, type OnboardingInput } from '@/app/(app)/ajustes/perfil-financiero/actions'
 
 const SKIP_KEY = 'finanzia_onboarding_skip_until'
@@ -59,10 +60,10 @@ function Chip({
       type="button"
       onClick={onClick}
       className={[
-        'rounded-[4px] border px-3 py-2 text-sm transition-colors text-left',
+        'rounded-[4px] border px-3 py-2 text-sm transition-colors text-left outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-ai)]/40',
         selected
-          ? 'border-[--text] bg-[--surface-elevated] text-[--text]'
-          : 'border-[--border] text-[--text-secondary] hover:border-[--border-emphasis] hover:text-[--text]',
+          ? 'border-border-emphasis bg-surface-elevated text-text'
+          : 'border-border-default text-text-secondary hover:border-border-emphasis hover:bg-surface-hover/40 hover:text-text',
       ].join(' ')}
     >
       {children}
@@ -153,13 +154,15 @@ export function OnboardingOverlay({ isOnboarded }: { isOnboarded: boolean }) {
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) handleSkip() }}>
       <DialogContent
-        className="max-w-lg border-[--border] bg-[--surface] p-0 gap-0"
+        className="max-w-lg border-border-default bg-surface p-0 gap-0"
+        hideClose
         onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
       >
         {/* Progress bar */}
-        <div className="h-[2px] w-full bg-[--border] rounded-t-[16px] overflow-hidden">
+        <div className="h-[2px] w-full bg-border-default rounded-t-[16px] overflow-hidden">
           <div
-            className="h-full bg-[--text-secondary] transition-all duration-300"
+            className="h-full bg-text-secondary transition-all duration-300"
             style={{ width: `${((step + 1) / 3) * 100}%` }}
           />
         </div>
@@ -167,20 +170,20 @@ export function OnboardingOverlay({ isOnboarded }: { isOnboarded: boolean }) {
         <div className="flex flex-col gap-6 p-6 sm:p-8">
           {/* Header */}
           <div className="flex flex-col gap-1">
-            <p className="text-[11px] uppercase tracking-[0.08em] text-[--text-tertiary]">
+            <p className="text-[11px] uppercase tracking-[0.08em] text-text-tertiary">
               Paso {step + 1} de 3
             </p>
-            <h2 className="font-editorial italic text-2xl text-[--text] leading-tight">
+            <h2 className="editorial italic text-2xl text-text leading-tight">
               {current.headline}
             </h2>
-            <p className="text-sm text-[--text-secondary]">{current.sub}</p>
+            <p className="text-sm text-text-secondary">{current.sub}</p>
           </div>
 
           {/* Step content */}
           {step === 0 && (
             <div className="flex flex-col gap-5">
               <div className="flex flex-col gap-2">
-                <p className="text-xs font-medium text-[--text-tertiary] uppercase tracking-[0.06em]">
+                <p className="text-xs font-medium text-text-tertiary uppercase tracking-[0.06em]">
                   País de residencia
                 </p>
                 <div className="grid grid-cols-2 gap-2">
@@ -196,7 +199,7 @@ export function OnboardingOverlay({ isOnboarded }: { isOnboarded: boolean }) {
                 </div>
               </div>
               <div className="flex flex-col gap-2">
-                <p className="text-xs font-medium text-[--text-tertiary] uppercase tracking-[0.06em]">
+                <p className="text-xs font-medium text-text-tertiary uppercase tracking-[0.06em]">
                   Moneda principal
                 </p>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -207,7 +210,7 @@ export function OnboardingOverlay({ isOnboarded }: { isOnboarded: boolean }) {
                       onClick={() => setCurrency(c.value)}
                     >
                       <span className="block font-mono text-[13px]">{c.label}</span>
-                      <span className="block text-[11px] text-[--text-tertiary]">{c.desc}</span>
+                      <span className="block text-[11px] text-text-tertiary">{c.desc}</span>
                     </Chip>
                   ))}
                 </div>
@@ -217,7 +220,7 @@ export function OnboardingOverlay({ isOnboarded }: { isOnboarded: boolean }) {
 
           {step === 1 && (
             <div className="flex flex-col gap-2">
-              <p className="text-xs font-medium text-[--text-tertiary] uppercase tracking-[0.06em]">
+              <p className="text-xs font-medium text-text-tertiary uppercase tracking-[0.06em]">
                 Ingreso mensual (en {currency})
               </p>
               <div className="grid grid-cols-2 gap-2">
@@ -244,14 +247,14 @@ export function OnboardingOverlay({ isOnboarded }: { isOnboarded: boolean }) {
                     onClick={() => setMethod(m.value)}
                   >
                     <span className="block text-[13px] font-medium">{m.label}</span>
-                    <span className="block text-[11px] text-[--text-tertiary] mt-0.5">{m.desc}</span>
+                    <span className="block text-[11px] text-text-tertiary mt-0.5">{m.desc}</span>
                   </Chip>
                 ))}
               </div>
 
               {method === 'percentage_income' && (
                 <div className="flex flex-col gap-2 pt-1">
-                  <p className="text-xs font-medium text-[--text-tertiary] uppercase tracking-[0.06em]">
+                  <p className="text-xs font-medium text-text-tertiary uppercase tracking-[0.06em]">
                     Porcentaje a ahorrar
                   </p>
                   <div className="flex flex-wrap gap-2">
@@ -266,31 +269,31 @@ export function OnboardingOverlay({ isOnboarded }: { isOnboarded: boolean }) {
 
               {method === 'fixed_amount' && (
                 <div className="flex flex-col gap-2 pt-1">
-                  <p className="text-xs font-medium text-[--text-tertiary] uppercase tracking-[0.06em]">
+                  <p className="text-xs font-medium text-text-tertiary uppercase tracking-[0.06em]">
                     Monto mensual ({currency})
                   </p>
-                  <input
+                  <Input
                     type="text"
                     inputMode="decimal"
                     placeholder="500000"
                     value={fixedAmount}
                     onChange={(e) => setFixedAmount(e.target.value.replace(/[^0-9.]/g, ''))}
-                    className="h-10 rounded-[8px] border border-[--border] bg-[--surface-elevated] px-3 font-mono text-sm text-[--text] placeholder:text-[--text-tertiary] focus:outline-none focus:border-[--text-secondary]"
+                    className="font-mono tabular-nums"
                   />
                 </div>
               )}
 
-              {error && <p className="text-sm text-[--negative]">{error}</p>}
+              {error && <p className="text-sm text-negative">{error}</p>}
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between border-t border-[--border] px-6 py-4 sm:px-8">
+        <div className="flex items-center justify-between border-t border-border-default px-6 py-4 sm:px-8">
           <button
             type="button"
             onClick={handleSkip}
-            className="text-sm text-[--text-tertiary] hover:text-[--text-secondary] transition-colors"
+            className="text-sm text-text-tertiary hover:text-text-secondary transition-colors"
           >
             Configurar más tarde
           </button>

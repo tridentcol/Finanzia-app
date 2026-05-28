@@ -22,8 +22,8 @@ export default async function PerfilFinancieroPage() {
   return (
     <div className="flex flex-col gap-8 max-w-lg">
       <div>
-        <h1 className="text-xl font-semibold text-[--text]">Perfil financiero</h1>
-        <p className="text-sm text-[--text-secondary] mt-1">
+        <h1 className="text-xl font-semibold text-text">Perfil financiero</h1>
+        <p className="text-sm text-text-secondary mt-1">
           Tu divisa base y método de ahorro.
         </p>
       </div>
