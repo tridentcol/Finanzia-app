@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 
 import { requireCurrentUser } from '@/lib/auth'
 import { listAccountsWithBalance } from '@/lib/db/queries/accounts'
@@ -6,6 +7,7 @@ import { EmptyState } from '@/components/app/empty-state'
 import { Amount } from '@/components/app/amount'
 import { NewAccountTrigger } from '@/components/app/new-account-trigger'
 import { CardVisual } from '@/components/cards/card-visual'
+import { EditCardVisualDialog } from '@/components/app/edit-card-visual-dialog'
 import { icons, type IconName } from '@/lib/design/icons'
 import { formatMoney } from '@/lib/currency/format'
 import type { CardKind } from '@/lib/cards/catalog'
@@ -70,6 +72,20 @@ export default async function CuentasPage() {
             return (
               <li key={a.id} className="min-w-0">
                 <article className="border-border-default bg-surface group relative flex min-w-0 flex-col gap-5 rounded-[12px] border p-5">
+                  {cardKind && (
+                    <EditCardVisualDialog
+                      accountId={a.id}
+                      accountName={a.name}
+                      cardKind={cardKind}
+                      initial={{
+                        bankSlug: a.bankSlug,
+                        cardProductSlug: a.cardProductSlug,
+                        cardBrand: a.cardBrand,
+                        cardLastFour: a.cardLastFour,
+                        cardHolderName: a.cardHolderName,
+                      }}
+                    />
+                  )}
                   {hasCardVisual && cardKind && (
                     <CardVisual
                       bankSlug={a.bankSlug}
@@ -83,7 +99,10 @@ export default async function CuentasPage() {
                   )}
 
                   <header className="flex items-start justify-between gap-3">
-                    <div className="flex min-w-0 items-center gap-3">
+                    <Link
+                      href={`/cuentas/${a.id}`}
+                      className="flex min-w-0 items-center gap-3 hover:opacity-80 transition-opacity"
+                    >
                       <span
                         className="border-border-default flex h-9 w-9 shrink-0 items-center justify-center rounded-md border"
                         style={a.color ? { color: a.color } : undefined}
@@ -99,7 +118,7 @@ export default async function CuentasPage() {
                           {a.cardLastFour && ` · ···· ${a.cardLastFour}`}
                         </span>
                       </div>
-                    </div>
+                    </Link>
                     <span className="text-text-tertiary shrink-0 text-[11px] tracking-wider">
                       {a.currency}
                     </span>

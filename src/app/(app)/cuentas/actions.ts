@@ -6,7 +6,7 @@ import { and, eq } from 'drizzle-orm'
 
 import { requireCurrentUser } from '@/lib/auth'
 import { db } from '@/lib/db/client'
-import { accounts } from '@/lib/db/schema'
+import { accounts, creditCardProfiles } from '@/lib/db/schema'
 import { currencyCodes } from '@/lib/currency/currencies'
 import { findCardProduct, type CardKind } from '@/lib/cards/catalog'
 
@@ -154,6 +154,124 @@ export async function createAccount(
   revalidatePath('/cuentas')
   revalidatePath('/dashboard')
   return { ok: true, data: { id: row.id } }
+}
+
+const updateCardVisualSchema = z.object({
+  accountId: z.string().uuid(),
+  bankSlug: z.string().min(1).max(40).optional().nullable(),
+  cardProductSlug: z.string().min(1).max(60).optional().nullable(),
+  cardBrand: z.enum(cardBrandValues).optional().nullable(),
+  cardLastFour: z
+    .string()
+    .regex(/^\d{4}$/, 'Deben ser 4 dígitos')
+    .optional()
+    .nullable(),
+  cardHolderName: z
+    .string()
+    .trim()
+    .min(1)
+    .max(60, 'Máx 60 caracteres')
+    .optional()
+    .nullable(),
+})
+
+export type UpdateCardVisualInput = z.input<typeof updateCardVisualSchema>
+
+export async function updateAccountCardVisual(
+  input: UpdateCardVisualInput,
+): Promise<ActionResult> {
+  const user = await requireCurrentUser()
+
+  const parsed = updateCardVisualSchema.safeParse(input)
+  if (!parsed.success) {
+    return { ok: false, error: { code: 'validation', message: 'Datos inválidos.' } }
+  }
+
+  const { accountId, ...fields } = parsed.data
+
+  await db
+    .update(accounts)
+    .set({
+      bankSlug: fields.bankSlug ?? null,
+      cardProductSlug: fields.cardProductSlug ?? null,
+      cardBrand: fields.cardBrand ?? null,
+      cardLastFour: fields.cardLastFour ?? null,
+      cardHolderName: fields.cardHolderName ?? null,
+      updatedAt: new Date(),
+    })
+    .where(and(eq(accounts.id, accountId), eq(accounts.userId, user.id)))
+
+  revalidatePath('/cuentas')
+  revalidatePath('/dashboard')
+  return { ok: true, data: undefined }
+}
+
+const creditCardPaymentPolicies = ['total', 'minimum', 'partial'] as const
+
+const upsertCreditCardProfileSchema = z.object({
+  accountId: z.string().uuid(),
+  allowsDirectedPayment: z.boolean().default(false),
+  interestRateMonthly: z
+    .string()
+    .regex(/^\d+(\.\d{1,4})?$/, 'Formato inválido')
+    .optional()
+    .nullable(),
+  paymentPolicy: z.enum(creditCardPaymentPolicies).default('total'),
+  hasPromotionalTerms: z.boolean().default(false),
+  notes: z.string().trim().max(500).optional().nullable(),
+})
+
+export type UpsertCreditCardProfileInput = z.input<typeof upsertCreditCardProfileSchema>
+
+export async function upsertCreditCardProfile(
+  input: UpsertCreditCardProfileInput,
+): Promise<ActionResult> {
+  const user = await requireCurrentUser()
+
+  const parsed = upsertCreditCardProfileSchema.safeParse(input)
+  if (!parsed.success) {
+    return { ok: false, error: { code: 'validation', message: 'Datos inválidos.' } }
+  }
+
+  const data = parsed.data
+
+  // Verify account belongs to user
+  const [acct] = await db
+    .select({ id: accounts.id })
+    .from(accounts)
+    .where(and(eq(accounts.id, data.accountId), eq(accounts.userId, user.id)))
+    .limit(1)
+
+  if (!acct) {
+    return { ok: false, error: { code: 'not_found', message: 'Cuenta no encontrada.' } }
+  }
+
+  await db
+    .insert(creditCardProfiles)
+    .values({
+      userId: user.id,
+      accountId: data.accountId,
+      allowsDirectedPayment: data.allowsDirectedPayment,
+      interestRateMonthly: data.interestRateMonthly ?? null,
+      paymentPolicy: data.paymentPolicy,
+      hasPromotionalTerms: data.hasPromotionalTerms,
+      notes: data.notes ?? null,
+    })
+    .onConflictDoUpdate({
+      target: creditCardProfiles.accountId,
+      set: {
+        allowsDirectedPayment: data.allowsDirectedPayment,
+        interestRateMonthly: data.interestRateMonthly ?? null,
+        paymentPolicy: data.paymentPolicy,
+        hasPromotionalTerms: data.hasPromotionalTerms,
+        notes: data.notes ?? null,
+        updatedAt: new Date(),
+      },
+    })
+
+  revalidatePath('/cuentas')
+  revalidatePath(`/cuentas/${data.accountId}`)
+  return { ok: true, data: undefined }
 }
 
 export async function archiveAccount(id: string): Promise<ActionResult> {

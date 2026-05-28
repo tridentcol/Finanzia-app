@@ -579,6 +579,40 @@ export const userIntegrations = pgTable(
   ],
 )
 
+// ============================================================
+// credit_card_profiles  (perfil financiero por tarjeta de crédito)
+// ============================================================
+
+export const creditCardPaymentPolicy = pgEnum('credit_card_payment_policy', [
+  'total',
+  'minimum',
+  'partial',
+])
+
+export const creditCardProfiles = pgTable(
+  'credit_card_profiles',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    accountId: uuid('account_id')
+      .notNull()
+      .references(() => accounts.id, { onDelete: 'cascade' }),
+    allowsDirectedPayment: boolean('allows_directed_payment').notNull().default(false),
+    interestRateMonthly: numeric('interest_rate_monthly', { precision: 7, scale: 4 }),
+    paymentPolicy: creditCardPaymentPolicy('payment_policy').notNull().default('total'),
+    hasPromotionalTerms: boolean('has_promotional_terms').notNull().default(false),
+    notes: text('notes'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex('idx_cc_profiles_account').on(t.accountId),
+    index('idx_cc_profiles_user').on(t.userId),
+  ],
+)
+
 export const exchangeRates = pgTable(
   'exchange_rates',
   {
@@ -619,6 +653,15 @@ export const accountsRelations = relations(accounts, ({ one, many }) => ({
   user: one(users, { fields: [accounts.userId], references: [users.id] }),
   transactions: many(transactions),
   debts: many(debts),
+  creditCardProfile: one(creditCardProfiles, {
+    fields: [accounts.id],
+    references: [creditCardProfiles.accountId],
+  }),
+}))
+
+export const creditCardProfilesRelations = relations(creditCardProfiles, ({ one }) => ({
+  user: one(users, { fields: [creditCardProfiles.userId], references: [users.id] }),
+  account: one(accounts, { fields: [creditCardProfiles.accountId], references: [accounts.id] }),
 }))
 
 export const debtsRelations = relations(debts, ({ one }) => ({
@@ -750,3 +793,5 @@ export type ExchangeRate = typeof exchangeRates.$inferSelect
 export type NewExchangeRate = typeof exchangeRates.$inferInsert
 export type UserIntegration = typeof userIntegrations.$inferSelect
 export type NewUserIntegration = typeof userIntegrations.$inferInsert
+export type CreditCardProfile = typeof creditCardProfiles.$inferSelect
+export type NewCreditCardProfile = typeof creditCardProfiles.$inferInsert

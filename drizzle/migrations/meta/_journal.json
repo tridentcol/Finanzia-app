@@ -15,6 +15,13 @@
       "when": 1779857754853,
       "tag": "0001_user_integrations_transfer_group_debts",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1779929599307,
+      "tag": "0002_bent_firestar",
+      "breakpoints": true
     }
   ]
 }
