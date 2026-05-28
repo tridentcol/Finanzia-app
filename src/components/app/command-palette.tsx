@@ -71,6 +71,7 @@ export function CommandPalette() {
   const Tag = icons.tag
   const Target = icons.target
   const Upload = icons.upload
+  const Calendar = icons.calendar
 
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
@@ -145,6 +146,17 @@ export function CommandPalette() {
                 >
                   <Upload strokeWidth={1.5} className="h-[15px] w-[15px]" />
                   <span className="flex-1">Importar CSV</span>
+                </Command.Item>
+                <Command.Item
+                  value="Resumen del día movimientos hoy diario"
+                  onSelect={() => {
+                    const today = new Date().toISOString().slice(0, 10)
+                    runNavigate(`/transacciones?day=${today}`)
+                  }}
+                  className="text-text-secondary aria-selected:bg-surface-hover aria-selected:text-text mx-2 flex h-9 cursor-pointer items-center gap-3 rounded-md px-2 text-sm transition-colors"
+                >
+                  <Calendar strokeWidth={1.5} className="h-[15px] w-[15px]" />
+                  <span className="flex-1">Resumen de hoy</span>
                 </Command.Item>
               </Command.Group>
 

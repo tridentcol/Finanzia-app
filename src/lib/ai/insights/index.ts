@@ -9,6 +9,9 @@ import { detectForecasts } from './forecast'
 import { detectSavingsRate } from './savings-rate'
 import { detectDormancy } from './dormancy'
 import { detectRecurring } from './recurring-detection'
+import { detectSavingsOffTrack } from './savings-off-track'
+import { detectRecurringDrift } from './recurring-drift'
+import { detectAntSpending } from './ant-spending'
 import { generateRecommendations } from './recommendation'
 import { mirrorAlertsForInsights } from './alert-mirror'
 import type { DetectedInsight, InsightContext } from './types'
@@ -46,6 +49,9 @@ export async function runDetectorsForUser(userId: string): Promise<RunResult> {
     detectSavingsRate,
     detectDormancy,
     detectRecurring,
+    detectSavingsOffTrack,
+    detectRecurringDrift,
+    detectAntSpending,
   ]
   for (const detector of detectors) {
     try {

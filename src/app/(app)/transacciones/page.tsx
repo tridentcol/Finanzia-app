@@ -22,6 +22,7 @@ export const metadata: Metadata = {
 type SearchParams = Promise<{
   kind?: string
   accountId?: string
+  day?: string
 }>
 
 const kindFilters: Array<{
@@ -63,14 +64,18 @@ export default async function TransaccionesPage({
     return undefined
   })()
 
+  const dayFilter = /^\d{4}-\d{2}-\d{2}$/.test(params.day ?? '') ? params.day : undefined
+
   const [list, available, unclassified] = await Promise.all([
     listTransactionsForUser(user.id, {
-      kind,
+      kind: dayFilter ? undefined : kind,
       accountId: params.accountId,
-      limit: 200,
+      from: dayFilter,
+      to: dayFilter,
+      limit: dayFilter ? 500 : 200,
     }),
     listAvailableCategories(user.id),
-    countUnclassifiedTransactions(user.id),
+    dayFilter ? Promise.resolve(0) : countUnclassifiedTransactions(user.id),
   ])
   const categoryOptions: CategoryOption[] = available.map((c) => ({
     id: c.id,
@@ -79,22 +84,64 @@ export default async function TransaccionesPage({
     parentId: c.parentId,
   }))
 
+  // Net delta for day view
+  const dayNet = dayFilter
+    ? list.reduce((acc, tx) => {
+        if (tx.kind === 'income') return acc + Number.parseFloat(tx.amountBase)
+        if (tx.kind === 'expense') return acc - Number.parseFloat(tx.amountBase)
+        return acc
+      }, 0)
+    : null
+
+  const dayLabel = dayFilter
+    ? new Date(dayFilter + 'T12:00:00Z').toLocaleDateString('es-CO', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })
+    : null
+
   return (
     <div className="flex min-w-0 flex-col gap-10">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex min-w-0 flex-col gap-1">
-          <p className="text-text-secondary text-sm">Transacciones</p>
-          <h1 className="text-text text-2xl font-semibold tracking-[-0.02em] sm:text-3xl">
-            Bitácora
-          </h1>
+          {dayFilter ? (
+            <>
+              <Link
+                href="/transacciones"
+                className="text-[--text-tertiary] hover:text-[--text-secondary] text-[13px] transition-colors"
+              >
+                Transacciones
+              </Link>
+              <h1 className="text-[--text] text-xl font-semibold tracking-[-0.02em] capitalize sm:text-2xl">
+                {dayLabel}
+              </h1>
+              {dayNet !== null && (
+                <p
+                  className={`font-mono text-2xl font-semibold tabular-nums sm:text-3xl ${dayNet >= 0 ? 'text-[--positive]' : 'text-[--negative]'}`}
+                >
+                  {dayNet >= 0 ? '+' : ''}
+                  {dayNet.toLocaleString('es-CO', { maximumFractionDigits: 0 })}
+                </p>
+              )}
+            </>
+          ) : (
+            <>
+              <p className="text-text-secondary text-sm">Transacciones</p>
+              <h1 className="text-text text-2xl font-semibold tracking-[-0.02em] sm:text-3xl">
+                Bitácora
+              </h1>
+            </>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <RecategorizeButton pending={unclassified} />
+          {!dayFilter && <RecategorizeButton pending={unclassified} />}
           <NewTransactionTrigger />
         </div>
       </header>
 
-      <nav
+      {!dayFilter && <nav
         aria-label="Filtros"
         className="border-border-default -mx-1 flex items-center gap-1 overflow-x-auto rounded-[8px] border p-0.5 self-start"
       >
@@ -115,14 +162,16 @@ export default async function TransaccionesPage({
             </Link>
           )
         })}
-      </nav>
+      </nav>}
 
       {list.length === 0 ? (
         <EmptyState
           headline={
-            kind
-              ? 'No hay movimientos para este filtro.'
-              : 'Sin movimientos para mostrar.'
+            dayFilter
+              ? 'Sin movimientos ese día.'
+              : kind
+                ? 'No hay movimientos para este filtro.'
+                : 'Sin movimientos para mostrar.'
           }
           body="Cuando importes un extracto o registres un gasto manualmente, lo verás aquí. Multi-divisa, ordenado, categorizable."
           action={<NewTransactionTrigger />}

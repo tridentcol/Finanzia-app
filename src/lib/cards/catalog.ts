@@ -251,6 +251,97 @@ export const CARD_CATALOG: CardBank[] = [
     ],
   },
   {
+    slug: 'bancoomeva',
+    name: 'Bancoomeva',
+    creditProducts: [
+      {
+        slug: 'visa',
+        name: 'Visa Clásica',
+        brands: ['visa'],
+        imagePath: '/cards/bancoomeva-credit-visa.avif',
+      },
+      {
+        slug: 'mastercard-gold',
+        name: 'Mastercard Gold',
+        brands: ['mastercard'],
+        imagePath: '/cards/bancoomeva-credit-mastercard-gold.avif',
+      },
+    ],
+    debitProducts: [
+      {
+        slug: 'ahorros',
+        name: 'Débito Ahorros',
+        brands: ['visa', 'mastercard'],
+        imagePath: '/cards/bancoomeva-debit-ahorros.avif',
+      },
+    ],
+  },
+  {
+    slug: 'avvillas',
+    name: 'AV Villas',
+    creditProducts: [
+      {
+        slug: 'mastercard-clasica',
+        name: 'Mastercard Clásica',
+        brands: ['mastercard'],
+        imagePath: '/cards/avvillas-credit-mastercard-clasica.avif',
+      },
+      {
+        slug: 'visa-platinum',
+        name: 'Visa Platinum',
+        brands: ['visa'],
+        imagePath: '/cards/avvillas-credit-visa-platinum.avif',
+      },
+    ],
+    debitProducts: [
+      {
+        slug: 'ahorros',
+        name: 'Débito Ahorros',
+        brands: ['mastercard'],
+        imagePath: '/cards/avvillas-debit-ahorros.avif',
+      },
+    ],
+  },
+  {
+    slug: 'itau',
+    name: 'Itaú Colombia',
+    creditProducts: [
+      {
+        slug: 'mastercard-gold',
+        name: 'Mastercard Gold',
+        brands: ['mastercard'],
+        imagePath: '/cards/itau-credit-mastercard-gold.avif',
+      },
+      {
+        slug: 'visa-platinum',
+        name: 'Visa Platinum',
+        brands: ['visa'],
+        imagePath: '/cards/itau-credit-visa-platinum.avif',
+      },
+    ],
+    debitProducts: [
+      {
+        slug: 'ahorros',
+        name: 'Débito Ahorros',
+        brands: ['visa', 'mastercard'],
+        imagePath: '/cards/itau-debit-ahorros.avif',
+      },
+    ],
+  },
+  {
+    slug: 'nequi',
+    name: 'Nequi',
+    creditProducts: [],
+    debitProducts: [
+      {
+        slug: 'cuenta',
+        name: 'Cuenta Nequi',
+        brands: ['mastercard'],
+        imagePath: '/cards/nequi-debit-cuenta.avif',
+      },
+    ],
+  },
+  {
     slug: 'otro',
     name: 'Otro banco',
     creditProducts: [

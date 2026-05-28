@@ -30,6 +30,15 @@ export default async function AjustesPage() {
     badge?: number
   }> = [
     {
+      href: '/ajustes/perfil-financiero',
+      label: 'Perfil financiero',
+      description: profile?.onboardedAt
+        ? `Moneda ${profile.baseCurrency} · Plan de ahorro configurado.`
+        : 'Completa tu perfil para activar recomendaciones personalizadas.',
+      icon: 'user',
+      accent: !profile?.onboardedAt,
+    },
+    {
       href: '/ajustes/integraciones',
       label: 'Integraciones IA',
       description:

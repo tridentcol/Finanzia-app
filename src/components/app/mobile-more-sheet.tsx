@@ -34,6 +34,7 @@ const SECTIONS: Section[] = [
       { label: 'Categorías', href: '/categorias', icon: 'tag' },
       { label: 'Presupuestos', href: '/presupuestos', icon: 'target' },
       { label: 'Metas', href: '/metas', icon: 'piggy-bank' },
+      { label: 'Ahorro', href: '/ahorro', icon: 'trending-up' },
     ],
   },
   {

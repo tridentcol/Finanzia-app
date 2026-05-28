@@ -51,7 +51,10 @@ const SECTIONS: NavSection[] = [
   {
     id: 'intelligence',
     label: 'Inteligencia',
-    items: [{ label: 'Insights', href: '/insights', icon: 'sparkles' }],
+    items: [
+      { label: 'Ahorro', href: '/ahorro', icon: 'trending-up' },
+      { label: 'Insights', href: '/insights', icon: 'sparkles' },
+    ],
   },
 ]
 

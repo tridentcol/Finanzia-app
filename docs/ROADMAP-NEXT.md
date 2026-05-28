@@ -48,6 +48,11 @@ Tracks adicionales identificados durante el diseño:
 | Belvo Open Banking permanece **post-MVP visual** (Fase 5b) | Complejidad operativa alta (compliance, re-auth, error handling). No bloquea acercarse a usuarios. |
 | Onboarding (Sección 8 blueprint) se integra con la encuesta de ahorro de Fase 1 | Dos problemas, un flujo. |
 | Inversiones, cripto, OCR de tickets, voice input, sharing en pareja → **fuera de scope este sprint** | Diluyen el producto. Quedan en v2 post feature-completion. |
+| **Orden de fases**: 1→2→3→4→5→6 (propuesto) | Confirmado 2026-05-27. |
+| **Onboarding saltable** con advertencia "deshabilita recomendaciones de ahorro" | Menos fricción al primer login. Se completa desde `/ajustes/perfil-financiero`. |
+| **Editor de identidad visual para cuentas existentes** (Fase 4a residual): implementar ahora | Gap UX inmediato si hay cuentas sin `bank_slug`. |
+| **Fase 5a (email parsing) entra en este sprint**, Fase 5b (Belvo) post-sprint | Email parsing es gratis y cubre Bancolombia. Belvo post-feature-completion. |
+| **Catálogo ampliado a 13 bancos**: se agregan Bancoomeva, AV Villas, Itaú Colombia, Nequi | Cobertura ampliada del mercado colombiano. Imágenes pendientes de drop en `/public/cards/`. |
 
 ---
 
@@ -420,13 +425,9 @@ Helper nuevo `src/lib/forecast/cash-flow.ts`.
 
 ---
 
-## Decisiones aún pendientes (las responde el usuario al iniciar siguiente sesión)
+## Decisiones aún pendientes
 
-1. **Orden de fases**: ¿el orden propuesto 1→2→3→4→5→6 coincide con la intuición del usuario sobre valor percibido? Si Idea 3 (tarjeta) es la que más excita a futuros usuarios, se puede saltar al frente.
-2. **Onboarding obligatorio o saltable**: la encuesta del Plan de ahorro, ¿se fuerza al primer login o se permite saltar?
-3. **Editor de identidad visual de tarjetas existentes** (Fase 4a residual): ¿lo agregamos ya, o esperamos a que un usuario lo pida?
-4. **Belvo en este sprint o post-feature-completion**: ¿avanzamos hasta 5b o paramos en 5a?
-5. **Profundidad del catálogo** (Fase 4a): ¿9 bancos cubren bien al usuario target o necesitamos más?
+_(Todas resueltas al inicio de sesión 2026-05-27 — ver tabla de decisiones tomadas arriba.)_
 
 ---
 

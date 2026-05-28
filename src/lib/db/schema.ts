@@ -134,9 +134,63 @@ export const profiles = pgTable('profiles', {
   timezone: text('timezone').notNull().default('America/Bogota'),
   aiProfile: jsonb('ai_profile'),
   aiEnabled: boolean('ai_enabled').notNull().default(true),
+  onboardedAt: timestamp('onboarded_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 })
+
+// ============================================================
+// savings_plans
+// ============================================================
+
+export const savingsPlanMethod = pgEnum('savings_plan_method', [
+  'percentage_income',
+  'fixed_amount',
+  'none',
+  'other',
+])
+
+export const savingsPlans = pgTable(
+  'savings_plans',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    method: savingsPlanMethod('method').notNull(),
+    params: jsonb('params'),
+    activeFrom: date('active_from').notNull(),
+    activeTo: date('active_to'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index('savings_plans_user_active_from_idx').on(t.userId, t.activeFrom)],
+)
+
+// ============================================================
+// savings_periods
+// ============================================================
+
+export const savingsPeriods = pgTable(
+  'savings_periods',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    planId: uuid('plan_id')
+      .notNull()
+      .references(() => savingsPlans.id, { onDelete: 'restrict' }),
+    periodStart: date('period_start').notNull(),
+    periodEnd: date('period_end').notNull(),
+    targetAmount: numeric('target_amount', { precision: 15, scale: 2 }).notNull(),
+    achievedAmount: numeric('achieved_amount', { precision: 15, scale: 2 }).notNull().default('0'),
+    computedAt: timestamp('computed_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index('savings_periods_user_period_end_idx').on(t.userId, t.periodEnd),
+    uniqueIndex('savings_periods_user_period_end_unique').on(t.userId, t.periodEnd),
+  ],
+)
 
 // ============================================================
 // accounts
@@ -247,6 +301,7 @@ export const recurringRules = pgTable('recurring_rules', {
   lastRun: date('last_run'),
   active: boolean('active').notNull().default(true),
   autoCreate: boolean('auto_create').notNull().default(true),
+  toleranceDays: smallint('tolerance_days').notNull().default(2),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })
 
@@ -639,6 +694,16 @@ export const alertsRelations = relations(alerts, ({ one }) => ({
   user: one(users, { fields: [alerts.userId], references: [users.id] }),
 }))
 
+export const savingsPlansRelations = relations(savingsPlans, ({ one, many }) => ({
+  user: one(users, { fields: [savingsPlans.userId], references: [users.id] }),
+  periods: many(savingsPeriods),
+}))
+
+export const savingsPeriodsRelations = relations(savingsPeriods, ({ one }) => ({
+  user: one(users, { fields: [savingsPeriods.userId], references: [users.id] }),
+  plan: one(savingsPlans, { fields: [savingsPeriods.planId], references: [savingsPlans.id] }),
+}))
+
 export const importBatchesRelations = relations(importBatches, ({ one, many }) => ({
   user: one(users, { fields: [importBatches.userId], references: [users.id] }),
   account: one(accounts, { fields: [importBatches.accountId], references: [accounts.id] }),
@@ -667,6 +732,10 @@ export type RecurringRule = typeof recurringRules.$inferSelect
 export type NewRecurringRule = typeof recurringRules.$inferInsert
 export type Debt = typeof debts.$inferSelect
 export type NewDebt = typeof debts.$inferInsert
+export type SavingsPlan = typeof savingsPlans.$inferSelect
+export type NewSavingsPlan = typeof savingsPlans.$inferInsert
+export type SavingsPeriod = typeof savingsPeriods.$inferSelect
+export type NewSavingsPeriod = typeof savingsPeriods.$inferInsert
 export type Insight = typeof insights.$inferSelect
 export type NewInsight = typeof insights.$inferInsert
 export type Conversation = typeof conversations.$inferSelect
