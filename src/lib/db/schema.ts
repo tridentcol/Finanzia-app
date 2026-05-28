@@ -580,6 +580,36 @@ export const userIntegrations = pgTable(
 )
 
 // ============================================================
+// monthly_reports  (reporte mensual generado por cron)
+// ============================================================
+
+export const monthlyReports = pgTable(
+  'monthly_reports',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    /** Año-mes del reporte, ej. "2026-05" */
+    period: text('period').notNull(),
+    totalIncome: numeric('total_income', { precision: 15, scale: 2 }).notNull().default('0'),
+    totalExpense: numeric('total_expense', { precision: 15, scale: 2 }).notNull().default('0'),
+    netSavings: numeric('net_savings', { precision: 15, scale: 2 }).notNull().default('0'),
+    topCategories: jsonb('top_categories').$type<Array<{ name: string; amount: string; count: number }>>().notNull().default([]),
+    topMerchants: jsonb('top_merchants').$type<Array<{ name: string; amount: string; count: number }>>().notNull().default([]),
+    /** Resumen narrativo generado por LLM (opcional). */
+    aiSummary: text('ai_summary'),
+    /** Hábitos identificados por LLM. */
+    aiHabits: jsonb('ai_habits').$type<Array<{ title: string; body: string; kind: 'positive' | 'negative' | 'neutral' }>>().notNull().default([]),
+    generatedAt: timestamp('generated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex('idx_monthly_reports_user_period').on(t.userId, t.period),
+    index('idx_monthly_reports_user').on(t.userId),
+  ],
+)
+
+// ============================================================
 // email_inbox_aliases  (parseo de alertas bancarias por email)
 // ============================================================
 
@@ -688,6 +718,10 @@ export const accountsRelations = relations(accounts, ({ one, many }) => ({
 export const creditCardProfilesRelations = relations(creditCardProfiles, ({ one }) => ({
   user: one(users, { fields: [creditCardProfiles.userId], references: [users.id] }),
   account: one(accounts, { fields: [creditCardProfiles.accountId], references: [accounts.id] }),
+}))
+
+export const monthlyReportsRelations = relations(monthlyReports, ({ one }) => ({
+  user: one(users, { fields: [monthlyReports.userId], references: [users.id] }),
 }))
 
 export const emailInboxAliasesRelations = relations(emailInboxAliases, ({ one }) => ({
@@ -831,3 +865,5 @@ export type CreditCardProfile = typeof creditCardProfiles.$inferSelect
 export type NewCreditCardProfile = typeof creditCardProfiles.$inferInsert
 export type EmailInboxAlias = typeof emailInboxAliases.$inferSelect
 export type NewEmailInboxAlias = typeof emailInboxAliases.$inferInsert
+export type MonthlyReport = typeof monthlyReports.$inferSelect
+export type NewMonthlyReport = typeof monthlyReports.$inferInsert

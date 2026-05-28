@@ -20,6 +20,8 @@ const titles: Record<string, string> = {
   '/metas': 'Metas',
   '/ahorro': 'Ahorro',
   '/insights': 'Insights',
+  '/cash-flow': 'Cash Flow',
+  '/informes': 'Informes',
   '/ajustes': 'Ajustes',
 }
 

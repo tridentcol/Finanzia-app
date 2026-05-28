@@ -24,6 +24,8 @@ const navigation: NavItem[] = [
   { label: 'Ir a Presupuestos', href: '/presupuestos', icon: 'target' },
   { label: 'Ir a Metas', href: '/metas', icon: 'piggy-bank' },
   { label: 'Ir a Insights', href: '/insights', icon: 'sparkles' },
+  { label: 'Ir a Cash Flow', href: '/cash-flow', icon: 'trending-down' },
+  { label: 'Ir a Informes', href: '/informes', icon: 'book-open' },
   { label: 'Ir a Importar', href: '/importar', icon: 'upload' },
   { label: 'Ajustes', href: '/ajustes', icon: 'settings' },
 ]

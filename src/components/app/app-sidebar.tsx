@@ -53,7 +53,9 @@ const SECTIONS: NavSection[] = [
     label: 'Inteligencia',
     items: [
       { label: 'Ahorro', href: '/ahorro', icon: 'trending-up' },
+      { label: 'Cash Flow', href: '/cash-flow', icon: 'trending-down' },
       { label: 'Insights', href: '/insights', icon: 'sparkles' },
+      { label: 'Informes', href: '/informes', icon: 'book-open' },
     ],
   },
 ]
