@@ -7,12 +7,13 @@ import { userIntegrations } from '@/lib/db/schema'
 export type Provider = 'anthropic' | 'openai'
 
 /**
- * Default scopes por provider. OpenAI puede usar la key sólo para embeddings,
- * sólo para chat, o ambos. Anthropic sólo expone chat.
+ * Default scopes por provider. OpenAI es el cerebro del copiloto por defecto
+ * (chat) además de los embeddings, así que pre-seleccionamos ambos; el usuario
+ * puede desmarcar. Anthropic sólo expone chat.
  */
 export const DEFAULT_SCOPES: Record<Provider, string[]> = {
   anthropic: ['chat'],
-  openai: ['embed'],
+  openai: ['embed', 'chat'],
 }
 
 export const AVAILABLE_SCOPES: Record<Provider, string[]> = {

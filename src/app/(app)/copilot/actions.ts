@@ -7,6 +7,7 @@ import { and, eq, isNull, or } from 'drizzle-orm'
 import { requireCurrentUser } from '@/lib/auth'
 import { db } from '@/lib/db/client'
 import { accounts, budgets, categories } from '@/lib/db/schema'
+import { getCopilotLlmConfig } from '@/lib/ai/copilot/config'
 import { createTransaction } from '@/app/(app)/mi-dinero/movimientos/actions'
 
 type ActionResult<T = void> =
@@ -145,10 +146,11 @@ export async function confirmProposedBudget(input: {
 }
 
 /**
- * Sondea si el copiloto LLM está disponible para el usuario actual.
- * Orden: integración del usuario → AI Gateway → env operador.
+ * Sondea si el copiloto LLM está disponible para el usuario actual, según el
+ * proveedor configurado (COPILOT_LLM_PROVIDER, default OpenAI).
+ * Orden: integración del usuario (scope chat) → AI Gateway → env operador.
  *
- * `mode: 'llm'` significa que el endpoint puede usar Anthropic.
+ * `mode: 'llm'` significa que el endpoint puede usar el LLM configurado.
  * `mode: 'heuristic'` significa que cae al motor interno (sin LLM).
  */
 export async function isCopilotAvailable(): Promise<{
@@ -156,11 +158,14 @@ export async function isCopilotAvailable(): Promise<{
   source: 'user' | 'gateway' | 'operator' | null
 }> {
   const user = await requireCurrentUser()
+  const { provider } = getCopilotLlmConfig()
   const userKey = await import('@/lib/integrations/store').then((m) =>
-    m.getUserApiKey({ userId: user.id, provider: 'anthropic', requiredScope: 'chat' }),
+    m.getUserApiKey({ userId: user.id, provider, requiredScope: 'chat' }),
   )
   if (userKey) return { mode: 'llm', source: 'user' }
   if (process.env.AI_GATEWAY_API_KEY) return { mode: 'llm', source: 'gateway' }
-  if (process.env.ANTHROPIC_API_KEY) return { mode: 'llm', source: 'operator' }
+  const operatorKey =
+    provider === 'openai' ? process.env.OPENAI_API_KEY : process.env.ANTHROPIC_API_KEY
+  if (operatorKey) return { mode: 'llm', source: 'operator' }
   return { mode: 'heuristic', source: null }
 }

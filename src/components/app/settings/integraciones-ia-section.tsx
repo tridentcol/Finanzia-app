@@ -14,18 +14,18 @@ const PROVIDERS: Array<{
   signupUrl: string
 }> = [
   {
-    id: 'anthropic',
-    name: 'Anthropic Claude',
-    description:
-      'Modelo de lenguaje para el copiloto y para recomendaciones en /insights. Requiere una key sk-ant- desde console.anthropic.com.',
-    signupUrl: 'https://console.anthropic.com/settings/keys',
-  },
-  {
     id: 'openai',
     name: 'OpenAI',
     description:
-      'Usado para embeddings (text-embedding-3-small, 1536 dim) que alimentan la auto-categorización. Una key barata, ~$0.02 por 1M tokens.',
+      'Cerebro del copiloto por defecto (modelo gpt-5 mini) si activas el scope Generación / Chat, y embeddings (text-embedding-3-small) para la auto-categorización si activas Embeddings. Key sk- desde platform.openai.com.',
     signupUrl: 'https://platform.openai.com/api-keys',
+  },
+  {
+    id: 'anthropic',
+    name: 'Anthropic Claude',
+    description:
+      'Alternativa de chat para el copiloto y para las recomendaciones de /insights (se usa cuando seleccionas Anthropic como proveedor). Key sk-ant- desde console.anthropic.com.',
+    signupUrl: 'https://console.anthropic.com/settings/keys',
   },
 ]
 
