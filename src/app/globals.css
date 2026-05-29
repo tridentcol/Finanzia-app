@@ -306,6 +306,15 @@
     font-variation-settings: "opsz" 28;
   }
 
+  /* Modo PWA standalone — overrides puntuales activados por
+     StandaloneDetector vía <html data-standalone="true">. En standalone no
+     hay URL bar que "rebote": cancelamos el overscroll para que el shell se
+     sienta nativo y la status/home-indicator no revelen fondo al hacer pull. */
+  html[data-standalone='true'],
+  html[data-standalone='true'] body {
+    overscroll-behavior-y: none;
+  }
+
   /* Respeto a usuarios con preferencia de reduced-motion (regla 12). */
   @media (prefers-reduced-motion: reduce) {
     *,

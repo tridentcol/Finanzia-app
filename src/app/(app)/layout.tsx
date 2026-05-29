@@ -17,6 +17,7 @@ import { NewDebtDialog } from '@/components/app/new-debt-dialog'
 import { CopilotDialog } from '@/components/app/copilot-dialog'
 import { DialogsBundle } from '@/components/app/dialogs-bundle'
 import { OnboardingOverlay } from '@/components/app/onboarding-overlay'
+import { StandaloneDetector } from '@/components/app/standalone-detector'
 import { PageTransition } from '@/components/app/page-transition'
 import { countUnreadAlerts } from '@/lib/db/queries/alerts'
 
@@ -64,6 +65,7 @@ export default async function AppLayout({
         <DialogsBundle />
       </Suspense>
       <OnboardingOverlay isOnboarded={!!profile?.onboardedAt} />
+      <StandaloneDetector />
     </SidebarProvider>
   )
 }
