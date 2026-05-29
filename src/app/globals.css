@@ -96,6 +96,18 @@
    Independientes del tema: no se redefinen en .dark.
    ============================================================ */
 
+/* ------------------------------------------------------------
+   Jerarquía z-index oficial — toda capa nueva respeta esta pirámide.
+   No se inventan valores intermedios sin actualizar este mapa.
+
+     z-10  sidebar (md), sticky day-headers (mobile)
+     z-20  section-tabs, thead de tabla desktop, rail del sidebar
+     z-30  topbar, watermark/landing
+     z-40  mobile-nav (bottom)
+     z-50  dialogs, sheets, popovers, dropdown menus, tooltips, skip-link
+     z-60  select dropdown (debe ir por encima del contenido de un dialog)
+   ------------------------------------------------------------ */
+
 :root {
   --topbar-h: 56px;
   --mobile-nav-h: 64px;
