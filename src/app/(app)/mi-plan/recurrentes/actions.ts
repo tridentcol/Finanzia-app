@@ -45,6 +45,24 @@ export async function createRecurringRule(
     return { ok: false, error: { code: 'validation', message: 'Revisa los campos.', fields } }
   }
   const data = parsed.data
+
+  // Inferir dayOfMonth/dayOfWeek de nextRun cuando frequency los necesita
+  // y no vienen explícitos. Sin esto las reglas mensuales caen siempre el
+  // 1 del mes (default usado por projectCashFlow), no en la fecha real.
+  let inferredDayOfMonth = data.dayOfMonth ?? null
+  let inferredDayOfWeek = data.dayOfWeek ?? null
+  const needsDayOfMonth =
+    data.frequency === 'monthly' ||
+    data.frequency === 'quarterly' ||
+    data.frequency === 'yearly'
+  const needsDayOfWeek = data.frequency === 'weekly' || data.frequency === 'biweekly'
+  if (needsDayOfMonth && inferredDayOfMonth === null) {
+    inferredDayOfMonth = Number.parseInt(data.nextRun.slice(8, 10), 10)
+  }
+  if (needsDayOfWeek && inferredDayOfWeek === null) {
+    inferredDayOfWeek = new Date(`${data.nextRun}T00:00:00Z`).getUTCDay()
+  }
+
   const account = await db.query.accounts.findFirst({
     where: and(eq(accounts.id, data.accountId), eq(accounts.userId, user.id)),
   })
@@ -74,8 +92,8 @@ export async function createRecurringRule(
       currency: data.currency,
       kind: data.kind,
       frequency: data.frequency,
-      dayOfMonth: data.dayOfMonth ?? null,
-      dayOfWeek: data.dayOfWeek ?? null,
+      dayOfMonth: inferredDayOfMonth,
+      dayOfWeek: inferredDayOfWeek,
       nextRun: data.nextRun,
       autoCreate: data.autoCreate,
       active: true,

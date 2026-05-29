@@ -83,7 +83,7 @@ export function CategoryCombobox({
               />
             </div>
 
-            <Command.List className="max-h-[260px] overflow-y-auto py-1">
+            <Command.List className="max-h-[360px] overflow-y-auto py-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[var(--border-emphasis)] [&::-webkit-scrollbar-track]:bg-transparent">
               <Command.Empty className="text-text-tertiary px-3 py-4 text-center text-[13px]">
                 Sin resultados.
               </Command.Empty>
