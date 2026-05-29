@@ -411,7 +411,7 @@ Crear `<EmptyState>` component variante "rich" con:
 - Mobile bottom-nav muestra 4 botones
 - Cmd+K resuelve todas las rutas nuevas
 
-### Fase B — Mi dinero: refinamiento (1 sesión)
+### Fase B — Mi dinero: refinamiento (1 sesión) ✅ `bc1b229`
 
 1. Crear `/mi-dinero/tarjetas` (lista filtrada + hero deuda + CTA)
 2. Excluir tarjetas de `/mi-dinero/cuentas`
