@@ -467,7 +467,7 @@ Crear `<EmptyState>` component variante "rich" con:
 - `/ajustes/perfil-financiero` redirige a `/ajustes#perfil`
 - Navegación por anchor funciona en mobile y desktop
 
-### Fase F — Polish cross-cutting (1 sesión)
+### Fase F — Polish cross-cutting (1 sesión) ✅ `27cc038`
 
 1. Audit de copy en cada página, reescribir headlines
 2. Audit de espaciado: forzar gap-10/12 en todas las páginas
