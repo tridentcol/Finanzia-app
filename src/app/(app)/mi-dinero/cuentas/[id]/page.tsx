@@ -26,15 +26,12 @@ export default async function CuentaDetailPage({ params }: Props) {
 
   if (!account) notFound()
 
-  const cardKind: CardKind | null =
-    account.type === 'credit_card'
-      ? 'credit'
-      : account.type === 'checking' || account.type === 'savings'
-        ? 'debit'
-        : null
-
-  const hasCardVisual = Boolean(account.bankSlug && cardKind)
+  // La identidad visual es exclusiva de tarjetas de crédito. Las cuentas
+  // (checking, savings, etc.) ya no la usan — la cuenta es la cuenta, la
+  // tarjeta es algo distinto.
   const isCreditCard = account.type === 'credit_card'
+  const cardKind: CardKind | null = isCreditCard ? 'credit' : null
+  const hasCardVisual = Boolean(account.bankSlug && isCreditCard)
 
   const limit = account.creditLimit ? Number.parseFloat(account.creditLimit) : 0
   const balance = Number.parseFloat(account.currentBalance)

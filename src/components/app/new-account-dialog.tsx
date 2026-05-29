@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -27,18 +27,12 @@ import {
 import { Button } from '@/components/ui/button'
 import { currencyCodes, currencies } from '@/lib/currency/currencies'
 import { createAccount } from '@/app/(app)/mi-dinero/cuentas/actions'
-import {
-  BRAND_LABELS,
-  CARD_CATALOG,
-  type CardBrand,
-  type CardKind,
-} from '@/lib/cards/catalog'
-import { CardVisual } from '@/components/cards/card-visual'
 import { useDialogStore } from './dialog-store'
 
 // Las tarjetas de crédito viven en /mi-dinero/tarjetas con su propio dialog
-// (NewCardDialog). Aquí se registran cuentas líquidas y activos — sin la
-// mecánica de cupo/corte/pago.
+// (NewCardDialog). Aquí se registran cuentas líquidas y activos — sin
+// mecánica de cupo/corte/pago y sin identidad visual de tarjeta (la cuenta
+// es la cuenta, la tarjeta es algo distinto).
 const accountTypes = [
   { value: 'checking', label: 'Cuenta corriente' },
   { value: 'savings', label: 'Ahorros' },
@@ -48,8 +42,6 @@ const accountTypes = [
   { value: 'other', label: 'Otra' },
 ] as const
 
-const NONE = '__none__'
-
 const schema = z.object({
   name: z.string().trim().min(1, 'Requerido').max(80, 'Máx 80'),
   type: z.enum(accountTypes.map((t) => t.value) as [string, ...string[]]),
@@ -57,20 +49,9 @@ const schema = z.object({
   initialBalance: z
     .string()
     .regex(/^-?\d+(\.\d{1,2})?$/, 'Formato 1234.56'),
-  // Identidad visual (opcional) — sólo aplica a checking/savings (débito).
-  bankSlug: z.string().optional(),
-  cardProductSlug: z.string().optional(),
-  cardBrand: z.string().optional(),
-  cardLastFour: z.string().optional(),
-  cardHolderName: z.string().optional(),
 })
 
 type FormValues = z.infer<typeof schema>
-
-function typeToCardKind(type: string): CardKind | null {
-  if (type === 'checking' || type === 'savings') return 'debit'
-  return null
-}
 
 export function NewAccountDialog() {
   const active = useDialogStore((s) => s.active)
@@ -103,37 +84,8 @@ function NewAccountForm({ onDone }: { onDone: () => void }) {
     },
   })
 
-  const type = watch('type')
-  const bankSlug = watch('bankSlug')
-  const cardProductSlug = watch('cardProductSlug')
-  const cardBrand = watch('cardBrand')
-  const cardLastFour = watch('cardLastFour')
-  const cardHolderName = watch('cardHolderName')
-
-  const cardKind = typeToCardKind(type)
-  const allowsCardVisual = cardKind !== null
-
-  const selectedBank = useMemo(
-    () => (bankSlug ? CARD_CATALOG.find((b) => b.slug === bankSlug) : null),
-    [bankSlug],
-  )
-
-  const productsForBank = useMemo(() => {
-    if (!selectedBank) return []
-    return selectedBank.debitProducts
-  }, [selectedBank])
-
-  const selectedProduct = useMemo(
-    () =>
-      productsForBank.find((p) => p.slug === cardProductSlug) ?? null,
-    [productsForBank, cardProductSlug],
-  )
-
-  const brandsForProduct = selectedProduct?.brands ?? []
-
   function onSubmit(values: FormValues) {
     setServerError(null)
-    const showCardVisual = allowsCardVisual && Boolean(values.bankSlug)
     startTransition(async () => {
       const result = await createAccount({
         name: values.name,
@@ -143,13 +95,11 @@ function NewAccountForm({ onDone }: { onDone: () => void }) {
         creditLimit: null,
         statementDay: null,
         paymentDay: null,
-        bankSlug: showCardVisual ? (values.bankSlug ?? null) : null,
-        cardProductSlug: showCardVisual ? (values.cardProductSlug ?? null) : null,
-        cardBrand: showCardVisual
-          ? ((values.cardBrand as CardBrand | undefined) ?? null)
-          : null,
-        cardLastFour: showCardVisual ? (values.cardLastFour || null) : null,
-        cardHolderName: showCardVisual ? (values.cardHolderName || null) : null,
+        bankSlug: null,
+        cardProductSlug: null,
+        cardBrand: null,
+        cardLastFour: null,
+        cardHolderName: null,
       })
 
       if (!result.ok) {
@@ -165,12 +115,12 @@ function NewAccountForm({ onDone }: { onDone: () => void }) {
   }
 
   return (
-    <DialogContent className="sm:max-w-[640px]">
+    <DialogContent className="sm:max-w-[520px]">
       <DialogHeader>
         <DialogTitle>Nueva cuenta</DialogTitle>
         <DialogDescription>
-          Cada movimiento se asienta sobre una cuenta. Define una corriente,
-          una de ahorros o una tarjeta para empezar.
+          Cuenta corriente, ahorros, efectivo, inversión. Las tarjetas de
+          crédito se registran desde Mi dinero · Tarjetas.
         </DialogDescription>
       </DialogHeader>
 
@@ -192,15 +142,9 @@ function NewAccountForm({ onDone }: { onDone: () => void }) {
           <Field label="Tipo" error={errors.type?.message}>
             <Select
               value={watch('type')}
-              onValueChange={(v) => {
+              onValueChange={(v) =>
                 setValue('type', v, { shouldValidate: true })
-                // Resetea identidad visual si el tipo no la admite.
-                if (typeToCardKind(v) === null) {
-                  setValue('bankSlug', undefined)
-                  setValue('cardProductSlug', undefined)
-                  setValue('cardBrand', undefined)
-                }
-              }}
+              }
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecciona" />
@@ -250,148 +194,6 @@ function NewAccountForm({ onDone }: { onDone: () => void }) {
             {...register('initialBalance')}
           />
         </Field>
-
-        {allowsCardVisual && (
-          <div className="border-border-default flex flex-col gap-4 border-t pt-4">
-            <div className="flex flex-col gap-1">
-              <h3 className="text-text text-sm font-semibold">
-                Identidad visual
-              </h3>
-              <p className="text-text-tertiary text-xs">
-                Opcional. Elige tu banco y producto para que la tarjeta se vea
-                tal como la conoces.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Banco" error={errors.bankSlug?.message}>
-                <Select
-                  value={bankSlug ?? NONE}
-                  onValueChange={(v) => {
-                    const next = v === NONE ? undefined : v
-                    setValue('bankSlug', next)
-                    setValue('cardProductSlug', undefined)
-                    setValue('cardBrand', undefined)
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={NONE}>Sin imagen</SelectItem>
-                    {CARD_CATALOG.map((b) => (
-                      <SelectItem key={b.slug} value={b.slug}>
-                        {b.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-
-              <Field label="Producto" error={errors.cardProductSlug?.message}>
-                <Select
-                  value={cardProductSlug ?? NONE}
-                  onValueChange={(v) => {
-                    const next = v === NONE ? undefined : v
-                    setValue('cardProductSlug', next)
-                    setValue('cardBrand', undefined)
-                  }}
-                  disabled={!selectedBank || productsForBank.length === 0}
-                >
-                  <SelectTrigger>
-                    <SelectValue
-                      placeholder={
-                        !selectedBank
-                          ? 'Elige banco primero'
-                          : productsForBank.length === 0
-                            ? 'Sin productos'
-                            : 'Selecciona'
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={NONE}>—</SelectItem>
-                    {productsForBank.map((p) => (
-                      <SelectItem key={p.slug} value={p.slug}>
-                        {p.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3">
-              <Field label="Red" error={errors.cardBrand?.message}>
-                <Select
-                  value={cardBrand ?? NONE}
-                  onValueChange={(v) =>
-                    setValue('cardBrand', v === NONE ? undefined : v)
-                  }
-                  disabled={brandsForProduct.length === 0}
-                >
-                  <SelectTrigger>
-                    <SelectValue
-                      placeholder={
-                        brandsForProduct.length === 0
-                          ? 'Elige producto'
-                          : 'Selecciona'
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={NONE}>—</SelectItem>
-                    {brandsForProduct.map((b) => (
-                      <SelectItem key={b} value={b}>
-                        {BRAND_LABELS[b]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-
-              <Field
-                label="Últimos 4"
-                htmlFor="last-four"
-                error={errors.cardLastFour?.message}
-              >
-                <Input
-                  id="last-four"
-                  inputMode="numeric"
-                  maxLength={4}
-                  placeholder="4821"
-                  className="tabular"
-                  {...register('cardLastFour')}
-                />
-              </Field>
-
-              <Field
-                label="Titular"
-                htmlFor="holder-name"
-                error={errors.cardHolderName?.message}
-              >
-                <Input
-                  id="holder-name"
-                  placeholder="Daniel Martínez"
-                  {...register('cardHolderName')}
-                />
-              </Field>
-            </div>
-
-            {(bankSlug || selectedProduct) && cardKind && (
-              <div className="mx-auto w-full max-w-[360px]">
-                <CardVisual
-                  bankSlug={bankSlug ?? null}
-                  kind={cardKind}
-                  cardProductSlug={cardProductSlug ?? null}
-                  cardBrand={cardBrand ?? null}
-                  cardLastFour={cardLastFour ?? null}
-                  cardHolderName={cardHolderName ?? null}
-                />
-              </div>
-            )}
-          </div>
-        )}
 
         {serverError && (
           <p className="text-negative text-xs">{serverError}</p>
