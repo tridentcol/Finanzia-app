@@ -442,7 +442,7 @@ Crear `<EmptyState>` component variante "rich" con:
 - Recurrentes agrupados visualmente por tipo
 - Empty states editoriales en cada sub-tab
 
-### Fase D — Mi historia: refinamiento (1 sesión)
+### Fase D — Mi historia: refinamiento (1 sesión) ✅ `2b9d86e`
 
 1. Insights agrupados por mes
 2. Insight → "acción tomada" estado
