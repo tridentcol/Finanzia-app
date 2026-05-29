@@ -12,6 +12,7 @@ import { getOpenAI } from '../openai'
 import { getCopilotLlmConfig, type CopilotLlmConfig } from './config'
 import { buildCopilotTools } from './tools'
 import { buildSystemPrompt } from './system-prompt'
+import { buildProfileSnapshot } from './profile-snapshot'
 import type { CopilotContext } from './context'
 
 export type RunChatParams = {
@@ -76,6 +77,19 @@ export async function runCopilotChat(params: RunChatParams) {
   const todayIso = new Date().toISOString().slice(0, 10)
   const { config } = resolved
 
+  // Snapshot del perfil para personalizar. Tolerante a fallos: si la DB falla,
+  // el copiloto sigue funcionando sin el bloque de contexto.
+  let profileSnapshot: string | undefined
+  try {
+    profileSnapshot = await buildProfileSnapshot({
+      userId: params.ctx.userId,
+      baseCurrency: params.ctx.baseCurrency,
+      todayIso,
+    })
+  } catch (err) {
+    console.error('[copilot] profile snapshot falló:', err)
+  }
+
   const providerOptions =
     resolved.kind === 'openai'
       ? {
@@ -92,6 +106,7 @@ export async function runCopilotChat(params: RunChatParams) {
     system: buildSystemPrompt({
       baseCurrency: params.ctx.baseCurrency,
       todayIso,
+      profileSnapshot,
     }),
     messages: await convertToModelMessages(params.messages),
     tools,
