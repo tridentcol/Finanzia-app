@@ -94,48 +94,54 @@ export function MobileNav() {
     <>
       <nav
         aria-label="Navegación principal móvil"
-        className="border-border-default bg-surface/95 fixed inset-x-0 bottom-0 z-40 flex h-[64px] items-stretch border-t backdrop-blur-md md:hidden"
+        className="border-border-default bg-surface/95 fixed inset-x-0 bottom-0 z-40 border-t backdrop-blur-md md:hidden"
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
-        {LEFT_ITEMS.map(renderNavItem)}
+        {/* Inner row con altura fija — el safe-area inset queda en el
+            <nav> outer como padding extra, no comprime los items. En
+            standalone iOS la home indicator vive sobre el inset; el
+            contenido se queda en sus 64px sanos. */}
+        <div className="flex h-[64px] items-stretch">
+          {LEFT_ITEMS.map(renderNavItem)}
 
-        {/* FAB central — abre new-transaction. Encajado en la barra,
-            centrado vertical. Tamaño 56px destaca por color, sin
-            sobresalir verticalmente. */}
-        <div className="flex w-[72px] shrink-0 items-center justify-center">
+          {/* FAB central — abre new-transaction. Encajado en la barra,
+              centrado vertical. Tamaño 56px destaca por color, sin
+              sobresalir verticalmente. */}
+          <div className="flex w-[72px] shrink-0 items-center justify-center">
+            <button
+              type="button"
+              onClick={() => openDialog('new-transaction')}
+              aria-label="Registrar movimiento"
+              className="active:scale-95 flex h-14 w-14 items-center justify-center rounded-full transition-transform"
+              style={{
+                background: 'var(--purple-base)',
+                color: '#FFFFFF',
+              }}
+            >
+              <Plus strokeWidth={2.5} className="size-6" />
+            </button>
+          </div>
+
+          {RIGHT_ITEMS.map(renderNavItem)}
+
           <button
             type="button"
-            onClick={() => openDialog('new-transaction')}
-            aria-label="Registrar movimiento"
-            className="active:scale-95 flex h-14 w-14 items-center justify-center rounded-full transition-transform"
-            style={{
-              background: 'var(--purple-base)',
-              color: '#FFFFFF',
-            }}
+            onClick={() => setMoreOpen(true)}
+            aria-label="Abrir más opciones"
+            aria-haspopup="dialog"
+            aria-expanded={moreOpen}
+            className={cn(
+              'relative flex flex-1 flex-col items-center justify-center gap-1 px-1 transition-colors',
+              moreOpen ? 'text-text' : 'text-text-tertiary',
+            )}
           >
-            <Plus strokeWidth={2.5} className="size-6" />
+            <More
+              strokeWidth={1.5}
+              className={cn('size-[18px]', moreOpen && 'text-text')}
+            />
+            <span className="text-[10px] font-medium tracking-tight">Más</span>
           </button>
         </div>
-
-        {RIGHT_ITEMS.map(renderNavItem)}
-
-        <button
-          type="button"
-          onClick={() => setMoreOpen(true)}
-          aria-label="Abrir más opciones"
-          aria-haspopup="dialog"
-          aria-expanded={moreOpen}
-          className={cn(
-            'relative flex flex-1 flex-col items-center justify-center gap-1 px-1 transition-colors',
-            moreOpen ? 'text-text' : 'text-text-tertiary',
-          )}
-        >
-          <More
-            strokeWidth={1.5}
-            className={cn('size-[18px]', moreOpen && 'text-text')}
-          />
-          <span className="text-[10px] font-medium tracking-tight">Más</span>
-        </button>
       </nav>
       <MobileMoreSheet open={moreOpen} onOpenChange={setMoreOpen} />
     </>

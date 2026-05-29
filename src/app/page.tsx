@@ -1,5 +1,7 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { Show, SignInButton, SignUpButton, UserButton } from '@clerk/nextjs'
+import { auth } from '@clerk/nextjs/server'
 
 import { BrandMark } from '@/components/brand/brand-mark'
 import { BrandWordmark } from '@/components/brand/brand-wordmark'
@@ -22,7 +24,16 @@ const PILLARS = [
   },
 ] as const
 
-export default function Home() {
+export default async function Home() {
+  // Si ya hay sesión, no mostrar landing — la conversión ya ocurrió.
+  // Saltamos directo a Hoy. Esto también arregla el caso PWA: cuando
+  // el usuario abre la app desde el ícono del home screen, espera ver
+  // su dashboard, no el pitch comercial.
+  const { userId } = await auth()
+  if (userId) {
+    redirect('/dashboard')
+  }
+
   return (
     <div className="bg-background flex min-h-svh flex-col">
       <header className="border-border-default bg-background/85 sticky top-0 z-30 border-b backdrop-blur-md">

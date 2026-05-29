@@ -439,21 +439,23 @@ function DayHeader({
   const label = formatDayHeader(group.day)
   const netLabel = `${positive ? '+' : '−'}${Math.abs(Math.round(group.netBase)).toLocaleString('es-CO')} ${group.baseCurrency}`
   const count = group.txs.length
-  // El topbar mide 56px y el main añade pt-6 (24px) en mobile, py-10 en
-  // desktop. El sticky se ancla por debajo del topbar; en desktop la
-  // tabla además tiene su propio thead sticky, así que cargamos un
-  // top mayor para no superponerlos.
-  const stickyOffset = desktop ? 'top-[97px]' : 'top-[56px]'
+  // El topbar mide 56px + env(safe-area-inset-top) (en standalone iOS
+  // la status bar suma 44–59px más). El sticky day-header se ancla por
+  // debajo del topbar. En desktop la tabla además tiene su propio
+  // thead sticky, así que cargamos un top mayor para no superponerlos.
+  const stickyTop = desktop
+    ? 'calc(56px + env(safe-area-inset-top) + 41px)'
+    : 'calc(56px + env(safe-area-inset-top))'
   return (
     <header
       className={cn(
         'sticky z-10 flex items-baseline justify-between gap-3 px-5 py-2.5',
         'backdrop-blur supports-[backdrop-filter]:bg-[color-mix(in_oklab,var(--bg)_82%,transparent)]',
         'border-border-default/60 border-b',
-        stickyOffset,
         !desktop &&
           'border-border-default bg-surface -mx-1 rounded-[10px] border px-4',
       )}
+      style={{ top: stickyTop }}
     >
       <span className="text-text capitalize text-[13px] font-medium">
         {label}
@@ -478,7 +480,8 @@ function DayHeader({
 function DesktopHead() {
   return (
     <div
-      className="border-border-default bg-surface text-text-tertiary sticky top-[56px] z-20 grid grid-cols-[120px_1fr_180px_180px_140px_40px] gap-x-4 border-b px-5 py-3 text-[11px] uppercase tracking-[0.08em]"
+      className="border-border-default bg-surface text-text-tertiary sticky z-20 grid grid-cols-[120px_1fr_180px_180px_140px_40px] gap-x-4 border-b px-5 py-3 text-[11px] uppercase tracking-[0.08em]"
+      style={{ top: 'calc(56px + env(safe-area-inset-top))' }}
       role="row"
     >
       <span className="font-medium">Fecha</span>
