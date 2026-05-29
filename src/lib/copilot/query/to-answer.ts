@@ -4,7 +4,7 @@ import type { AnswerBlock, AnswerPayload, BreakdownRow } from '../render/answer-
 import type { EngineContext } from '../intents/types'
 import { money, capitalize } from '../intents/helpers'
 import type { Query } from './types'
-import type { QueryResult } from './execute'
+import type { CompareResult, QueryResult } from './execute'
 
 const METRIC_NOUN: Record<Query['metric'], string> = {
   sum: 'total',
@@ -23,6 +23,37 @@ function subjectNoun(q: Query): string {
 /** Formatea un valor según la métrica: count es conteo plano, el resto dinero. */
 function fmt(value: number, q: Query, ctx: EngineContext): string {
   return q.metric === 'count' ? String(Math.round(value)) : money(value, ctx.baseCurrency)
+}
+
+/** Render de una comparación de dos lados → BarsBlock + intro con la diferencia. */
+export function compareToAnswer(
+  query: Query,
+  result: CompareResult,
+  ctx: EngineContext,
+): AnswerPayload {
+  const subj = subjectNoun(query)
+  const max = Math.max(result.a.value, result.b.value, 1)
+  const diff = result.a.value - result.b.value
+  const pct = result.b.value > 0 ? (diff / result.b.value) * 100 : 0
+  const more = diff > 0 ? 'más' : 'menos'
+  return {
+    intro:
+      diff === 0
+        ? `Mismo ${subj} en ambos (${fmt(result.a.value, query, ctx)}).`
+        : `${capitalize(result.a.label)} tuvo ${fmt(Math.abs(diff), query, ctx)} ${more} que ${result.b.label}${pct !== 0 && query.metric !== 'count' ? ` (${pct > 0 ? '+' : ''}${pct.toFixed(0)}%)` : ''}.`,
+    blocks: [
+      {
+        type: 'bars',
+        title: `${capitalize(subj)} comparado`,
+        max,
+        valueFormat: query.metric === 'count' ? 'count' : 'money',
+        rows: [
+          { label: result.a.label, raw: result.a.value, value: fmt(result.a.value, query, ctx) },
+          { label: result.b.label, raw: result.b.value, value: fmt(result.b.value, query, ctx) },
+        ],
+      },
+    ],
+  }
 }
 
 export function queryToAnswer(

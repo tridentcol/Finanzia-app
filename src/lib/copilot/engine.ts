@@ -31,9 +31,9 @@ import {
   type ResolvedTurn,
 } from './conversation/reducer'
 import { buildFollowUps } from './conversation/follow-ups'
-import { parseQuery } from './query/parse'
-import { executeQuery } from './query/execute'
-import { queryToAnswer } from './query/to-answer'
+import { parseQuery, type ParseLists } from './query/parse'
+import { executeQuery, executeCompare } from './query/execute'
+import { queryToAnswer, compareToAnswer } from './query/to-answer'
 import { periodOrThisMonth } from './intents/helpers'
 
 export type EngineResult = {
@@ -205,7 +205,7 @@ export async function runEngine(
 ): Promise<EngineResult> {
   const { resolved, classification } = await analyze(message, ctx, context, cache)
 
-  const payload = await dispatch(resolved.intent, resolved.slots, resolved.decision, ctx, {
+  const payload = await dispatch(resolved.intent, resolved.slots, resolved.decision, ctx, cache, {
     missingSlot: resolved.missingSlot,
     alternative: resolved.alternative,
     message,
@@ -264,6 +264,7 @@ async function dispatch(
   slots: Slots,
   decision: ResolvedTurn['decision'],
   ctx: EngineContext,
+  cache: RequestCache,
   extra: { missingSlot?: SlotKey; alternative?: string; message: string },
 ): Promise<AnswerPayload> {
   if (slots.categoryCandidates && slots.categoryCandidates.length >= 2) {
@@ -299,7 +300,23 @@ async function dispatch(
   if (intent === 'data-query') {
     try {
       const period = periodOrThisMonth(slots, ctx)
-      const query = parseQuery(extra.message, slots, period)
+      // Para "X vs Y" cargamos categorías/comercios (solo si hay separador).
+      let lists: ParseLists | undefined
+      if (/\b(vs|versus|contra)\b/.test(extra.message.toLowerCase())) {
+        const [categories, merchants] = await Promise.all([
+          loadCategories(ctx, cache),
+          loadMerchants(ctx, cache),
+        ])
+        lists = {
+          categories: categories.map((c) => ({ id: c.id, name: c.name })),
+          merchants: merchants.map((m) => ({ slug: m.slug, name: m.name })),
+        }
+      }
+      const query = parseQuery(extra.message, slots, period, lists)
+      if (query?.compare) {
+        const cmp = await executeCompare(query, ctx)
+        return compareToAnswer(query, cmp, ctx)
+      }
       if (query) {
         const result = await executeQuery(query, ctx)
         return queryToAnswer(query, result, ctx)

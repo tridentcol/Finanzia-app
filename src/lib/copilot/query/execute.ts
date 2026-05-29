@@ -65,6 +65,46 @@ function valueExpr(metric: QueryMetric, subject: QuerySubject): SQL {
   }
 }
 
+export type CompareResult = {
+  a: { label: string; value: number }
+  b: { label: string; value: number }
+}
+
+/** Corre el escalar de la consulta para un set de filtros + período dado. */
+async function runScalar(
+  query: Query,
+  ctx: EngineContext,
+  filters: QueryFilters,
+  period: { from: string; to: string },
+): Promise<number> {
+  const where = buildWhere(ctx, query, filters, period)
+  const value = valueExpr(query.metric, query.subject)
+  const rows = await db.execute<{ value: string | null }>(sql`
+    SELECT ${value}::text AS value FROM transactions t WHERE ${where}
+  `)
+  const raw = rows[0]?.value
+  const v = raw ? Number.parseFloat(raw) : 0
+  return Number.isFinite(v) ? v : 0
+}
+
+/** Ejecuta una comparación de dos lados (entidades o períodos). */
+export async function executeCompare(query: Query, ctx: EngineContext): Promise<CompareResult> {
+  const cmp = query.compare
+  if (!cmp) return { a: { label: '', value: 0 }, b: { label: '', value: 0 } }
+  if (cmp.by === 'period') {
+    const [va, vb] = await Promise.all([
+      runScalar(query, ctx, query.filters, cmp.a),
+      runScalar(query, ctx, query.filters, cmp.b),
+    ])
+    return { a: { label: cmp.a.label, value: va }, b: { label: cmp.b.label, value: vb } }
+  }
+  const [va, vb] = await Promise.all([
+    runScalar(query, ctx, { ...query.filters, ...cmp.a.filters }, query.period),
+    runScalar(query, ctx, { ...query.filters, ...cmp.b.filters }, query.period),
+  ])
+  return { a: { label: cmp.a.label, value: va }, b: { label: cmp.b.label, value: vb } }
+}
+
 export async function executeQuery(query: Query, ctx: EngineContext): Promise<QueryResult> {
   const where = buildWhere(ctx, query, query.filters, query.period)
   const value = valueExpr(query.metric, query.subject)

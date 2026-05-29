@@ -146,6 +146,11 @@ const CORPUS: Array<[string, IntentId]> = [
   ['dame consejos', 'advice'],
   ['¿cómo puedo mejorar mis finanzas?', 'advice'],
 
+  // data-query
+  ['¿cuántas transacciones tuve la semana pasada?', 'data-query'],
+  ['gasto por mes', 'data-query'],
+  ['gasto agrupado por categoría', 'data-query'],
+
   // help
   ['ayuda', 'help'],
   ['¿qué sabes hacer?', 'help'],
