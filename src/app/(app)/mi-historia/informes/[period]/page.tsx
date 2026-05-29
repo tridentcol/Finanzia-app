@@ -6,8 +6,11 @@ import { and, eq } from 'drizzle-orm'
 import { requireCurrentUser } from '@/lib/auth'
 import { db } from '@/lib/db/client'
 import { monthlyReports, profiles } from '@/lib/db/schema'
+import { getExpensesByParentCategory } from '@/lib/db/queries/expenses-by-parent'
+import { listInsightsForUser } from '@/lib/db/queries/insights'
 import { formatMoney } from '@/lib/currency/format'
 import { Amount } from '@/components/app/amount'
+import { CategoryBreakdown } from '@/components/app/category-breakdown'
 import type { CurrencyCode } from '@/lib/currency/currencies'
 
 type Props = { params: Promise<{ period: string }> }
@@ -32,19 +35,31 @@ export default async function InformePage({ params }: Props) {
 
   const user = await requireCurrentUser()
 
-  const [report, profile] = await Promise.all([
+  const profile = await db.query.profiles.findFirst({
+    where: eq(profiles.userId, user.id),
+  })
+  const currency = (profile?.baseCurrency ?? 'COP') as CurrencyCode
+
+  const [report, expensesByParent, monthInsights] = await Promise.all([
     db.query.monthlyReports.findFirst({
       where: and(eq(monthlyReports.userId, user.id), eq(monthlyReports.period, period)),
     }),
-    db.query.profiles.findFirst({ where: eq(profiles.userId, user.id) }),
+    getExpensesByParentCategory(user.id, currency, { month: period }),
+    listInsightsForUser(user.id, { includeDismissed: false, limit: 50 }),
   ])
+
+  // Filter insights by month — their periodEnd cae dentro de este `period`.
+  const insightsOfMonth = monthInsights.filter((ins) => {
+    const bucket = (ins.periodEnd ?? ins.createdAt.toISOString().slice(0, 10)).slice(0, 7)
+    return bucket === period
+  })
 
   if (!report) {
     return (
       <div className="flex min-w-0 flex-col gap-10">
         <header className="flex min-w-0 flex-col gap-1.5">
           <Link
-            href="/informes"
+            href="/mi-historia/informes"
             className="text-text-tertiary hover:text-text-secondary text-[13px] transition-colors w-fit"
           >
             ← Informes
@@ -65,7 +80,6 @@ export default async function InformePage({ params }: Props) {
     )
   }
 
-  const currency = (profile?.baseCurrency ?? 'COP') as CurrencyCode
   const income = Number.parseFloat(report.totalIncome)
   const expense = Number.parseFloat(report.totalExpense)
   const savings = Number.parseFloat(report.netSavings)
@@ -83,7 +97,7 @@ export default async function InformePage({ params }: Props) {
       {/* Hero editorial */}
       <header className="flex min-w-0 flex-col gap-3">
         <Link
-          href="/informes"
+          href="/mi-historia/informes"
           className="text-text-tertiary hover:text-text-secondary text-[13px] transition-colors w-fit"
         >
           ← Informes
@@ -144,6 +158,9 @@ export default async function InformePage({ params }: Props) {
           />
         </div>
       </section>
+
+      {/* Breakdown por categoría con tonos morados — migrado desde dashboard */}
+      <CategoryBreakdown data={expensesByParent} currency={currency} />
 
       {/* Top categorías — barras editoriales */}
       {report.topCategories.length > 0 && (
@@ -238,6 +255,38 @@ export default async function InformePage({ params }: Props) {
                   </h3>
                   <p className="text-text-secondary text-[13px] leading-relaxed">{h.body}</p>
                 </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* Insights del mismo mes — cross-link */}
+      {insightsOfMonth.length > 0 && (
+        <section className="flex flex-col gap-4">
+          <header className="flex items-baseline justify-between">
+            <h2 className="text-text text-sm font-semibold">Lecturas de este mes</h2>
+            <Link
+              href={`/mi-historia/insights`}
+              className="text-text-secondary hover:text-text text-[13px] transition-colors"
+            >
+              Ver todas
+            </Link>
+          </header>
+          <ul className="border-border-default bg-surface flex flex-col rounded-[12px] border">
+            {insightsOfMonth.slice(0, 8).map((ins, i) => (
+              <li
+                key={ins.id}
+                className={`flex flex-col gap-1 px-5 py-3 ${
+                  i !== Math.min(insightsOfMonth.length, 8) - 1
+                    ? 'border-border-default/60 border-b'
+                    : ''
+                }`}
+              >
+                <span className="text-text text-sm">{ins.title}</span>
+                <span className="text-text-tertiary line-clamp-2 text-[12px]">
+                  {ins.body}
+                </span>
               </li>
             ))}
           </ul>

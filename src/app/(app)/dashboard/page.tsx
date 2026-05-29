@@ -10,7 +10,6 @@ import { listTransactionsForUser } from '@/lib/db/queries/transactions'
 import { listBudgetsWithProgress } from '@/lib/db/queries/budgets'
 import { listUnreadInsights } from '@/lib/db/queries/insights'
 import { getDebtsSummary } from '@/lib/db/queries/debts'
-import { getExpensesByParentCategory } from '@/lib/db/queries/expenses-by-parent'
 import { listRecurringForUser } from '@/lib/db/queries/recurring'
 import { getRatesForPairs } from '@/lib/currency/rates'
 import { projectCashFlow } from '@/lib/cash-flow/project'
@@ -18,7 +17,6 @@ import { getDailyVolatility } from '@/lib/cash-flow/volatility'
 import { Amount } from '@/components/app/amount'
 import { BudgetProgressCard } from '@/components/app/budget-progress'
 import { CashFlowTeaser } from '@/components/app/cash-flow-teaser'
-import { CategoryBreakdown } from '@/components/app/category-breakdown'
 import { DebtsSummaryCard } from '@/components/app/debts-summary-card'
 import { EmptyState } from '@/components/app/empty-state'
 import { InsightCard } from '@/components/app/insight-card'
@@ -48,7 +46,6 @@ export default async function DashboardPage() {
     budgets,
     unreadInsights,
     debtsSummary,
-    expensesByParent,
     recurringRules,
     volatility,
   ] = await Promise.all([
@@ -57,7 +54,6 @@ export default async function DashboardPage() {
     listBudgetsWithProgress(user.id),
     listUnreadInsights(user.id, 3),
     getDebtsSummary(user.id, baseCurrency),
-    getExpensesByParentCategory(user.id, baseCurrency),
     listRecurringForUser(user.id),
     getDailyVolatility(user.id),
   ])
@@ -194,8 +190,6 @@ export default async function DashboardPage() {
               />
             )
           })()}
-
-          <CategoryBreakdown data={expensesByParent} currency={baseCurrency} />
 
           <section className="flex flex-col gap-4">
             <header className="flex items-center justify-between">
