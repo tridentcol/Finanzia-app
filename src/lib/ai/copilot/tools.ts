@@ -14,6 +14,7 @@ import { getAccountsTool } from './tools/get-accounts'
 import { getTopMerchantsTool } from './tools/get-top-merchants'
 import { getCashFlowTool } from './tools/get-cash-flow'
 import { getAdviceTool } from './tools/get-advice'
+import { queryTransactionsTool } from './tools/query-transactions'
 import { proposeCreateTransactionTool } from './tools/propose-create-transaction'
 import { proposeSetBudgetTool } from './tools/propose-set-budget'
 import { proposeCardPurchaseTool } from './tools/propose-card-purchase'
@@ -36,6 +37,7 @@ export function buildCopilotTools(ctx: CopilotContext) {
     getAccounts: getAccountsTool(ctx),
     listRecentTransactions: listRecentTransactionsTool(ctx),
     searchTransactions: searchTransactionsTool(ctx),
+    queryTransactions: queryTransactionsTool(ctx),
     getBudgetStatus: getBudgetStatusTool(ctx),
     getDebts: getDebtsTool(ctx),
     listRecurring: listRecurringTool(ctx),
