@@ -43,7 +43,8 @@ export async function detectRecurring(
         merchant_norm AS merchant,
         COUNT(*)::int AS count,
         SUM(amount_base)::text AS total_base,
-        EXTRACT(EPOCH FROM (MAX(date) - MIN(date))) / NULLIF(COUNT(*) - 1, 0) / 86400.0 AS avg_interval_days
+        /* date - date retorna integer (días) en Postgres, no interval. */
+        (MAX(date) - MIN(date))::numeric / NULLIF(COUNT(*) - 1, 0) AS avg_interval_days
       FROM txs
       WHERE LENGTH(merchant_norm) >= 4
       GROUP BY merchant_norm
