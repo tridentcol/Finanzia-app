@@ -129,17 +129,28 @@ function CopilotChat({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="flex h-full flex-col">
-      <header className="border-border-default flex items-center justify-between gap-3 border-b px-4 py-3">
-        <div className="flex items-center gap-2">
-          <Spark strokeWidth={1.5} className="size-4" style={{ color: 'var(--accent-ai)' }} />
-          <span className="text-text text-sm font-semibold">Finanzia</span>
+      <header className="border-border-default flex items-center justify-between gap-2 border-b px-4 py-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <Spark strokeWidth={1.5} className="size-4 shrink-0" style={{ color: 'var(--accent-ai)' }} />
+          <span className="text-text truncate text-sm font-semibold">Finanzia</span>
           {mode && (
-            <span className="text-text-tertiary border-border-default rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-[0.08em]">
-              {mode === 'llm' ? 'IA' : 'heurístico'}
+            <span
+              className="text-text-tertiary flex shrink-0 items-center gap-1 text-[10px] uppercase tracking-[0.08em]"
+              title={
+                mode === 'llm'
+                  ? 'Respuesta generada por el modelo de IA'
+                  : 'Respuesta del motor local (sin IA)'
+              }
+            >
+              <span
+                className={`size-1.5 rounded-full ${mode === 'llm' ? 'bg-accent-ai' : 'bg-text-tertiary'}`}
+                aria-hidden
+              />
+              {mode === 'llm' ? 'IA' : 'local'}
             </span>
           )}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
           {messages.length > 0 && (
             <button
               type="button"
