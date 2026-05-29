@@ -8,6 +8,7 @@ import { listActiveInsightsTool } from './tools/list-active-insights'
 import { searchTransactionsTool } from './tools/search-transactions'
 import { proposeCreateTransactionTool } from './tools/propose-create-transaction'
 import { proposeSetBudgetTool } from './tools/propose-set-budget'
+import { proposeCardPurchaseTool } from './tools/propose-card-purchase'
 
 /**
  * Construye el set completo de tools para el copiloto, scopeado al usuario
@@ -24,6 +25,7 @@ export function buildCopilotTools(ctx: CopilotContext) {
     searchTransactions: searchTransactionsTool(ctx),
     proposeCreateTransaction: proposeCreateTransactionTool(ctx),
     proposeSetBudget: proposeSetBudgetTool(ctx),
+    proposeCardPurchase: proposeCardPurchaseTool(ctx),
   } as const
 }
 

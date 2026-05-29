@@ -7,6 +7,7 @@ import { profiles } from '@/lib/db/schema'
 import { listRecurringForUser } from '@/lib/db/queries/recurring'
 import { listAccountsWithBalance, getTotalBalanceInBase } from '@/lib/db/queries/accounts'
 import { projectCashFlow } from '@/lib/cash-flow/project'
+import { getDailyVolatility } from '@/lib/cash-flow/volatility'
 import { CashFlowChart } from '@/components/app/cash-flow-chart'
 import { Amount } from '@/components/app/amount'
 import { EmptyState } from '@/components/app/empty-state'
@@ -19,10 +20,11 @@ export const metadata: Metadata = {
 export default async function CashFlowPage() {
   const user = await requireCurrentUser()
 
-  const [rules, accountsList, profile] = await Promise.all([
+  const [rules, accountsList, profile, volatility] = await Promise.all([
     listRecurringForUser(user.id),
     listAccountsWithBalance(user.id),
     db.query.profiles.findFirst({ where: eq(profiles.userId, user.id) }),
+    getDailyVolatility(user.id),
   ])
 
   const baseCurrency = (profile?.baseCurrency ?? 'COP') as CurrencyCode
@@ -35,7 +37,7 @@ export default async function CashFlowPage() {
   const startingBalance = Number.parseFloat(totalBalanceStr)
 
   const activeRules = rules.filter((r) => r.active)
-  const points = projectCashFlow(rules, startingBalance, 90)
+  const points = projectCashFlow(rules, startingBalance, 90, { volatility })
 
   const balance30 = points[30]?.balance ?? startingBalance
   const balance60 = points[60]?.balance ?? startingBalance
@@ -103,11 +105,19 @@ export default async function CashFlowPage() {
               <h2 className="text-text text-sm font-semibold">Proyección</h2>
               <span className="text-text-tertiary text-[11px] uppercase tracking-[0.08em]">
                 {activeRules.length} {activeRules.length === 1 ? 'regla activa' : 'reglas activas'}
+                {volatility > 0 ? ' · banda ±1σ' : ''}
               </span>
             </header>
             <div className="border-border-default bg-surface rounded-[12px] border px-5 py-6">
               <CashFlowChart points={points} currency={baseCurrency} />
             </div>
+            {volatility > 0 && (
+              <p className="text-text-tertiary text-[11px] max-w-prose">
+                La banda sombreada refleja la variabilidad histórica de tu gasto
+                discrecional (lo no recurrente). Crece con la raíz cuadrada de
+                los días — más lejos = más incertidumbre.
+              </p>
+            )}
           </section>
 
           {/* Próximos eventos */}

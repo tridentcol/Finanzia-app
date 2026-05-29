@@ -62,7 +62,6 @@ function CashFlowInner({
   points,
   width,
   height,
-  currency,
 }: {
   points: CashFlowPoint[]
   width: number
@@ -79,14 +78,22 @@ function CashFlowInner({
 
   const dates = points.map((p) => new Date(p.date + 'T12:00:00Z'))
   const balances = points.map((p) => p.balance)
+  const hasBands = points.some((p) => p.lower !== undefined)
 
   const xScale = scaleTime({
     domain: [dates[0] ?? new Date(), dates[dates.length - 1] ?? new Date()],
     range: [0, innerWidth],
   })
 
-  const minBalance = Math.min(...balances)
-  const maxBalance = Math.max(...balances)
+  const allValues = hasBands
+    ? [
+        ...balances,
+        ...points.map((p) => p.lower ?? p.balance),
+        ...points.map((p) => p.upper ?? p.balance),
+      ]
+    : balances
+  const minBalance = Math.min(...allValues)
+  const maxBalance = Math.max(...allValues)
   const pad = Math.max((maxBalance - minBalance) * 0.1, 1)
 
   const yScale = scaleLinear({
@@ -97,10 +104,11 @@ function CashFlowInner({
 
   const getX = (_: CashFlowPoint, i: number) => xScale(dates[i] ?? new Date())
   const getY = (p: CashFlowPoint) => yScale(p.balance)
+  const getYLower = (p: CashFlowPoint) => yScale(p.lower ?? p.balance)
+  const getYUpper = (p: CashFlowPoint) => yScale(p.upper ?? p.balance)
 
   const isPositive = (points[points.length - 1]?.balance ?? 0) >= (points[0]?.balance ?? 0)
   const strokeColor = isPositive ? 'var(--positive)' : 'var(--negative)'
-  const fillColor = isPositive ? 'var(--positive)' : 'var(--negative)'
 
   const zero = yScale(0)
   const clipToZero = zero >= 0 && zero <= innerHeight
@@ -108,18 +116,20 @@ function CashFlowInner({
   return (
     <svg width={width} height={height}>
       <g transform={`translate(${marginLeft},${marginTop})`}>
-        {/* Área bajo la curva */}
-        <Area
-          data={points}
-          x={getX}
-          y0={() => (clipToZero ? zero : innerHeight)}
-          y1={getY}
-          curve={curveMonotoneX}
-          fill={fillColor}
-          fillOpacity={0.08}
-        />
+        {/* Banda de incertidumbre (conservador ↔ optimista) */}
+        {hasBands && (
+          <Area
+            data={points}
+            x={getX}
+            y0={getYLower}
+            y1={getYUpper}
+            curve={curveMonotoneX}
+            fill={strokeColor}
+            fillOpacity={0.08}
+          />
+        )}
 
-        {/* Línea */}
+        {/* Línea esperada */}
         <LinePath
           data={points}
           x={getX}

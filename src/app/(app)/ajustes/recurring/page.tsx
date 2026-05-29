@@ -2,7 +2,10 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 
 import { requireCurrentUser } from '@/lib/auth'
-import { listRecurringForUser } from '@/lib/db/queries/recurring'
+import {
+  getRecurringDriftSnapshots,
+  listRecurringForUser,
+} from '@/lib/db/queries/recurring'
 import { EmptyState } from '@/components/app/empty-state'
 import { NewRecurringTrigger } from '@/components/app/new-recurring-trigger'
 import { RecurringList } from '@/components/app/recurring-list'
@@ -14,21 +17,21 @@ export const metadata: Metadata = {
 export default async function RecurringPage() {
   const user = await requireCurrentUser()
   const list = await listRecurringForUser(user.id)
+  const driftRuleIds = list
+    .filter((r) => r.active && r.dayOfMonth !== null)
+    .map((r) => r.id)
+  const driftSnapshots = await getRecurringDriftSnapshots(user.id, driftRuleIds)
 
   return (
-    <div className="flex min-w-0 flex-col gap-10">
+    <div className="flex min-w-0 flex-col gap-10 lg:gap-12">
       <header className="flex flex-wrap items-end justify-between gap-4">
-        <div className="flex min-w-0 flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <Link
-              href="/ajustes"
-              className="text-text-tertiary hover:text-text-secondary text-[13px] transition-colors"
-            >
-              Ajustes
-            </Link>
-            <span className="text-text-tertiary text-[13px]">/</span>
-            <span className="text-text-secondary text-[13px]">Recurrentes</span>
-          </div>
+        <div className="flex min-w-0 flex-col gap-1.5">
+          <Link
+            href="/ajustes"
+            className="text-text-tertiary hover:text-text-secondary text-[13px] transition-colors w-fit"
+          >
+            ← Ajustes
+          </Link>
           <h1 className="text-text text-2xl font-semibold tracking-[-0.02em] sm:text-3xl">
             Reglas recurrentes
           </h1>
@@ -48,7 +51,7 @@ export default async function RecurringPage() {
           action={<NewRecurringTrigger />}
         />
       ) : (
-        <RecurringList rules={list} />
+        <RecurringList rules={list} driftSnapshots={driftSnapshots} />
       )}
     </div>
   )

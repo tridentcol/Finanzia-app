@@ -5,6 +5,10 @@ export type CashFlowPoint = {
   balance: number
   delta: number
   events: Array<{ description: string; amount: number; kind: 'income' | 'expense' }>
+  /** Banda inferior (conservador). Sólo presente si se pasó `volatility`. */
+  lower?: number
+  /** Banda superior (optimista). Sólo presente si se pasó `volatility`. */
+  upper?: number
 }
 
 function wouldFireOnDate(
@@ -23,7 +27,6 @@ function wouldFireOnDate(
 
   if (frequency === 'biweekly') {
     if (dayOfWeek !== (rule.dayOfWeek ?? 1)) return false
-    // Check even/odd week relative to epoch
     const weekNum = Math.floor(date.getTime() / (7 * 24 * 60 * 60 * 1000))
     return weekNum % 2 === 0
   }
@@ -44,10 +47,22 @@ function wouldFireOnDate(
   return false
 }
 
+export type ProjectionOptions = {
+  /**
+   * Desviación estándar (σ) del net delta diario histórico, expresada en
+   * la moneda base. Si se pasa, el output incluye bandas `lower`/`upper`
+   * basadas en random walk: la varianza acumulada en el día N es σ × √N,
+   * lo que representa la incertidumbre creciente conforme se proyecta más
+   * lejos. La banda cubre ±1σ (~68% de probabilidad).
+   */
+  volatility?: number
+}
+
 export function projectCashFlow(
   rules: RecurringRuleListItem[],
   startingBalance: number,
   horizonDays: number,
+  options: ProjectionOptions = {},
 ): CashFlowPoint[] {
   const today = new Date()
   today.setUTCHours(0, 0, 0, 0)
@@ -84,7 +99,18 @@ export function projectCashFlow(
     }
 
     balance += delta
-    points.push({ date: dateStr, balance, delta, events })
+
+    const point: CashFlowPoint = { date: dateStr, balance, delta, events }
+
+    if (options.volatility !== undefined && options.volatility > 0) {
+      // Random walk: σ acumulado en día N = σ × √N.
+      // Día 0 no tiene incertidumbre (es el saldo actual).
+      const cumulativeSigma = options.volatility * Math.sqrt(i)
+      point.lower = balance - cumulativeSigma
+      point.upper = balance + cumulativeSigma
+    }
+
+    points.push(point)
   }
 
   return points

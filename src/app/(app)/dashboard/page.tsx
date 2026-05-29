@@ -11,9 +11,13 @@ import { listBudgetsWithProgress } from '@/lib/db/queries/budgets'
 import { listUnreadInsights } from '@/lib/db/queries/insights'
 import { getDebtsSummary } from '@/lib/db/queries/debts'
 import { getExpensesByParentCategory } from '@/lib/db/queries/expenses-by-parent'
+import { listRecurringForUser } from '@/lib/db/queries/recurring'
 import { getRatesForPairs } from '@/lib/currency/rates'
+import { projectCashFlow } from '@/lib/cash-flow/project'
+import { getDailyVolatility } from '@/lib/cash-flow/volatility'
 import { Amount } from '@/components/app/amount'
 import { BudgetProgressCard } from '@/components/app/budget-progress'
+import { CashFlowTeaser } from '@/components/app/cash-flow-teaser'
 import { CategoryBreakdown } from '@/components/app/category-breakdown'
 import { DebtsSummaryCard } from '@/components/app/debts-summary-card'
 import { EmptyState } from '@/components/app/empty-state'
@@ -45,6 +49,8 @@ export default async function DashboardPage() {
     unreadInsights,
     debtsSummary,
     expensesByParent,
+    recurringRules,
+    volatility,
   ] = await Promise.all([
     listAccountsWithBalance(user.id),
     listTransactionsForUser(user.id, { limit: 5 }),
@@ -52,6 +58,8 @@ export default async function DashboardPage() {
     listUnreadInsights(user.id, 3),
     getDebtsSummary(user.id, baseCurrency),
     getExpensesByParentCategory(user.id, baseCurrency),
+    listRecurringForUser(user.id),
+    getDailyVolatility(user.id),
   ])
 
   // Una sola query para todas las tasas que el dashboard necesita: saldo
@@ -173,6 +181,19 @@ export default async function DashboardPage() {
             creditCardDebtInBase={creditCardDebtInBase}
             currency={baseCurrency}
           />
+
+          {recurringRules.filter((r) => r.active).length > 0 && (() => {
+            const points = projectCashFlow(recurringRules, totalNum, 30, {
+              volatility,
+            })
+            return (
+              <CashFlowTeaser
+                points={points}
+                currency={baseCurrency}
+                startingBalance={totalNum}
+              />
+            )
+          })()}
 
           <CategoryBreakdown data={expensesByParent} currency={baseCurrency} />
 
