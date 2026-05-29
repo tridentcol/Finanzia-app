@@ -10,7 +10,6 @@ import { listDebts, getDebtsSummary } from '@/lib/db/queries/debts'
 import { Amount } from '@/components/app/amount'
 import { EmptyState } from '@/components/app/empty-state'
 import { NewDebtTrigger } from '@/components/app/new-debt-trigger'
-import { CardVisual } from '@/components/cards/card-visual'
 import { formatMoney } from '@/lib/currency/format'
 import { icons, type IconName } from '@/lib/design/icons'
 import type { CurrencyCode } from '@/lib/currency/currencies'
@@ -56,17 +55,19 @@ export default async function DeudasPage() {
     getDebtsSummary(user.id, baseCurrency),
   ])
 
+  // Total deuda en tarjetas (saldo negativo = lo adeudado). Solo se usa
+  // para el KPI hero de contexto — el detalle de tarjetas vive en
+  // /mi-dinero/tarjetas, así que no se duplica acá.
   const creditCards = accountsList.filter((a) => a.type === 'credit_card')
-  const activeDebts = debtsList.filter((d) => d.status === 'active')
-  const archivedOrPaid = debtsList.filter((d) => d.status !== 'active')
-
-  // Total deuda en tarjetas (saldo negativo = lo adeudado).
   const totalCreditCardDebt = creditCards.reduce((sum, c) => {
     const balance = Number.parseFloat(c.currentBalance)
     return balance < 0 ? sum + Math.abs(balance) : sum
   }, 0)
 
-  const isEmpty = creditCards.length === 0 && debtsList.length === 0
+  const activeDebts = debtsList.filter((d) => d.status === 'active')
+  const archivedOrPaid = debtsList.filter((d) => d.status !== 'active')
+
+  const isEmpty = debtsList.length === 0
 
   // KPI unificado: deuda total = préstamos formales + saldos negativos de tarjetas.
   // Las tarjetas viven en /mi-dinero/tarjetas, pero la cifra global vive aquí.
@@ -117,13 +118,7 @@ export default async function DeudasPage() {
 
       {/* Próximo pago destacado */}
       {summary.nextPayment && (
-        <section
-          className="border-border-default rounded-[12px] border p-5"
-          style={{
-            background:
-              'color-mix(in oklab, var(--brand-purple-strong) 5%, transparent)',
-          }}
-        >
+        <section className="border-border-default bg-surface rounded-[12px] border p-5">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex min-w-0 flex-col gap-1">
               <span className="text-text-tertiary text-[11px] uppercase tracking-[0.08em]">
@@ -163,103 +158,6 @@ export default async function DeudasPage() {
         />
       ) : (
         <>
-          {/* Tarjetas de crédito (vista resumida con link a /mi-dinero/tarjetas) */}
-          {creditCards.length > 0 && (
-            <section className="flex flex-col gap-4">
-              <header className="flex items-baseline justify-between">
-                <div className="flex min-w-0 flex-col gap-0.5">
-                  <h2 className="text-text text-sm font-semibold">
-                    Tarjetas de crédito
-                  </h2>
-                  <p className="text-text-tertiary text-[12px]">
-                    Aquí solo el resumen — la mecánica vive en Tarjetas.
-                  </p>
-                </div>
-                <Link
-                  href="/mi-dinero/tarjetas"
-                  className="text-text-secondary hover:text-text text-[13px] transition-colors"
-                >
-                  Ver tarjetas
-                </Link>
-              </header>
-              <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {creditCards.map((c) => {
-                  const Icon = icons['credit-card']
-                  const limit = Number.parseFloat(c.creditLimit ?? '0')
-                  const balance = Number.parseFloat(c.currentBalance)
-                  const used = balance < 0 ? -balance : 0
-                  const utilization =
-                    limit > 0 ? Math.min(1, used / limit) : 0
-                  const hasCardVisual = Boolean(c.bankSlug)
-                  return (
-                    <li key={c.id}>
-                      <article className="border-border-default bg-surface flex flex-col gap-3 rounded-[12px] border p-4">
-                        {hasCardVisual && (
-                          <CardVisual
-                            bankSlug={c.bankSlug}
-                            kind="credit"
-                            cardProductSlug={c.cardProductSlug}
-                            cardBrand={c.cardBrand}
-                            cardLastFour={c.cardLastFour}
-                            cardHolderName={c.cardHolderName}
-                            showMeta={false}
-                          />
-                        )}
-                        <header className="flex items-center gap-3">
-                          <span className="border-border-default flex h-8 w-8 items-center justify-center rounded-md border">
-                            <Icon strokeWidth={1.5} className="h-4 w-4" />
-                          </span>
-                          <div className="flex min-w-0 flex-col">
-                            <span className="text-text truncate text-sm font-medium">
-                              {c.name}
-                            </span>
-                            <span className="text-text-tertiary text-[11px] tracking-wider">
-                              {c.currency}
-                              {c.cardLastFour && ` · ···· ${c.cardLastFour}`}
-                            </span>
-                          </div>
-                        </header>
-                        <div className="flex flex-col gap-1">
-                          <span className="text-text-tertiary text-[11px] uppercase tracking-[0.08em]">
-                            Adeudado
-                          </span>
-                          <Amount
-                            value={String(used)}
-                            currency={c.currency}
-                            kind={used > 0 ? 'negative' : 'neutral'}
-                            className="text-lg"
-                          />
-                        </div>
-                        {limit > 0 && (
-                          <div className="flex flex-col gap-1.5">
-                            <div className="flex items-baseline justify-between text-[12px]">
-                              <span className="text-text-tertiary">
-                                Utilizado
-                              </span>
-                              <span className="text-text-secondary tabular">
-                                {Math.round(utilization * 100)}%
-                              </span>
-                            </div>
-                            <div className="bg-surface-hover h-1 overflow-hidden rounded-full">
-                              <div
-                                aria-hidden
-                                className="h-full rounded-full"
-                                style={{
-                                  width: `${utilization * 100}%`,
-                                  background: 'var(--brand-purple-strong)',
-                                }}
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </article>
-                    </li>
-                  )
-                })}
-              </ul>
-            </section>
-          )}
-
           {/* Préstamos y otros */}
           {activeDebts.length > 0 && (
             <section className="flex flex-col gap-4">

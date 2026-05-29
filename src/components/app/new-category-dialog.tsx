@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -34,6 +34,10 @@ import {
 } from '@/lib/design/palette'
 import { cn } from '@/lib/utils'
 
+// Las categorías son planas — un nivel solo. El usuario crea, edita y elimina
+// directamente sin jerarquía padre/hijo. Mantenemos la prop `categories` en
+// la signature para compat con DialogsBundle, pero ya no la usamos para
+// poblar el select de padre (que ya no existe).
 type CategoryOption = {
   id: string
   name: string
@@ -50,8 +54,6 @@ const kindOptions = [
   { value: 'income' as const, label: 'Ingreso' },
   { value: 'transfer' as const, label: 'Transferencia' },
 ]
-
-const NO_PARENT = '__none__'
 
 const iconChoices: IconName[] = [
   'tag',
@@ -75,28 +77,24 @@ const iconChoices: IconName[] = [
 const schema = z.object({
   name: z.string().trim().min(1, 'Requerido').max(60, 'Máx 60'),
   kind: z.enum(['income', 'expense', 'transfer']),
-  parentId: z.string().optional(),
   icon: z.string().min(1),
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Hex inválido'),
 })
 
 type FormValues = z.infer<typeof schema>
 
-export function NewCategoryDialog({ categories }: Props) {
+export function NewCategoryDialog(_props: Props) {
   const active = useDialogStore((s) => s.active)
   const close = useDialogStore((s) => s.close)
   const open = active === 'new-category'
   return (
     <Dialog open={open} onOpenChange={(o) => !o && close()}>
-      {open && <NewCategoryForm categories={categories} onDone={close} />}
+      {open && <NewCategoryForm onDone={close} />}
     </Dialog>
   )
 }
 
-function NewCategoryForm({
-  categories,
-  onDone,
-}: Props & { onDone: () => void }) {
+function NewCategoryForm({ onDone }: { onDone: () => void }) {
   const router = useRouter()
   const [serverError, setServerError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
@@ -111,20 +109,13 @@ function NewCategoryForm({
     defaultValues: {
       name: '',
       kind: 'expense',
-      parentId: NO_PARENT,
       icon: 'tag',
       color: '#6B7280',
     },
   })
 
-  const kind = watch('kind')
   const selectedIcon = watch('icon') as IconName
   const selectedColor = watch('color')
-
-  const parentOptions = useMemo(
-    () => categories.filter((c) => c.kind === kind && c.parentId === null),
-    [categories, kind],
-  )
 
   function onSubmit(values: FormValues) {
     setServerError(null)
@@ -132,9 +123,7 @@ function NewCategoryForm({
       const result = await createCategory({
         name: values.name,
         kind: values.kind,
-        parentId: values.parentId && values.parentId !== NO_PARENT
-          ? values.parentId
-          : null,
+        parentId: null,
         icon: values.icon,
         color: values.color,
       })
@@ -182,51 +171,25 @@ function NewCategoryForm({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Tipo">
-            <Select
-              value={watch('kind')}
-              onValueChange={(v) => {
-                setValue('kind', v as FormValues['kind'], { shouldValidate: true })
-                setValue('parentId', NO_PARENT)
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {kindOptions.map((k) => (
-                  <SelectItem key={k.value} value={k.value}>
-                    {k.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
-
-          <Field
-            label="Categoría padre"
-            hint={parentOptions.length === 0 ? 'Sin padres disponibles' : 'Opcional'}
+        <Field label="Tipo">
+          <Select
+            value={watch('kind')}
+            onValueChange={(v) =>
+              setValue('kind', v as FormValues['kind'], { shouldValidate: true })
+            }
           >
-            <Select
-              value={watch('parentId') ?? NO_PARENT}
-              onValueChange={(v) => setValue('parentId', v)}
-              disabled={parentOptions.length === 0}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Sin padre" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={NO_PARENT}>Sin padre</SelectItem>
-                {parentOptions.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
-        </div>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {kindOptions.map((k) => (
+                <SelectItem key={k.value} value={k.value}>
+                  {k.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
 
         <Field label="Icono" hint="Elige uno del set curado">
           <div className="grid grid-cols-8 gap-2">

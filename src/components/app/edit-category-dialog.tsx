@@ -17,13 +17,6 @@ import {
 } from '@/components/ui/dialog'
 import { Field } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { updateCategory } from '@/app/(app)/categorias/actions'
 import { useDialogStore } from './dialog-store'
@@ -47,8 +40,6 @@ type Props = {
   categories: CategoryOption[]
 }
 
-const NO_PARENT = '__none__'
-
 const iconChoices: IconName[] = [
   'tag',
   'shopping-bag',
@@ -70,7 +61,6 @@ const iconChoices: IconName[] = [
 
 const schema = z.object({
   name: z.string().trim().min(1, 'Requerido').max(60, 'Máx 60'),
-  parentId: z.string().optional(),
   icon: z.string().min(1),
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Hex inválido'),
 })
@@ -134,7 +124,6 @@ function EditCategoryForm({
     resolver: zodResolver(schema),
     defaultValues: {
       name: category.name,
-      parentId: category.parentId ?? NO_PARENT,
       icon: (category.icon ?? 'tag') as string,
       color: category.color ?? '#6B7280',
     },
@@ -142,14 +131,6 @@ function EditCategoryForm({
 
   const selectedIcon = watch('icon') as IconName
   const selectedColor = watch('color')
-
-  const parentOptions = useMemo(
-    () =>
-      categories.filter(
-        (c) => c.kind === category.kind && c.parentId === null && c.id !== category.id,
-      ),
-    [categories, category],
-  )
 
   function onSubmit(values: FormValues) {
     setServerError(null)
@@ -159,8 +140,7 @@ function EditCategoryForm({
         name: values.name,
         icon: values.icon,
         color: values.color,
-        parentId:
-          values.parentId && values.parentId !== NO_PARENT ? values.parentId : null,
+        parentId: null,
       })
 
       if (!result.ok) {
@@ -200,29 +180,6 @@ function EditCategoryForm({
             </Field>
           </div>
         </div>
-
-        <Field
-          label="Categoría padre"
-          hint={parentOptions.length === 0 ? 'Sin padres disponibles' : 'Opcional'}
-        >
-          <Select
-            value={watch('parentId') ?? NO_PARENT}
-            onValueChange={(v) => setValue('parentId', v)}
-            disabled={parentOptions.length === 0}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Sin padre" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={NO_PARENT}>Sin padre</SelectItem>
-              {parentOptions.map((c) => (
-                <SelectItem key={c.id} value={c.id}>
-                  {c.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Field>
 
         <Field label="Icono">
           <div className="grid grid-cols-8 gap-2">
