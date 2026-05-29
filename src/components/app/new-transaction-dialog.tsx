@@ -1,10 +1,7 @@
 'use client'
 
-import { useMemo, useState, useTransition } from 'react'
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
 import { toast } from 'sonner'
 
 import {
@@ -15,21 +12,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Field } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
-  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { createTransaction } from '@/app/(app)/mi-dinero/movimientos/actions'
+import { icons } from '@/lib/design/icons'
+import { cn } from '@/lib/utils'
 import { useDialogStore } from './dialog-store'
 
 type AccountOption = {
@@ -51,33 +46,60 @@ type Props = {
   categories: CategoryOption[]
 }
 
-const txKinds = [
-  { value: 'expense' as const, label: 'Gasto' },
-  { value: 'income' as const, label: 'Ingreso' },
-  { value: 'transfer' as const, label: 'Transferencia' },
-]
+type Kind = 'expense' | 'income' | 'transfer'
 
-const schema = z.object({
-  kind: z.enum(['income', 'expense', 'transfer']),
-  accountId: z.string().min(1, 'Selecciona una cuenta'),
-  transferAccountId: z.string().optional(),
-  categoryId: z.string().optional(),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha inválida'),
-  amountOriginal: z
-    .string()
-    .regex(/^\d+(\.\d{1,2})?$/, 'Monto positivo, formato 1234.56'),
-  description: z.string().trim().min(1, 'Requerido').max(200),
-  notes: z.string().max(500).optional(),
-})
+const KIND_META: Record<
+  Kind,
+  { label: string; icon: keyof typeof icons; tone: string; sign: '−' | '+' | '⇆' }
+> = {
+  expense: { label: 'Gasto', icon: 'arrow-up', tone: 'text-negative', sign: '−' },
+  income: { label: 'Ingreso', icon: 'arrow-down', tone: 'text-positive', sign: '+' },
+  transfer: {
+    label: 'Transferencia',
+    icon: 'arrow-right-left',
+    tone: 'text-text-secondary',
+    sign: '⇆',
+  },
+}
 
-type FormValues = z.infer<typeof schema>
+const ACCOUNT_TYPE_LABEL: Record<string, string> = {
+  checking: 'Corriente',
+  savings: 'Ahorros',
+  credit_card: 'Tarjeta',
+  cash: 'Efectivo',
+  investment: 'Inversión',
+  crypto: 'Cripto',
+  other: 'Otra',
+}
 
-function today(): string {
+function todayIso(): string {
   return new Date().toISOString().slice(0, 10)
+}
+
+function relativeDateLabel(iso: string): string {
+  const today = todayIso()
+  if (iso === today) return 'Hoy'
+  const t = new Date(`${today}T00:00:00Z`).getTime()
+  const d = new Date(`${iso}T00:00:00Z`).getTime()
+  const days = Math.round((t - d) / (1000 * 60 * 60 * 24))
+  if (days === 1) return 'Ayer'
+  if (days > 0 && days < 7) return `Hace ${days} días`
+  return new Date(`${iso}T12:00:00Z`).toLocaleDateString('es-CO', {
+    day: 'numeric',
+    month: 'short',
+    timeZone: 'UTC',
+  })
+}
+
+function shiftDate(iso: string, days: number): string {
+  const d = new Date(`${iso}T00:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + days)
+  return d.toISOString().slice(0, 10)
 }
 
 export function NewTransactionDialog({ accounts, categories }: Props) {
   const active = useDialogStore((s) => s.active)
+  const payload = useDialogStore((s) => s.payload)
   const close = useDialogStore((s) => s.close)
   const open = active === 'new-transaction'
 
@@ -87,6 +109,8 @@ export function NewTransactionDialog({ accounts, categories }: Props) {
         <NewTransactionForm
           accounts={accounts}
           categories={categories}
+          presetKind={(payload as { kind?: Kind } | null)?.kind}
+          presetAccountId={(payload as { accountId?: string } | null)?.accountId}
           onDone={close}
         />
       )}
@@ -97,63 +121,117 @@ export function NewTransactionDialog({ accounts, categories }: Props) {
 function NewTransactionForm({
   accounts,
   categories,
+  presetKind,
+  presetAccountId,
   onDone,
-}: Props & { onDone: () => void }) {
+}: Props & {
+  presetKind?: Kind
+  presetAccountId?: string
+  onDone: () => void
+}) {
   const router = useRouter()
   const [serverError, setServerError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
-  const defaultAccountId = accounts[0]?.id ?? ''
-  const {
-    register,
-    handleSubmit,
-    watch,
-    setValue,
-    formState: { errors },
-  } = useForm<FormValues>({
-    resolver: zodResolver(schema),
-    defaultValues: {
-      kind: 'expense',
-      accountId: defaultAccountId,
-      date: today(),
-      amountOriginal: '',
-      description: '',
-    },
-  })
+  const [showAdvanced, setShowAdvanced] = useState(false)
 
-  const kind = watch('kind')
-  const accountId = watch('accountId')
+  // State directo en lugar de react-hook-form — el form es lo bastante simple
+  // y queremos máxima velocidad y control de los chips/quick-actions.
+  const [kind, setKind] = useState<Kind>(presetKind ?? 'expense')
+  const initialAccount =
+    accounts.find((a) => a.id === presetAccountId)?.id ?? accounts[0]?.id ?? ''
+  const [accountId, setAccountId] = useState(initialAccount)
+  const [transferAccountId, setTransferAccountId] = useState<string>('')
+  const [categoryId, setCategoryId] = useState<string>('')
+  const [date, setDate] = useState(todayIso())
+  const [amount, setAmount] = useState('')
+  const [description, setDescription] = useState('')
+  const [notes, setNotes] = useState('')
+
+  // Auto-focus en el monto al abrir — es lo primero que se llena.
+  const amountRef = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    amountRef.current?.focus()
+  }, [])
+
   const account = accounts.find((a) => a.id === accountId)
   const transferOptions = accounts.filter((a) => a.id !== accountId)
-  const categoryOptions = useMemo(
+  const eligibleCategories = useMemo(
     () => categories.filter((c) => c.kind === kind),
     [categories, kind],
   )
-  /**
-   * Agrupa categorías por padre para que el Select muestre la jerarquía:
-   * raíces con hijos van como SelectGroup; raíces sin hijos van sueltas.
-   */
-  const groupedCategories = useMemo(() => {
-    const roots = categoryOptions.filter((c) => c.parentId === null)
-    const childrenByParent = new Map<string, typeof categoryOptions>()
-    for (const c of categoryOptions) {
-      if (!c.parentId) continue
-      const list = childrenByParent.get(c.parentId) ?? []
-      list.push(c)
-      childrenByParent.set(c.parentId, list)
+
+  // Si cambian kind y la categoría ya no aplica, la limpiamos.
+  useEffect(() => {
+    if (categoryId && !eligibleCategories.some((c) => c.id === categoryId)) {
+      setCategoryId('')
     }
-    return roots.map((root) => ({
-      root,
-      children: childrenByParent.get(root.id) ?? [],
-    }))
-  }, [categoryOptions])
+  }, [eligibleCategories, categoryId])
+
+  const isCreditCard = account?.type === 'credit_card'
+  const meta = KIND_META[kind]
+
+  function reset() {
+    setAmount('')
+    setDescription('')
+    setNotes('')
+    setShowAdvanced(false)
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setServerError(null)
+    if (!account) {
+      setServerError('Selecciona una cuenta.')
+      return
+    }
+    if (!amount || !/^\d+(\.\d{1,2})?$/.test(amount)) {
+      setServerError('Monto inválido. Usa formato 1234 o 1234.56.')
+      return
+    }
+    if (!description.trim()) {
+      setServerError('Escribe una descripción.')
+      return
+    }
+    if (kind === 'transfer' && !transferAccountId) {
+      setServerError('Elige la cuenta destino de la transferencia.')
+      return
+    }
+
+    startTransition(async () => {
+      const result = await createTransaction({
+        kind,
+        accountId,
+        transferAccountId: kind === 'transfer' ? transferAccountId : null,
+        categoryId: categoryId || null,
+        date,
+        amountOriginal: amount,
+        currency: account.currency as 'COP',
+        description: description.trim(),
+        merchant: null,
+        notes: notes.trim() || null,
+      })
+
+      if (!result.ok) {
+        setServerError(result.error.message)
+        toast.error(result.error.message)
+        return
+      }
+      toast.success('Movimiento registrado.')
+      router.refresh()
+      reset()
+      onDone()
+    })
+  }
 
   if (accounts.length === 0) {
     return (
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Nueva transacción</DialogTitle>
+          <DialogTitle>Necesitas una cuenta primero</DialogTitle>
           <DialogDescription>
-            Necesitas al menos una cuenta antes de registrar movimientos.
+            Registra una cuenta o tarjeta antes de asentar movimientos. La
+            cuenta es donde se asienta la plata; el movimiento solo tiene
+            sentido referido a una.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
@@ -165,108 +243,97 @@ function NewTransactionForm({
     )
   }
 
-  function onSubmit(values: FormValues) {
-    setServerError(null)
-    if (!account) {
-      setServerError('Selecciona una cuenta.')
-      return
-    }
-    startTransition(async () => {
-      const result = await createTransaction({
-        kind: values.kind,
-        accountId: values.accountId,
-        transferAccountId:
-          values.kind === 'transfer' ? values.transferAccountId ?? null : null,
-        categoryId: values.categoryId && values.categoryId !== '' ? values.categoryId : null,
-        date: values.date,
-        amountOriginal: values.amountOriginal,
-        currency: account.currency as 'COP',
-        description: values.description,
-        merchant: null,
-        notes: values.notes && values.notes !== '' ? values.notes : null,
-      })
-
-      if (!result.ok) {
-        setServerError(result.error.message)
-        toast.error(result.error.message)
-        return
-      }
-      toast.success('Transacción registrada.')
-      router.refresh()
-      onDone()
-    })
-  }
-
   return (
-    <DialogContent>
+    <DialogContent className="sm:max-w-[520px]">
       <DialogHeader>
-        <DialogTitle>Nueva transacción</DialogTitle>
-        <DialogDescription>
-          Registra un movimiento manual. En transferencias cross-currency
-          calculamos la conversión con la tasa del día.
+        <DialogTitle>Nuevo movimiento</DialogTitle>
+        <DialogDescription className="sr-only">
+          Registra un movimiento. Cantidad, cuenta, descripción.
         </DialogDescription>
       </DialogHeader>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-        <Field label="Tipo">
-          <div className="border-border-default flex rounded-[8px] border p-0.5">
-            {txKinds.map((k) => {
-              const selected = kind === k.value
-              return (
-                <button
-                  key={k.value}
-                  type="button"
-                  onClick={() => setValue('kind', k.value, { shouldValidate: true })}
-                  className={`flex-1 rounded-[6px] py-1.5 text-sm transition-colors ${
-                    selected
-                      ? 'bg-surface-hover text-text'
-                      : 'text-text-secondary hover:text-text'
-                  }`}
-                >
-                  {k.label}
-                </button>
-              )
-            })}
-          </div>
-        </Field>
-
-        <div className="grid grid-cols-2 gap-3">
-          <Field
-            label={kind === 'transfer' ? 'Desde' : 'Cuenta'}
-            error={errors.accountId?.message}
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        {/* Hero: monto grande + signo según tipo */}
+        <div className="border-border-default/60 bg-surface-hover/40 flex items-baseline justify-center gap-2 rounded-[12px] border px-4 py-5">
+          <span
+            className={cn('amount text-2xl tabular leading-none', meta.tone)}
+            aria-hidden
           >
-            <Select
-              value={watch('accountId')}
-              onValueChange={(v) =>
-                setValue('accountId', v, { shouldValidate: true })
-              }
-            >
+            {meta.sign}
+          </span>
+          <input
+            ref={amountRef}
+            inputMode="decimal"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ''))}
+            placeholder="0"
+            aria-label="Monto"
+            className="amount text-text placeholder:text-text-tertiary w-full max-w-[260px] bg-transparent text-center text-[44px] leading-none font-semibold tabular outline-none"
+          />
+          <span className="text-text-tertiary text-[12px] tabular leading-none">
+            {account?.currency ?? ''}
+          </span>
+        </div>
+
+        {/* Tipo: 3 chips */}
+        <div className="grid grid-cols-3 gap-2">
+          {(Object.keys(KIND_META) as Kind[]).map((k) => {
+            const m = KIND_META[k]
+            const Icon = icons[m.icon]
+            const selected = kind === k
+            return (
+              <button
+                key={k}
+                type="button"
+                onClick={() => setKind(k)}
+                aria-pressed={selected}
+                className={cn(
+                  'flex h-10 items-center justify-center gap-2 rounded-[8px] border text-[13px] font-medium transition-colors',
+                  selected
+                    ? 'border-border-emphasis bg-surface-hover text-text'
+                    : 'border-border-default text-text-secondary hover:text-text hover:bg-surface-hover/60',
+                )}
+              >
+                <Icon strokeWidth={1.5} className={cn('size-[14px]', selected ? m.tone : '')} />
+                {m.label}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Cuenta + destino/categoría */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-text-tertiary text-[11px] uppercase tracking-[0.08em]">
+              {kind === 'transfer' ? 'Desde' : isCreditCard ? 'Tarjeta' : 'Cuenta'}
+            </label>
+            <Select value={accountId} onValueChange={setAccountId}>
               <SelectTrigger>
                 <SelectValue placeholder="Cuenta" />
               </SelectTrigger>
               <SelectContent>
                 {accounts.map((a) => (
                   <SelectItem key={a.id} value={a.id}>
-                    {a.name}
-                    <span className="text-text-tertiary ml-2 text-[11px]">
-                      {a.currency}
+                    <span className="flex items-center gap-2">
+                      <span>{a.name}</span>
+                      <span className="text-text-tertiary text-[11px]">
+                        {ACCOUNT_TYPE_LABEL[a.type] ?? a.type} · {a.currency}
+                      </span>
                     </span>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-          </Field>
+          </div>
 
           {kind === 'transfer' ? (
-            <Field
-              label="Hacia"
-              error={errors.transferAccountId?.message}
-            >
+            <div className="flex flex-col gap-1.5">
+              <label className="text-text-tertiary text-[11px] uppercase tracking-[0.08em]">
+                Hacia
+              </label>
               <Select
-                value={watch('transferAccountId') ?? ''}
-                onValueChange={(v) =>
-                  setValue('transferAccountId', v, { shouldValidate: true })
-                }
+                value={transferAccountId}
+                onValueChange={setTransferAccountId}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Cuenta destino" />
@@ -274,108 +341,143 @@ function NewTransactionForm({
                 <SelectContent>
                   {transferOptions.map((a) => (
                     <SelectItem key={a.id} value={a.id}>
-                      {a.name}
-                      <span className="text-text-tertiary ml-2 text-[11px]">
-                        {a.currency}
+                      <span className="flex items-center gap-2">
+                        <span>{a.name}</span>
+                        <span className="text-text-tertiary text-[11px]">
+                          {a.currency}
+                        </span>
                       </span>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-            </Field>
+            </div>
           ) : (
-            <Field
-              label="Categoría"
-              hint={categoryOptions.length === 0 ? 'Sin categorías para este tipo' : undefined}
-            >
+            <div className="flex flex-col gap-1.5">
+              <label className="text-text-tertiary text-[11px] uppercase tracking-[0.08em]">
+                Categoría
+              </label>
               <Select
-                value={watch('categoryId') ?? ''}
-                onValueChange={(v) =>
-                  setValue('categoryId', v, { shouldValidate: true })
-                }
-                disabled={categoryOptions.length === 0}
+                value={categoryId || 'NONE'}
+                onValueChange={(v) => setCategoryId(v === 'NONE' ? '' : v)}
+                disabled={eligibleCategories.length === 0}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Sin categoría" />
+                  <SelectValue
+                    placeholder={
+                      eligibleCategories.length === 0
+                        ? 'Sin categorías'
+                        : 'Sin categorizar'
+                    }
+                  />
                 </SelectTrigger>
                 <SelectContent>
-                  {groupedCategories.map(({ root, children }, idx) => {
-                    if (children.length === 0) {
-                      return (
-                        <SelectItem key={root.id} value={root.id}>
-                          {root.name}
-                        </SelectItem>
-                      )
-                    }
-                    return (
-                      <SelectGroup key={root.id}>
-                        {idx > 0 && <SelectSeparator />}
-                        <SelectLabel>{root.name}</SelectLabel>
-                        <SelectItem value={root.id}>
-                          Sin subcategoría
-                        </SelectItem>
-                        {children.map((c) => (
-                          <SelectItem key={c.id} value={c.id}>
-                            {c.name}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    )
-                  })}
+                  <SelectItem value="NONE">Sin categorizar</SelectItem>
+                  {eligibleCategories.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-            </Field>
+            </div>
           )}
         </div>
 
-        <div className="grid grid-cols-[1fr_140px] gap-3">
-          <Field
-            label="Monto"
-            htmlFor="tx-amount"
-            error={errors.amountOriginal?.message}
-            hint={account ? `Moneda: ${account.currency}` : undefined}
-          >
-            <Input
-              id="tx-amount"
-              inputMode="decimal"
-              placeholder="0.00"
-              className="tabular"
-              {...register('amountOriginal')}
-            />
-          </Field>
-          <Field label="Fecha" htmlFor="tx-date" error={errors.date?.message}>
-            <Input id="tx-date" type="date" className="tabular" {...register('date')} />
-          </Field>
-        </div>
+        {/* Aviso contextual para tarjetas */}
+        {isCreditCard && kind === 'expense' && (
+          <p className="text-text-tertiary border-border-default/60 bg-surface-hover/30 rounded-[8px] border px-3 py-2 text-[12px] leading-relaxed">
+            Esta compra reducirá el cupo disponible de tu tarjeta y se reflejará
+            como deuda hasta que pagues el extracto.
+          </p>
+        )}
 
-        <Field
-          label="Descripción"
-          htmlFor="tx-description"
-          error={errors.description?.message}
-        >
+        {/* Descripción */}
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="tx-description" className="text-text-tertiary text-[11px] uppercase tracking-[0.08em]">
+            Descripción
+          </label>
           <Input
             id="tx-description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
             placeholder="Mercado del sábado"
-            {...register('description')}
           />
-        </Field>
+        </div>
 
-        <Field label="Notas" htmlFor="tx-notes" error={errors.notes?.message}>
-          <Textarea
-            id="tx-notes"
-            placeholder="Detalles opcionales"
-            {...register('notes')}
-          />
-        </Field>
+        {/* Fecha quick-chips */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-text-tertiary text-[11px] uppercase tracking-[0.08em]">
+            Fecha · {relativeDateLabel(date)}
+          </label>
+          <div className="flex items-center gap-2">
+            <div className="flex gap-1">
+              {[
+                { label: 'Hoy', value: todayIso() },
+                { label: 'Ayer', value: shiftDate(todayIso(), -1) },
+                { label: '-3d', value: shiftDate(todayIso(), -3) },
+              ].map((opt) => {
+                const selected = opt.value === date
+                return (
+                  <button
+                    key={opt.label}
+                    type="button"
+                    onClick={() => setDate(opt.value)}
+                    className={cn(
+                      'rounded-[6px] px-2.5 py-1 text-[12px] transition-colors',
+                      selected
+                        ? 'bg-surface-hover text-text'
+                        : 'text-text-secondary hover:bg-surface-hover/60',
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                )
+              })}
+            </div>
+            <Input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="tabular ml-auto h-9 w-[150px] text-[12px]"
+            />
+          </div>
+        </div>
 
-        {serverError && <p className="text-negative text-xs">{serverError}</p>}
+        {/* Avanzado: notas */}
+        {showAdvanced ? (
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="tx-notes" className="text-text-tertiary text-[11px] uppercase tracking-[0.08em]">
+              Notas
+            </label>
+            <Textarea
+              id="tx-notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Contexto opcional"
+              rows={3}
+            />
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowAdvanced(true)}
+            className="text-text-tertiary hover:text-text-secondary self-start text-[12px] underline-offset-2 transition-colors hover:underline"
+          >
+            + Agregar notas
+          </button>
+        )}
 
-        <DialogFooter>
+        {serverError && (
+          <p className="text-negative text-[12px]">{serverError}</p>
+        )}
+
+        <DialogFooter className="sm:gap-2">
           <Button type="button" variant="ghost" onClick={onDone} disabled={pending}>
             Cancelar
           </Button>
           <Button type="submit" disabled={pending}>
-            {pending ? 'Guardando…' : 'Guardar'}
+            {pending ? 'Guardando…' : `Registrar ${KIND_META[kind].label.toLowerCase()}`}
           </Button>
         </DialogFooter>
       </form>
