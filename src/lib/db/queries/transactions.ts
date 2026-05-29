@@ -29,10 +29,17 @@ export type TransactionFilters = {
   /** Slug normalizado (lower, trimmed) — matchea contra LOWER(TRIM(merchant)) o
    *  LOWER(TRIM(description)) cuando merchant es NULL. */
   merchantSlug?: string
+  /** Búsqueda libre — ILIKE substring case-insensitive sobre description o
+   *  merchant. Para Cmd+K y filtros del usuario. */
+  searchQuery?: string
   /** YYYY-MM-DD */
   from?: string
   /** YYYY-MM-DD */
   to?: string
+  /** Monto mínimo en moneda original (amount_original). */
+  minAmount?: string
+  /** Monto máximo en moneda original (amount_original). */
+  maxAmount?: string
   limit?: number
 }
 
@@ -55,8 +62,24 @@ export async function listTransactionsForUser(
       sql`LOWER(TRIM(COALESCE(NULLIF(${transactions.merchant}, ''), ${transactions.description}))) = ${filters.merchantSlug}`,
     )
   }
+  if (filters.searchQuery) {
+    const q = `%${filters.searchQuery.toLowerCase()}%`
+    conditions.push(
+      sql`(LOWER(${transactions.description}) LIKE ${q} OR LOWER(COALESCE(${transactions.merchant}, '')) LIKE ${q})`,
+    )
+  }
   if (filters.from) conditions.push(gte(transactions.date, filters.from))
   if (filters.to) conditions.push(lte(transactions.date, filters.to))
+  if (filters.minAmount) {
+    conditions.push(
+      sql`${transactions.amountOriginal}::numeric >= ${filters.minAmount}::numeric`,
+    )
+  }
+  if (filters.maxAmount) {
+    conditions.push(
+      sql`${transactions.amountOriginal}::numeric <= ${filters.maxAmount}::numeric`,
+    )
+  }
 
   const rows = await db
     .select({

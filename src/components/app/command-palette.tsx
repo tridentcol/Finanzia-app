@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Command } from 'cmdk'
 import { Dialog } from 'radix-ui'
@@ -57,6 +57,12 @@ export function CommandPalette() {
   const setOpen = useCommandStore((s) => s.setOpen)
   const toggle = useCommandStore((s) => s.toggle)
   const openDialog = useDialogStore((s) => s.open)
+  const [query, setQuery] = useState('')
+
+  // Reset query cuando se abre/cierra el cmdk.
+  useEffect(() => {
+    if (!open) setQuery('')
+  }, [open])
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -114,7 +120,9 @@ export function CommandPalette() {
                 })()}
               </span>
               <Command.Input
-                placeholder="Buscar o saltar a…"
+                value={query}
+                onValueChange={setQuery}
+                placeholder="Buscar movimientos o saltar a…"
                 className="text-text placeholder:text-text-tertiary flex-1 bg-transparent py-4 text-[15px] outline-none"
               />
             </div>
@@ -123,6 +131,43 @@ export function CommandPalette() {
               <Command.Empty className="text-text-tertiary px-4 py-8 text-center text-sm">
                 Sin resultados.
               </Command.Empty>
+
+              {/* Búsqueda libre de movimientos — aparece cuando el usuario
+                  escribe >= 2 caracteres. El value es el query mismo para
+                  que cmdk siempre lo deje visible. */}
+              {query.trim().length >= 2 && (
+                <Command.Group
+                  heading="Buscar en movimientos"
+                  className="[&_[cmdk-group-heading]]:text-text-tertiary [&_[cmdk-group-heading]]:px-4 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.08em]"
+                >
+                  <Command.Item
+                    value={`__search__ ${query}`}
+                    onSelect={() =>
+                      runNavigate(
+                        `/mi-dinero/movimientos?q=${encodeURIComponent(query.trim())}`,
+                      )
+                    }
+                    className="text-text-secondary aria-selected:bg-surface-hover aria-selected:text-text mx-2 flex h-9 cursor-pointer items-center gap-3 rounded-md px-2 text-sm transition-colors"
+                  >
+                    {(() => {
+                      const Search = icons.search
+                      return (
+                        <Search strokeWidth={1.5} className="h-[15px] w-[15px]" />
+                      )
+                    })()}
+                    <span className="flex-1 truncate">
+                      Buscar{' '}
+                      <span className="text-text font-medium">
+                        “{query.trim()}”
+                      </span>{' '}
+                      en movimientos
+                    </span>
+                    <span className="text-text-tertiary text-[11px]" aria-hidden>
+                      ↵
+                    </span>
+                  </Command.Item>
+                </Command.Group>
+              )}
 
               <Command.Group
                 heading="Acciones"

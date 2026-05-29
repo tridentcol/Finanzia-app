@@ -27,10 +27,19 @@ export const metadata: Metadata = {
 type SearchParams = Promise<{
   kind?: string
   accountId?: string
+  categoryId?: string
   day?: string
   import?: string
   /** Filtro por comercio — slug normalizado, set desde /mi-historia/comercios. */
   merchant?: string
+  /** Búsqueda libre (sustring case-insensitive sobre desc/merchant). */
+  q?: string
+  /** Rango de fechas custom. */
+  from?: string
+  to?: string
+  /** Rango de montos. */
+  minAmount?: string
+  maxAmount?: string
 }>
 
 const kindFilters: Array<{
@@ -74,15 +83,36 @@ export default async function TransaccionesPage({
 
   const dayFilter = /^\d{4}-\d{2}-\d{2}$/.test(params.day ?? '') ? params.day : undefined
   const merchantFilter = params.merchant?.trim() ? params.merchant.trim().toLowerCase() : undefined
+  const searchQuery = params.q?.trim() ? params.q.trim() : undefined
+  const fromFilter = /^\d{4}-\d{2}-\d{2}$/.test(params.from ?? '') ? params.from : undefined
+  const toFilter = /^\d{4}-\d{2}-\d{2}$/.test(params.to ?? '') ? params.to : undefined
+  const minAmount = /^\d+(\.\d{1,2})?$/.test(params.minAmount ?? '')
+    ? params.minAmount
+    : undefined
+  const maxAmount = /^\d+(\.\d{1,2})?$/.test(params.maxAmount ?? '')
+    ? params.maxAmount
+    : undefined
+  const categoryFilter = params.categoryId?.trim() || undefined
+  const hasCustomFilter =
+    Boolean(searchQuery) ||
+    Boolean(fromFilter) ||
+    Boolean(toFilter) ||
+    Boolean(minAmount) ||
+    Boolean(maxAmount) ||
+    Boolean(categoryFilter)
 
   const [list, available, unclassified, accounts, batches] = await Promise.all([
     listTransactionsForUser(user.id, {
       kind: dayFilter ? undefined : kind,
       accountId: params.accountId,
+      categoryId: categoryFilter,
       merchantSlug: merchantFilter,
-      from: dayFilter,
-      to: dayFilter,
-      limit: dayFilter ? 500 : merchantFilter ? 500 : 200,
+      searchQuery,
+      from: dayFilter ?? fromFilter,
+      to: dayFilter ?? toFilter,
+      minAmount,
+      maxAmount,
+      limit: dayFilter ? 500 : (merchantFilter || hasCustomFilter) ? 500 : 200,
     }),
     listAvailableCategories(user.id),
     dayFilter ? Promise.resolve(0) : countUnclassifiedTransactions(user.id),
@@ -150,6 +180,36 @@ export default async function TransaccionesPage({
               <h1 className="text-text text-2xl font-semibold tracking-[-0.02em] sm:text-3xl">
                 Bitácora
               </h1>
+              {hasCustomFilter && (
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  {searchQuery && (
+                    <span
+                      className="border-border-emphasis bg-surface-hover/60 text-text-secondary inline-flex items-center gap-1.5 rounded-[6px] border px-2 py-0.5 text-[12px]"
+                    >
+                      Buscando “{searchQuery}”
+                    </span>
+                  )}
+                  {(fromFilter || toFilter) && (
+                    <span className="border-border-emphasis bg-surface-hover/60 text-text-secondary inline-flex items-center gap-1.5 rounded-[6px] border px-2 py-0.5 text-[12px]">
+                      Fechas {fromFilter ?? '…'} → {toFilter ?? '…'}
+                    </span>
+                  )}
+                  {(minAmount || maxAmount) && (
+                    <span className="border-border-emphasis bg-surface-hover/60 text-text-secondary inline-flex items-center gap-1.5 rounded-[6px] border px-2 py-0.5 text-[12px]">
+                      Monto {minAmount ?? '0'} – {maxAmount ?? '∞'}
+                    </span>
+                  )}
+                  <Link
+                    href="/mi-dinero/movimientos"
+                    className="text-text-tertiary hover:text-text-secondary text-[12px] underline-offset-2 transition-colors hover:underline"
+                  >
+                    Limpiar filtros
+                  </Link>
+                  <span className="text-text-tertiary text-[12px]">
+                    · {list.length} {list.length === 1 ? 'resultado' : 'resultados'}
+                  </span>
+                </div>
+              )}
             </>
           )}
         </div>
