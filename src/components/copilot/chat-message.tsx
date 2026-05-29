@@ -9,6 +9,7 @@ import { MiniChartBlock } from './blocks/mini-chart-block'
 import { EventListBlock } from './blocks/event-list-block'
 import { AdviceBlock } from './blocks/advice-block'
 import { CopilotStatus } from './copilot-status'
+import { MarkdownProse } from './markdown-prose'
 import { FollowUpChips } from './follow-up-chips'
 import { AnswerActions } from './answer-actions'
 
@@ -48,6 +49,8 @@ function BlockView({ block }: { block: AnswerBlock }) {
       return <AdviceBlock tone={block.tone} title={block.title} body={block.body} />
     case 'text':
       return <p className="text-text-secondary text-[14px] leading-relaxed">{block.body}</p>
+    case 'markdown':
+      return <MarkdownProse body={block.body} />
     default:
       return null
   }

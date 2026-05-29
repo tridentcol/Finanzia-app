@@ -144,7 +144,9 @@ export function llmMessageToAnswer(message: LooseMessage): AnswerPayload | null 
 
   if (text.length === 0 && actions.length === 0) return null
 
-  const blocks: AnswerBlock[] = text.length > 0 ? [{ type: 'text', body: text }] : []
+  // El LLM redacta en markdown (listas, pasos, negrita). Lo emitimos como bloque
+  // `markdown` para renderizarlo limpio; el heurístico mantiene `text` plano.
+  const blocks: AnswerBlock[] = text.length > 0 ? [{ type: 'markdown', body: text }] : []
   const payload: AnswerPayload = { blocks }
   if (text.length === 0 && actions.length > 0) {
     payload.intro = 'Revisa la propuesta y confírmala:'

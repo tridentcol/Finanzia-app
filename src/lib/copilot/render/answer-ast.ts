@@ -94,6 +94,10 @@ export type AnswerBlock =
   | { type: 'event-list'; items: TimelineItem[] }
   | { type: 'advice'; tone: Tone; title: string; body: string }
   | { type: 'text'; body: string }
+  // Markdown crudo del LLM (listas, pasos, párrafos, negrita). Lo renderiza
+  // MarkdownProse con un map Noir restringido (sin HTML crudo, sin img). El
+  // camino heurístico NO lo usa — sigue con `text` y bloques estructurados.
+  | { type: 'markdown'; body: string }
 
 export type FollowUpChip = {
   /** Texto visible del chip. */
