@@ -16,6 +16,7 @@ import { getDailyVolatility } from '@/lib/cash-flow/volatility'
 import { CashFlowChart } from '@/components/app/cash-flow-chart'
 import { Amount } from '@/components/app/amount'
 import { EmptyState } from '@/components/app/empty-state'
+import { InfoHint } from '@/components/app/info-hint'
 import { formatMoney } from '@/lib/currency/format'
 import type { CurrencyCode } from '@/lib/currency/currencies'
 
@@ -177,7 +178,13 @@ export default async function CashFlowPage() {
     <div className="flex min-w-0 flex-col gap-10 lg:gap-12">
       {/* Hero — patrimonio neto */}
       <header className="flex min-w-0 flex-col gap-1.5">
-        <p className="text-text-secondary text-sm">Patrimonio neto</p>
+        <p className="text-text-secondary flex items-center gap-1.5 text-sm">
+          Patrimonio neto
+          <InfoHint
+            side="right"
+            label="Suma de tus activos (cuentas + inversiones) menos las deudas que mantienes — tarjetas con saldo y préstamos. Es la foto de cuánto realmente te pertenece hoy."
+          />
+        </p>
         <Amount
           value={netWorth.toFixed(2)}
           currency={baseCurrency}
@@ -240,6 +247,7 @@ export default async function CashFlowPage() {
                     ? 'sin ingresos'
                     : 'sin gastos recurrentes'
                 }
+                info="Cuántos días aguantarían tus saldos actuales si dejaras de recibir ingresos hoy, manteniendo solo los gastos recurrentes."
               />
             </div>
           </section>
@@ -271,10 +279,17 @@ export default async function CashFlowPage() {
               <h2 className="text-text text-sm font-semibold">
                 Proyección a 90 días
               </h2>
-              <span className="text-text-tertiary text-[11px] uppercase tracking-[0.08em]">
+              <span className="text-text-tertiary flex items-center gap-1 text-[11px] uppercase tracking-[0.08em]">
                 {activeRules.length}{' '}
                 {activeRules.length === 1 ? 'regla activa' : 'reglas activas'}
-                {volatility > 0 ? ' · banda ±1σ' : ''}
+                {volatility > 0 && (
+                  <>
+                    {' · banda ±1σ'}
+                    <InfoHint
+                      label="La banda muestra la incertidumbre del gasto no recurrente. ±1σ significa que en condiciones normales tu saldo caería dentro de esa banda 7 de cada 10 días, según tu volatilidad histórica."
+                    />
+                  </>
+                )}
               </span>
             </header>
             <div className="border-border-default bg-surface rounded-[12px] border px-5 py-6">
@@ -424,6 +439,7 @@ function KpiCell({
   tone,
   showSign,
   hint,
+  info,
 }: {
   label: string
   value: number | string
@@ -431,12 +447,14 @@ function KpiCell({
   tone?: 'positive' | 'negative' | 'neutral'
   showSign?: boolean
   hint?: string
+  info?: string
 }) {
   const isNumber = typeof value === 'number'
   return (
     <div className="flex flex-col gap-1 p-4">
-      <span className="text-text-tertiary text-[11px] uppercase tracking-[0.08em]">
+      <span className="text-text-tertiary flex items-center gap-1 text-[11px] uppercase tracking-[0.08em]">
         {label}
+        {info && <InfoHint label={info} />}
       </span>
       {isNumber && currency ? (
         <Amount
