@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { currencyCodes, currencies } from '@/lib/currency/currencies'
-import { createAccount } from '@/app/(app)/mi-dinero/cuentas/actions'
+import { createCard } from '@/app/(app)/mi-dinero/tarjetas/actions'
 import { BRAND_LABELS, CARD_CATALOG, type CardBrand } from '@/lib/cards/catalog'
 import { CardVisual } from '@/components/cards/card-visual'
 import { useDialogStore } from './dialog-store'
@@ -152,9 +152,8 @@ function NewCardForm({ onDone }: { onDone: () => void }) {
     const debt = Number.parseFloat(values.currentDebt) || 0
     const initialBalance = debt > 0 ? (-debt).toFixed(2) : '0'
     startTransition(async () => {
-      const result = await createAccount({
+      const result = await createCard({
         name: values.name,
-        type: 'credit_card',
         currency: values.currency,
         initialBalance,
         creditLimit: values.creditLimit,

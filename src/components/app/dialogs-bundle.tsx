@@ -21,7 +21,7 @@ import { NewRecurringDialog } from './new-recurring-dialog'
  * baja, y `dialog-store` mantiene la intención si abre antes de que el
  * componente monte (se renderiza apenas llega el HTML).
  *
- * Los dialogs sin data dependencies (NewAccount, NewDebt, Copilot) viven
+ * Los dialogs sin data dependencies (NewAccount, NewCard, NewDebt, Copilot) viven
  * directo en el layout — no tiene sentido diferirlos.
  */
 export async function DialogsBundle() {

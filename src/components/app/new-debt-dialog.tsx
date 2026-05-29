@@ -130,7 +130,7 @@ function NewDebtForm({ onDone }: { onDone: () => void }) {
         <DialogTitle>Nueva deuda</DialogTitle>
         <DialogDescription>
           Registra un préstamo, hipoteca o cualquier obligación de pago.
-          Las tarjetas de crédito viven como cuentas — no aquí.
+          Las tarjetas de crédito viven en Mi dinero · Tarjetas.
         </DialogDescription>
       </DialogHeader>
 

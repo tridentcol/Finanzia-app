@@ -29,7 +29,7 @@ import {
   type CardKind,
 } from '@/lib/cards/catalog'
 import { CardVisual } from '@/components/cards/card-visual'
-import { updateAccountCardVisual } from '@/app/(app)/mi-dinero/cuentas/actions'
+import { updateCardVisual } from '@/app/(app)/mi-dinero/tarjetas/actions'
 import { icons } from '@/lib/design/icons'
 
 const NONE = '__none__'
@@ -135,7 +135,7 @@ function EditCardVisualForm({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     startTransition(async () => {
-      const result = await updateAccountCardVisual({
+      const result = await updateCardVisual({
         accountId,
         bankSlug: bankSlug ?? null,
         cardProductSlug: cardProductSlug ?? null,

@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
-import { upsertCreditCardProfile } from '@/app/(app)/mi-dinero/cuentas/actions'
+import { upsertCreditCardProfile } from '@/app/(app)/mi-dinero/tarjetas/actions'
 
 type Profile = {
   allowsDirectedPayment: boolean

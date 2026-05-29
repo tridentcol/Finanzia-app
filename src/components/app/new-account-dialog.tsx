@@ -92,14 +92,6 @@ function NewAccountForm({ onDone }: { onDone: () => void }) {
         type: values.type as 'checking',
         currency: values.currency,
         initialBalance: values.initialBalance,
-        creditLimit: null,
-        statementDay: null,
-        paymentDay: null,
-        bankSlug: null,
-        cardProductSlug: null,
-        cardBrand: null,
-        cardLastFour: null,
-        cardHolderName: null,
       })
 
       if (!result.ok) {

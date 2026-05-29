@@ -163,7 +163,7 @@ export default async function DeudasPage() {
         />
       ) : (
         <>
-          {/* Tarjetas de crédito (vista resumida con link a /cuentas) */}
+          {/* Tarjetas de crédito (vista resumida con link a /mi-dinero/tarjetas) */}
           {creditCards.length > 0 && (
             <section className="flex flex-col gap-4">
               <header className="flex items-baseline justify-between">
