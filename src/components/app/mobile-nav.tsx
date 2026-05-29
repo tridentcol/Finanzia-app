@@ -99,20 +99,24 @@ export function MobileNav() {
       >
         {LEFT_ITEMS.map(renderNavItem)}
 
-        {/* FAB central — abre new-transaction. Visualmente elevado para
-            destacarse como acción primaria. */}
-        <div className="relative flex w-16 shrink-0 items-start justify-center">
+        {/* FAB central — abre new-transaction. Sobresale del bottom-nav
+            hacia arriba, anclado al borde inferior visual. Tamaño
+            generoso (56px) y shadow prominente para que sea la acción
+            primaria evidente. */}
+        <div className="relative flex w-[72px] shrink-0 items-end justify-center">
           <button
             type="button"
             onClick={() => openDialog('new-transaction')}
             aria-label="Registrar movimiento"
-            className="bg-text text-bg active:scale-95 absolute -top-4 flex h-12 w-12 items-center justify-center rounded-full shadow-lg transition-transform"
+            className="active:scale-95 absolute left-1/2 -translate-x-1/2 -top-6 flex h-14 w-14 items-center justify-center rounded-full transition-transform"
             style={{
               background: 'var(--purple-base)',
               color: '#FFFFFF',
+              boxShadow:
+                '0 8px 24px -4px rgba(124, 58, 237, 0.45), 0 2px 6px -1px rgba(0, 0, 0, 0.25)',
             }}
           >
-            <Plus strokeWidth={2} className="size-5" />
+            <Plus strokeWidth={2.5} className="size-6" />
           </button>
         </div>
 

@@ -12,6 +12,7 @@ import { Topbar } from '@/components/app/topbar'
 import { CommandPalette } from '@/components/app/command-palette'
 import { NewAccountDialog } from '@/components/app/new-account-dialog'
 import { NewCardDialog } from '@/components/app/new-card-dialog'
+import { ScrollToTop } from '@/components/app/scroll-to-top'
 import { NewDebtDialog } from '@/components/app/new-debt-dialog'
 import { CopilotDialog } from '@/components/app/copilot-dialog'
 import { DialogsBundle } from '@/components/app/dialogs-bundle'
@@ -52,6 +53,7 @@ export default async function AppLayout({
         </main>
       </SidebarInset>
       <MobileNav />
+      <ScrollToTop />
       <CommandPalette />
       <NewAccountDialog />
       <NewCardDialog />
