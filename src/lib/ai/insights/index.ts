@@ -24,8 +24,41 @@ export type RunResult = {
 
 const DEDUP_WINDOW_HOURS = 24
 
+const LOCAL_DETECTORS = [
+  detectAnomalies,
+  detectTrends,
+  detectForecasts,
+  detectSavingsRate,
+  detectDormancy,
+  detectRecurring,
+  detectSavingsOffTrack,
+  detectRecurringDrift,
+  detectAntSpending,
+]
+
 /**
- * Corre los 4 detectores para un usuario y persiste insights nuevos.
+ * Corre los 9 detectores LOCALES (sin LLM, sin persistir) y devuelve los
+ * insights detectados. Reutilizable por el cron (que luego persiste) y por el
+ * copiloto heurístico (que los convierte en consejos en vivo). Cada detector
+ * es tolerante a fallos: si uno revienta, no tumba al resto.
+ */
+export async function collectLocalInsights(
+  ctx: InsightContext,
+): Promise<DetectedInsight[]> {
+  const detected: DetectedInsight[] = []
+  for (const detector of LOCAL_DETECTORS) {
+    try {
+      const items = await detector(ctx)
+      detected.push(...items)
+    } catch (err) {
+      console.error(`[insights] detector falló para ${ctx.userId}:`, err)
+    }
+  }
+  return detected
+}
+
+/**
+ * Corre los detectores para un usuario y persiste insights nuevos.
  *
  * Dedupe: dos insights con la misma `signature` (en `data.signature`) creados
  * en las últimas 24 horas se consideran duplicados — el segundo se skipea.
@@ -41,26 +74,7 @@ export async function runDetectorsForUser(userId: string): Promise<RunResult> {
     today: new Date().toISOString().slice(0, 10),
   }
 
-  const detected: DetectedInsight[] = []
-  const detectors = [
-    detectAnomalies,
-    detectTrends,
-    detectForecasts,
-    detectSavingsRate,
-    detectDormancy,
-    detectRecurring,
-    detectSavingsOffTrack,
-    detectRecurringDrift,
-    detectAntSpending,
-  ]
-  for (const detector of detectors) {
-    try {
-      const items = await detector(ctx)
-      detected.push(...items)
-    } catch (err) {
-      console.error(`[insights] detector falló para ${userId}:`, err)
-    }
-  }
+  const detected: DetectedInsight[] = await collectLocalInsights(ctx)
   // Recomendación LLM: aporte separado, no bloquea si falla.
   try {
     const recs = await generateRecommendations(ctx)
