@@ -1,4 +1,5 @@
 import type { AnswerBlock, AnswerPayload, ProposalAction } from '../render/answer-ast'
+import { isTool, type LoosePart } from '../parts'
 import { formatMoney } from '@/lib/currency/format'
 import type { CurrencyCode } from '@/lib/currency/currencies'
 
@@ -15,18 +16,9 @@ import type { CurrencyCode } from '@/lib/currency/currencies'
  *   traduce a una `ProposalAction`: la UI muestra un botón "Confirmar" que
  *   dispara la server action real. El LLM nunca muta solo (regla 6).
  *
- * Tipamos los parts de forma laxa: useChat v6 añade campos según versión.
+ * Tipamos los parts de forma laxa (`LoosePart`, compartido con copilot-phase):
+ * useChat v6 añade campos según versión.
  */
-type LoosePart = {
-  type?: string
-  text?: string
-  data?: unknown
-  /** Salida de un tool (state === 'output-available'). */
-  output?: unknown
-  /** Para parts de tipo dynamic-tool. */
-  toolName?: string
-}
-
 type LooseMessage = {
   role?: string
   parts?: LoosePart[]
@@ -53,11 +45,6 @@ function okProposal(out: unknown): Record<string, unknown> | null {
     }
   }
   return null
-}
-
-/** ¿Este part es el tool `name` (typed `tool-name` o dynamic-tool)? */
-function isTool(p: LoosePart, name: string): boolean {
-  return p.type === `tool-${name}` || (p.type === 'dynamic-tool' && p.toolName === name)
 }
 
 const TX_KIND_LABEL: Record<string, string> = {

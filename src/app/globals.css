@@ -315,9 +315,11 @@
     overscroll-behavior-y: none;
   }
 
-  /* Typing indicator del copiloto — tres dots con opacity 0.3→1→0.3.
-     Sin shimmer ni gradiente. El stagger se aplica vía animation-delay inline.
-     Bajo prefers-reduced-motion la regla de abajo lo neutraliza. */
+  /* Estado del copiloto — un único punto lavanda que late con opacity
+     0.3→1→0.3 al lado de la frase de estado (CopilotStatus). Sin shimmer ni
+     gradiente. Bajo prefers-reduced-motion la regla de abajo lo neutraliza:
+     la animación corre una vez en ~0ms con fill-mode none → el punto queda
+     estático a opacity 1 (sólido, discreto). */
   @keyframes copilot-typing {
     0%, 80%, 100% { opacity: 0.3; }
     40% { opacity: 1; }

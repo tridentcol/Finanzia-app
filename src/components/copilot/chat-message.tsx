@@ -8,7 +8,7 @@ import { GaugeBlock } from './blocks/gauge-block'
 import { MiniChartBlock } from './blocks/mini-chart-block'
 import { EventListBlock } from './blocks/event-list-block'
 import { AdviceBlock } from './blocks/advice-block'
-import { TypingIndicator } from './typing-indicator'
+import { CopilotStatus } from './copilot-status'
 import { FollowUpChips } from './follow-up-chips'
 import { AnswerActions } from './answer-actions'
 
@@ -102,7 +102,7 @@ export function ChatMessage({
   if ('pending' in turn) {
     return (
       <div className="flex justify-start">
-        <TypingIndicator />
+        <CopilotStatus label={turn.phase} idle={turn.idle} />
       </div>
     )
   }

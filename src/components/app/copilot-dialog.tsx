@@ -10,6 +10,8 @@ import { toast } from 'sonner'
 import { icons } from '@/lib/design/icons'
 import { Button } from '@/components/ui/button'
 import { llmMessageToAnswer } from '@/lib/copilot/adapters/llm-to-ast'
+import { derivePhase, PHASE_THINKING } from '@/lib/copilot/render/copilot-phase'
+import type { LoosePart } from '@/lib/copilot/parts'
 import { ChatStream } from '@/components/copilot/chat-stream'
 import { CopilotEmptyState } from '@/components/copilot/empty-state'
 import { CopilotEngineMenu } from '@/components/copilot/engine-menu'
@@ -53,7 +55,7 @@ export function CopilotDialog() {
 type LooseMsg = {
   id: string
   role: string
-  parts?: Array<{ type?: string; text?: string; data?: unknown }>
+  parts?: LoosePart[]
 }
 
 function userText(m: LooseMsg): string {
@@ -91,18 +93,29 @@ function CopilotChat({ onClose }: { onClose: () => void }) {
   const turns: Turn[] = useMemo(() => {
     const list = messages as unknown as LooseMsg[]
     const out: Turn[] = []
-    for (const m of list) {
+    const lastIdx = list.length - 1
+    for (let i = 0; i < list.length; i++) {
+      const m = list[i]
+      if (!m) continue
       if (m.role === 'user') {
         out.push({ id: m.id, role: 'user', text: userText(m) })
       } else if (m.role === 'assistant') {
         const payload = llmMessageToAnswer(m)
-        if (payload) out.push({ id: m.id, role: 'assistant', payload })
-        else out.push({ id: m.id, role: 'assistant', pending: true })
+        if (payload) {
+          out.push({ id: m.id, role: 'assistant', payload })
+        } else if (isStreaming && i === lastIdx) {
+          // Generando en vivo: fase humana derivada del stream.
+          out.push({ id: m.id, role: 'assistant', pending: true, phase: derivePhase(m.parts) })
+        } else {
+          // Terminó sin contenido renderable (Detener, error o límite de pasos):
+          // estado terminal honesto, no seguimos animando "trabajando".
+          out.push({ id: m.id, role: 'assistant', pending: true, idle: true })
+        }
       }
     }
-    const last = list[list.length - 1]
+    const last = list[lastIdx]
     if (isStreaming && (!last || last.role === 'user')) {
-      out.push({ id: 'pending', role: 'assistant', pending: true })
+      out.push({ id: 'pending', role: 'assistant', pending: true, phase: PHASE_THINKING })
     }
     return out
   }, [messages, isStreaming])
