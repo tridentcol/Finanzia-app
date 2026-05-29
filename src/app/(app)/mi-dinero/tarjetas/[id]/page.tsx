@@ -6,7 +6,7 @@ import { requireCurrentUser } from '@/lib/auth'
 import { getAccountById } from '@/lib/db/queries/accounts'
 import { Amount } from '@/components/app/amount'
 import { CardVisual } from '@/components/cards/card-visual'
-import { EditCardVisualDialog } from '@/components/app/edit-card-visual-dialog'
+import { CardActionsMenu } from '@/components/app/card-actions-menu'
 import { CreditCardProfilePanel } from '@/components/app/credit-card-profile-panel'
 import { PurchaseAnalyzer } from '@/components/app/purchase-analyzer'
 import { formatMoney } from '@/lib/currency/format'
@@ -46,9 +46,22 @@ export default async function TarjetaDetailPage({ params }: Props) {
     return diff >= 0 ? diff : diff + 30
   }
 
+  const cardForActions = {
+    id: account.id,
+    name: account.name,
+    creditLimit: account.creditLimit,
+    statementDay: account.statementDay,
+    paymentDay: account.paymentDay,
+    bankSlug: account.bankSlug,
+    cardProductSlug: account.cardProductSlug,
+    cardBrand: account.cardBrand,
+    cardLastFour: account.cardLastFour,
+    cardHolderName: account.cardHolderName,
+  }
+
   return (
     <div className="flex min-w-0 flex-col gap-10 lg:gap-12">
-      {/* Breadcrumb + título + hero balance */}
+      {/* Breadcrumb + título + hero balance + menú de acciones */}
       <header className="flex min-w-0 flex-col gap-1.5">
         <Link
           href="/mi-dinero/tarjetas"
@@ -56,9 +69,12 @@ export default async function TarjetaDetailPage({ params }: Props) {
         >
           ← Tarjetas
         </Link>
-        <h1 className="text-text text-2xl font-semibold tracking-[-0.02em] sm:text-3xl">
-          {account.name}
-        </h1>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <h1 className="text-text text-2xl font-semibold tracking-[-0.02em] sm:text-3xl">
+            {account.name}
+          </h1>
+          <CardActionsMenu card={cardForActions} />
+        </div>
         <Amount
           value={account.currentBalance}
           currency={account.currency}
@@ -72,55 +88,26 @@ export default async function TarjetaDetailPage({ params }: Props) {
         </p>
       </header>
 
-      {/* Card visual destacada — sólo si hay imagen */}
-      {hasCardVisual && (
-        <section className="border-border-default bg-surface relative flex flex-col gap-4 rounded-[12px] border p-5">
-          <EditCardVisualDialog
-            accountId={account.id}
-            accountName={account.name}
-            cardKind="credit"
-            initial={{
-              bankSlug: account.bankSlug,
-              cardProductSlug: account.cardProductSlug,
-              cardBrand: account.cardBrand,
-              cardLastFour: account.cardLastFour,
-              cardHolderName: account.cardHolderName,
-            }}
+      {/* Card visual — siempre presente. Si no hay identidad asignada, el
+          placeholder editorial se muestra (banco "tarjeta" + chip "Crédito"). */}
+      <section className="border-border-default bg-surface flex flex-col gap-4 rounded-[12px] border p-5">
+        <div className="mx-auto w-full max-w-[260px]">
+          <CardVisual
+            bankSlug={account.bankSlug}
+            kind="credit"
+            cardProductSlug={account.cardProductSlug}
+            cardBrand={account.cardBrand}
+            cardLastFour={account.cardLastFour}
+            cardHolderName={account.cardHolderName}
+            showMeta={false}
           />
-          <div className="mx-auto w-full max-w-[260px]">
-            <CardVisual
-              bankSlug={account.bankSlug}
-              kind="credit"
-              cardProductSlug={account.cardProductSlug}
-              cardBrand={account.cardBrand}
-              cardLastFour={account.cardLastFour}
-              cardHolderName={account.cardHolderName}
-              showMeta={false}
-            />
-          </div>
-        </section>
-      )}
-
-      {!hasCardVisual && (
-        <section className="border-border-default border-dashed flex flex-col items-center gap-3 rounded-[12px] border p-6 text-center">
-          <p className="text-text-secondary text-sm max-w-prose">
-            Esta tarjeta aún no tiene identidad visual asignada.
+        </div>
+        {!hasCardVisual && (
+          <p className="text-text-tertiary text-center text-[12px]">
+            Asigna banco y producto desde <span className="text-text-secondary">Gestionar → Editar datos</span>.
           </p>
-          <EditCardVisualDialog
-            accountId={account.id}
-            accountName={account.name}
-            cardKind="credit"
-            variant="inline"
-            initial={{
-              bankSlug: account.bankSlug,
-              cardProductSlug: account.cardProductSlug,
-              cardBrand: account.cardBrand,
-              cardLastFour: account.cardLastFour,
-              cardHolderName: account.cardHolderName,
-            }}
-          />
-        </section>
-      )}
+        )}
+      </section>
 
       {/* Métricas */}
       {account.creditLimit && (

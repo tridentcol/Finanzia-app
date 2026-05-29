@@ -11,7 +11,6 @@ import { Amount } from '@/components/app/amount'
 import { EmptyState } from '@/components/app/empty-state'
 import { NewCardTrigger } from '@/components/app/new-card-trigger'
 import { CardVisual } from '@/components/cards/card-visual'
-import { EditCardVisualDialog } from '@/components/app/edit-card-visual-dialog'
 import { formatMoney } from '@/lib/currency/format'
 import type { CurrencyCode } from '@/lib/currency/currencies'
 
@@ -226,20 +225,7 @@ function CardListItem({ card: c }: { card: CardRow }) {
   const pyD = daysToMonthDay(c.paymentDay)
 
   return (
-    <article className="border-border-default bg-surface relative flex min-w-0 flex-col gap-5 rounded-[12px] border p-5">
-      <EditCardVisualDialog
-        accountId={c.id}
-        accountName={c.name}
-        cardKind="credit"
-        initial={{
-          bankSlug: c.bankSlug,
-          cardProductSlug: c.cardProductSlug,
-          cardBrand: c.cardBrand,
-          cardLastFour: c.cardLastFour,
-          cardHolderName: c.cardHolderName,
-        }}
-      />
-
+    <article className="border-border-default bg-surface flex min-w-0 flex-col gap-5 rounded-[12px] border p-5">
       <div className="mx-auto w-full max-w-[260px]">
         <CardVisual
           bankSlug={c.bankSlug}

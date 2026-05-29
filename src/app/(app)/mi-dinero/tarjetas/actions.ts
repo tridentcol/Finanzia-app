@@ -137,43 +137,69 @@ export async function createCard(
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// Update card visual identity
+// Update card — datos generales (nombre, cupo, corte, pago) + identidad visual
 // ──────────────────────────────────────────────────────────────────────
 
-const updateCardVisualSchema = z.object({
-  accountId: z.string().uuid(),
-  bankSlug: z.string().min(1).max(40).optional().nullable(),
-  cardProductSlug: z.string().min(1).max(60).optional().nullable(),
-  cardBrand: z.enum(cardBrandValues).optional().nullable(),
-  cardLastFour: z
-    .string()
-    .regex(/^\d{4}$/, 'Deben ser 4 dígitos')
-    .optional()
-    .nullable(),
-  cardHolderName: z
-    .string()
-    .trim()
-    .min(1)
-    .max(60, 'Máx 60 caracteres')
-    .optional()
-    .nullable(),
-})
+const updateCardSchema = z
+  .object({
+    accountId: z.string().uuid(),
+    name: z.string().trim().min(1, 'Requerido').max(80, 'Máx 80 caracteres'),
+    creditLimit: z
+      .string()
+      .regex(/^\d+(\.\d{1,2})?$/, 'Formato inválido')
+      .min(1, 'Requerido'),
+    statementDay: z.number().int().min(1).max(31).optional().nullable(),
+    paymentDay: z.number().int().min(1).max(31).optional().nullable(),
+    // Identidad visual — siempre se envía (puede ser null para limpiar).
+    bankSlug: z.string().min(1).max(40).nullable(),
+    cardProductSlug: z.string().min(1).max(60).nullable(),
+    cardBrand: z.enum(cardBrandValues).nullable(),
+    cardLastFour: z
+      .string()
+      .regex(/^\d{4}$/, 'Deben ser 4 dígitos')
+      .nullable(),
+    cardHolderName: z
+      .string()
+      .trim()
+      .min(1)
+      .max(60, 'Máx 60 caracteres')
+      .nullable(),
+  })
+  .superRefine((val, ctx) => {
+    if (val.bankSlug && val.cardProductSlug) {
+      const found = findCardProduct(val.bankSlug, 'credit', val.cardProductSlug)
+      if (!found) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['cardProductSlug'],
+          message: 'Producto no válido para este banco',
+        })
+      }
+    }
+  })
 
-export type UpdateCardVisualInput = z.input<typeof updateCardVisualSchema>
+export type UpdateCardInput = z.input<typeof updateCardSchema>
 
-export async function updateCardVisual(
-  input: UpdateCardVisualInput,
+export async function updateCard(
+  input: UpdateCardInput,
 ): Promise<ActionResult> {
   const user = await requireCurrentUser()
 
-  const parsed = updateCardVisualSchema.safeParse(input)
+  const parsed = updateCardSchema.safeParse(input)
   if (!parsed.success) {
-    return { ok: false, error: { code: 'validation', message: 'Datos inválidos.' } }
+    const fields: Record<string, string> = {}
+    for (const issue of parsed.error.issues) {
+      const key = issue.path.join('.')
+      if (key) fields[key] = issue.message
+    }
+    return {
+      ok: false,
+      error: { code: 'validation', message: 'Revisa los campos.', fields },
+    }
   }
 
-  const { accountId, ...fields } = parsed.data
+  const { accountId, ...data } = parsed.data
 
-  // Verifica que sea una tarjeta del usuario antes de tocar identidad visual.
   const [acct] = await db
     .select({ id: accounts.id, type: accounts.type })
     .from(accounts)
@@ -187,11 +213,15 @@ export async function updateCardVisual(
   await db
     .update(accounts)
     .set({
-      bankSlug: fields.bankSlug ?? null,
-      cardProductSlug: fields.cardProductSlug ?? null,
-      cardBrand: fields.cardBrand ?? null,
-      cardLastFour: fields.cardLastFour ?? null,
-      cardHolderName: fields.cardHolderName ?? null,
+      name: data.name,
+      creditLimit: data.creditLimit,
+      statementDay: data.statementDay ?? null,
+      paymentDay: data.paymentDay ?? null,
+      bankSlug: data.bankSlug,
+      cardProductSlug: data.cardProductSlug,
+      cardBrand: data.cardBrand,
+      cardLastFour: data.cardLastFour,
+      cardHolderName: data.cardHolderName,
       updatedAt: new Date(),
     })
     .where(and(eq(accounts.id, accountId), eq(accounts.userId, user.id)))
