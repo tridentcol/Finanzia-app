@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { and, desc, eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 
 import { requireCurrentUser } from '@/lib/auth'
 import { db } from '@/lib/db/client'
@@ -42,22 +42,22 @@ export default async function InformePage({ params }: Props) {
   if (!report) {
     return (
       <div className="flex min-w-0 flex-col gap-10">
-        <header className="flex min-w-0 flex-col gap-2">
+        <header className="flex min-w-0 flex-col gap-1.5">
           <Link
             href="/informes"
-            className="text-text-tertiary hover:text-text-secondary text-[13px] transition-colors"
+            className="text-text-tertiary hover:text-text-secondary text-[13px] transition-colors w-fit"
           >
-            Informes
+            ← Informes
           </Link>
           <h1 className="text-text text-2xl font-semibold tracking-[-0.02em] sm:text-3xl capitalize">
             {formatPeriod(period)}
           </h1>
         </header>
-        <div className="border-border-default bg-surface flex flex-col gap-3 rounded-[12px] border p-8 text-center">
-          <p className="editorial text-text-secondary text-base italic">
+        <div className="flex flex-col items-start gap-2 py-12">
+          <p className="editorial text-text text-xl italic sm:text-2xl">
             El informe de {formatPeriod(period)} todavía no está disponible.
           </p>
-          <p className="text-text-tertiary text-[13px]">
+          <p className="text-text-tertiary text-sm max-w-prose">
             Se genera automáticamente el primer día de cada mes.
           </p>
         </div>
@@ -71,103 +71,173 @@ export default async function InformePage({ params }: Props) {
   const savings = Number.parseFloat(report.netSavings)
   const savingsRate = income > 0 ? Math.round((savings / income) * 100) : 0
 
+  // Categorías y comercios: percent of expense para barras editoriales.
+  const topExpense = Math.max(
+    1,
+    ...report.topCategories.map((c) => Number.parseFloat(c.amount)),
+    ...report.topMerchants.map((m) => Number.parseFloat(m.amount)),
+  )
+
   return (
-    <div className="flex min-w-0 flex-col gap-10">
-      <header className="flex min-w-0 flex-col gap-2">
+    <div className="flex min-w-0 flex-col gap-12 lg:gap-16">
+      {/* Hero editorial */}
+      <header className="flex min-w-0 flex-col gap-3">
         <Link
           href="/informes"
-          className="text-text-tertiary hover:text-text-secondary text-[13px] transition-colors"
+          className="text-text-tertiary hover:text-text-secondary text-[13px] transition-colors w-fit"
         >
-          Informes
+          ← Informes
         </Link>
-        <h1 className="text-text text-2xl font-semibold tracking-[-0.02em] sm:text-3xl capitalize">
-          {formatPeriod(period)}
-        </h1>
+        <div className="flex flex-col gap-1">
+          <p className="text-text-secondary text-sm">Tu mes en</p>
+          <h1 className="editorial text-text text-3xl italic tracking-tight sm:text-4xl md:text-5xl capitalize">
+            {formatPeriod(period)}
+          </h1>
+        </div>
         {report.aiSummary && (
-          <p className="editorial text-text-secondary max-w-prose text-base italic">
+          <p className="text-text-secondary max-w-[60ch] text-[15px] leading-relaxed">
             {report.aiSummary}
           </p>
         )}
       </header>
 
-      {/* Hero KPIs */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <KpiCard label="Ingresos" value={income} currency={currency} tone="positive" />
-        <KpiCard label="Gastos" value={expense} currency={currency} tone="negative" />
-        <KpiCard label="Ahorro neto" value={savings} currency={currency} tone={savings >= 0 ? 'positive' : 'negative'} />
-        <div className="border-border-default bg-surface flex flex-col gap-1 rounded-[12px] border p-4">
-          <span className="text-text-tertiary text-[11px] uppercase tracking-[0.08em]">
-            Tasa de ahorro
-          </span>
-          <span
-            className={`font-mono text-2xl font-semibold tabular ${
-              savingsRate >= 20 ? 'text-positive' : savingsRate >= 5 ? 'text-text' : 'text-negative'
-            }`}
-          >
-            {savingsRate}%
-          </span>
+      {/* Métrica héroe — ahorro neto */}
+      <section className="flex min-w-0 flex-col gap-1.5">
+        <p className="text-text-tertiary text-[11px] uppercase tracking-[0.08em]">
+          Ahorro neto
+        </p>
+        <Amount
+          value={String(Math.abs(savings).toFixed(2))}
+          currency={currency}
+          display
+          kind={savings >= 0 ? 'positive' : 'negative'}
+          showPositiveSign={savings >= 0}
+          className="block truncate text-[32px] sm:text-5xl md:text-6xl lg:text-7xl"
+        />
+        <p className="text-text-tertiary text-xs">
+          {savingsRate >= 0 ? `${savingsRate}% de tu ingreso del mes` : 'Ingreso insuficiente para calcular tasa'}
+        </p>
+      </section>
+
+      {/* Ingresos vs Gastos — comparativa editorial */}
+      <section className="grid grid-cols-1 gap-px overflow-hidden rounded-[12px] border border-border-default bg-border-default sm:grid-cols-2">
+        <div className="bg-surface flex flex-col gap-1.5 p-5">
+          <p className="text-text-tertiary text-[11px] uppercase tracking-[0.08em]">
+            Ingresos
+          </p>
+          <Amount
+            value={String(income.toFixed(2))}
+            currency={currency}
+            kind="positive"
+            className="text-2xl sm:text-3xl"
+          />
         </div>
-      </div>
+        <div className="bg-surface flex flex-col gap-1.5 p-5">
+          <p className="text-text-tertiary text-[11px] uppercase tracking-[0.08em]">
+            Gastos
+          </p>
+          <Amount
+            value={String(expense.toFixed(2))}
+            currency={currency}
+            kind="negative"
+            className="text-2xl sm:text-3xl"
+          />
+        </div>
+      </section>
 
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-        {/* Top categorías */}
-        {report.topCategories.length > 0 && (
-          <section className="flex flex-col gap-4">
-            <h2 className="text-text text-sm font-semibold">Top categorías de gasto</h2>
-            <ul className="border-border-default bg-surface flex flex-col divide-y divide-[color:var(--border-default)] rounded-[12px] border">
-              {report.topCategories.map((c, i) => (
-                <li key={i} className="flex items-center justify-between gap-4 px-4 py-3">
-                  <span className="text-text-secondary truncate text-[13px]">{c.name}</span>
-                  <span className="text-text-secondary font-mono text-[13px] tabular">
-                    {formatMoney(Number.parseFloat(c.amount), { currency, compact: true })}
-                  </span>
+      {/* Top categorías — barras editoriales */}
+      {report.topCategories.length > 0 && (
+        <section className="flex flex-col gap-5">
+          <header className="flex items-baseline justify-between">
+            <h2 className="text-text text-sm font-semibold">Dónde se fue tu dinero</h2>
+            <span className="text-text-tertiary text-[11px] uppercase tracking-[0.08em]">
+              Por categoría
+            </span>
+          </header>
+          <ul className="flex flex-col gap-4">
+            {report.topCategories.map((c, i) => {
+              const amount = Number.parseFloat(c.amount)
+              const width = Math.max(2, (amount / topExpense) * 100)
+              return (
+                <li key={i} className="flex flex-col gap-1.5">
+                  <div className="flex items-baseline justify-between gap-4">
+                    <span className="text-text truncate text-sm">{c.name}</span>
+                    <span className="text-text-secondary shrink-0 font-mono text-sm tabular-nums">
+                      {formatMoney(amount, { currency, compact: true })}
+                    </span>
+                  </div>
+                  <div className="bg-surface h-[2px] w-full overflow-hidden rounded-full">
+                    <div
+                      aria-hidden
+                      className="bg-text-secondary h-full rounded-full"
+                      style={{ width: `${width}%` }}
+                    />
+                  </div>
                 </li>
-              ))}
-            </ul>
-          </section>
-        )}
+              )
+            })}
+          </ul>
+        </section>
+      )}
 
-        {/* Top merchants */}
-        {report.topMerchants.length > 0 && (
-          <section className="flex flex-col gap-4">
-            <h2 className="text-text text-sm font-semibold">Top comercios</h2>
-            <ul className="border-border-default bg-surface flex flex-col divide-y divide-[color:var(--border-default)] rounded-[12px] border">
-              {report.topMerchants.map((m, i) => (
-                <li key={i} className="flex items-center justify-between gap-4 px-4 py-3">
-                  <span className="text-text-secondary truncate text-[13px]">{m.name}</span>
-                  <span className="text-text-secondary font-mono text-[13px] tabular">
-                    {formatMoney(Number.parseFloat(m.amount), { currency, compact: true })}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-      </div>
-
-      {/* AI habits */}
-      {report.aiHabits.length > 0 && (
+      {/* Top comercios — lista editorial */}
+      {report.topMerchants.length > 0 && (
         <section className="flex flex-col gap-4">
-          <h2 className="text-text text-sm font-semibold">Hábitos detectados</h2>
-          <ul className="flex flex-col gap-3">
+          <header className="flex items-baseline justify-between">
+            <h2 className="text-text text-sm font-semibold">Comercios más visitados</h2>
+          </header>
+          <ul className="border-border-default bg-surface flex flex-col rounded-[12px] border">
+            {report.topMerchants.map((m, i) => (
+              <li
+                key={i}
+                className={`flex items-center justify-between gap-4 px-5 py-3.5 ${
+                  i !== report.topMerchants.length - 1 ? 'border-border-default/60 border-b' : ''
+                }`}
+              >
+                <span className="text-text truncate text-sm">{m.name}</span>
+                <span className="text-text-secondary shrink-0 font-mono text-sm tabular-nums">
+                  {formatMoney(Number.parseFloat(m.amount), { currency, compact: true })}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* Hábitos detectados — editorial */}
+      {report.aiHabits.length > 0 && (
+        <section className="flex flex-col gap-5">
+          <header className="flex items-baseline justify-between">
+            <h2 className="text-text text-sm font-semibold">Hábitos del mes</h2>
+            <span className="text-text-tertiary text-[11px] uppercase tracking-[0.08em]">
+              Lectura IA
+            </span>
+          </header>
+          <ul className="flex flex-col">
             {report.aiHabits.map((h, i) => (
               <li
                 key={i}
-                className="border-border-default bg-surface flex flex-col gap-1 rounded-[12px] border p-4"
+                className="border-border-default/60 flex gap-5 border-b py-5 first:pt-0 last:border-b-0 last:pb-0"
               >
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`h-1.5 w-1.5 rounded-full ${
-                      h.kind === 'positive'
-                        ? 'bg-positive'
-                        : h.kind === 'negative'
-                          ? 'bg-negative'
-                          : 'bg-text-tertiary'
-                    }`}
-                  />
-                  <span className="text-text text-[13px] font-semibold">{h.title}</span>
+                <span className="text-text-tertiary shrink-0 font-mono text-[11px] tabular-nums tracking-wider w-6">
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                <div className="flex flex-col gap-1">
+                  <h3 className="text-text text-sm font-semibold">
+                    <span
+                      className={`mr-2 inline-block h-1.5 w-1.5 rounded-full align-middle ${
+                        h.kind === 'positive'
+                          ? 'bg-positive'
+                          : h.kind === 'negative'
+                            ? 'bg-negative'
+                            : 'bg-text-tertiary'
+                      }`}
+                      aria-hidden
+                    />
+                    {h.title}
+                  </h3>
+                  <p className="text-text-secondary text-[13px] leading-relaxed">{h.body}</p>
                 </div>
-                <p className="text-text-secondary text-[13px]">{h.body}</p>
               </li>
             ))}
           </ul>
@@ -183,31 +253,6 @@ export default async function InformePage({ params }: Props) {
           timeZone: 'UTC',
         })}
       </footer>
-    </div>
-  )
-}
-
-function KpiCard({
-  label,
-  value,
-  currency,
-  tone,
-}: {
-  label: string
-  value: number
-  currency: CurrencyCode
-  tone: 'positive' | 'negative' | 'neutral'
-}) {
-  return (
-    <div className="border-border-default bg-surface flex flex-col gap-1 rounded-[12px] border p-4">
-      <span className="text-text-tertiary text-[11px] uppercase tracking-[0.08em]">{label}</span>
-      <Amount
-        value={String(Math.abs(value).toFixed(2))}
-        currency={currency}
-        kind={tone}
-        showPositiveSign={tone === 'positive'}
-        className="text-2xl"
-      />
     </div>
   )
 }

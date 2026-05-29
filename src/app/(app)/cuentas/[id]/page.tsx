@@ -34,7 +34,6 @@ export default async function CuentaDetailPage({ params }: Props) {
         : null
 
   const hasCardVisual = Boolean(account.bankSlug && cardKind)
-
   const isCreditCard = account.type === 'credit_card'
 
   const limit = account.creditLimit ? Number.parseFloat(account.creditLimit) : 0
@@ -53,123 +52,120 @@ export default async function CuentaDetailPage({ params }: Props) {
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-10">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div className="flex min-w-0 flex-col gap-1">
-          <Link
-            href="/cuentas"
-            className="text-text-tertiary hover:text-text-secondary text-[13px] transition-colors"
-          >
-            Cuentas
-          </Link>
-          <h1 className="text-text text-2xl font-semibold tracking-[-0.02em] sm:text-3xl">
-            {account.name}
-          </h1>
-        </div>
+    <div className="flex min-w-0 flex-col gap-10 lg:gap-12">
+      {/* Breadcrumb + título + hero balance */}
+      <header className="flex min-w-0 flex-col gap-1.5">
+        <Link
+          href="/cuentas"
+          className="text-text-tertiary hover:text-text-secondary text-[13px] transition-colors w-fit"
+        >
+          ← Cuentas
+        </Link>
+        <h1 className="text-text text-2xl font-semibold tracking-[-0.02em] sm:text-3xl">
+          {account.name}
+        </h1>
+        <Amount
+          value={account.currentBalance}
+          currency={account.currency}
+          display
+          kind={balance < 0 ? 'negative' : 'neutral'}
+          className="mt-2 block truncate text-[28px] sm:text-4xl md:text-5xl lg:text-6xl"
+        />
+        <p className="text-text-tertiary text-xs">
+          {isCreditCard ? 'Saldo de la tarjeta' : 'Saldo actual'} · {account.currency}
+          {account.cardLastFour && ` · ···· ${account.cardLastFour}`}
+        </p>
       </header>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
-        {/* Columna principal */}
-        <div className="flex flex-col gap-6">
-          {/* Card visual + identidad */}
-          <div className="border-border-default bg-surface relative flex flex-col gap-5 rounded-[12px] border p-5">
-            {cardKind && (
-              <EditCardVisualDialog
-                accountId={account.id}
-                accountName={account.name}
-                cardKind={cardKind}
-                initial={{
-                  bankSlug: account.bankSlug,
-                  cardProductSlug: account.cardProductSlug,
-                  cardBrand: account.cardBrand,
-                  cardLastFour: account.cardLastFour,
-                  cardHolderName: account.cardHolderName,
-                }}
-              />
-            )}
+      {/* Card visual destacada — sólo si hay imagen */}
+      {hasCardVisual && cardKind && (
+        <section className="border-border-default bg-surface relative flex flex-col gap-4 rounded-[12px] border p-6">
+          <EditCardVisualDialog
+            accountId={account.id}
+            accountName={account.name}
+            cardKind={cardKind}
+            initial={{
+              bankSlug: account.bankSlug,
+              cardProductSlug: account.cardProductSlug,
+              cardBrand: account.cardBrand,
+              cardLastFour: account.cardLastFour,
+              cardHolderName: account.cardHolderName,
+            }}
+          />
+          <div className="mx-auto w-full max-w-[340px]">
+            <CardVisual
+              bankSlug={account.bankSlug}
+              kind={cardKind}
+              cardProductSlug={account.cardProductSlug}
+              cardBrand={account.cardBrand}
+              cardLastFour={account.cardLastFour}
+              cardHolderName={account.cardHolderName}
+              showMeta={false}
+            />
+          </div>
+        </section>
+      )}
 
-            {hasCardVisual && cardKind && (
-              <div className="mx-auto w-full max-w-[320px]">
-                <CardVisual
-                  bankSlug={account.bankSlug}
-                  kind={cardKind}
-                  cardProductSlug={account.cardProductSlug}
-                  cardBrand={account.cardBrand}
-                  cardLastFour={account.cardLastFour}
-                  cardHolderName={account.cardHolderName}
-                  showMeta={false}
-                />
-              </div>
-            )}
+      {/* Si no hay card visual pero es tarjeta/cuenta editable */}
+      {!hasCardVisual && cardKind && (
+        <section className="border-border-default border-dashed flex flex-col items-center gap-3 rounded-[12px] border p-8 text-center">
+          <p className="text-text-secondary text-sm max-w-prose">
+            Esta cuenta aún no tiene identidad visual asignada.
+          </p>
+          <EditCardVisualDialog
+            accountId={account.id}
+            accountName={account.name}
+            cardKind={cardKind}
+            variant="inline"
+            initial={{
+              bankSlug: account.bankSlug,
+              cardProductSlug: account.cardProductSlug,
+              cardBrand: account.cardBrand,
+              cardLastFour: account.cardLastFour,
+              cardHolderName: account.cardHolderName,
+            }}
+          />
+        </section>
+      )}
 
-            <div className="flex flex-col gap-1">
-              <span className="text-text-tertiary text-[11px] uppercase tracking-[0.08em]">
-                Saldo actual
-              </span>
-              <Amount
-                value={account.currentBalance}
-                currency={account.currency}
-                kind={balance < 0 ? 'negative' : 'neutral'}
-                className="text-3xl"
+      {/* Métricas de tarjeta */}
+      {isCreditCard && account.creditLimit && (
+        <section className="flex flex-col gap-4">
+          <header className="flex items-baseline justify-between">
+            <h2 className="text-text text-sm font-semibold">Estado del cupo</h2>
+            <span className="text-text-tertiary tabular-nums text-[11px] uppercase tracking-[0.08em]">
+              {Math.round(utilization * 100)}% utilizado
+            </span>
+          </header>
+          <div className="border-border-default bg-surface flex flex-col gap-4 rounded-[12px] border p-5">
+            <div className="bg-surface-hover h-1.5 overflow-hidden rounded-full">
+              <div
+                aria-hidden
+                className={`h-full rounded-full transition-all ${utilizationTone}`}
+                style={{ width: `${utilization * 100}%` }}
               />
             </div>
-
-            {isCreditCard && account.creditLimit && (
-              <div className="border-border-default/60 flex flex-col gap-3 border-t pt-4 text-[13px]">
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-text-tertiary">Utilización</span>
-                  <span className="text-text-secondary tabular">
-                    {Math.round(utilization * 100)}%
-                  </span>
-                </div>
-                <div className="bg-surface-hover h-1 overflow-hidden rounded-full">
-                  <div
-                    aria-hidden
-                    className={`h-full rounded-full transition-all ${utilizationTone}`}
-                    style={{ width: `${utilization * 100}%` }}
-                  />
-                </div>
-                <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
-                  <dt className="text-text-tertiary">Disponible</dt>
-                  <dd className="text-text-secondary text-right font-mono tabular">
-                    {formatMoney(available, { currency: account.currency, compact: true })}
-                  </dd>
-                  <dt className="text-text-tertiary">Cupo</dt>
-                  <dd className="text-text-secondary text-right font-mono tabular">
-                    {formatMoney(limit, { currency: account.currency, compact: true })}
-                  </dd>
-                  {account.statementDay && (
-                    <>
-                      <dt className="text-text-tertiary">Corte</dt>
-                      <dd className="text-text-secondary text-right tabular">
-                        día {account.statementDay} · en {daysTo(account.statementDay)}d
-                      </dd>
-                    </>
-                  )}
-                  {account.paymentDay && (
-                    <>
-                      <dt className="text-text-tertiary">Pago</dt>
-                      <dd className="text-text-secondary text-right tabular">
-                        día {account.paymentDay} · en {daysTo(account.paymentDay)}d
-                      </dd>
-                    </>
-                  )}
-                </dl>
-              </div>
-            )}
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-[13px] sm:grid-cols-4">
+              <Fact label="Disponible" value={formatMoney(available, { currency: account.currency, compact: true })} />
+              <Fact label="Cupo total" value={formatMoney(limit, { currency: account.currency, compact: true })} />
+              {account.statementDay && (
+                <Fact label="Corte" value={`día ${account.statementDay} · en ${daysTo(account.statementDay)}d`} />
+              )}
+              {account.paymentDay && (
+                <Fact label="Pago" value={`día ${account.paymentDay} · en ${daysTo(account.paymentDay)}d`} />
+              )}
+            </dl>
           </div>
+        </section>
+      )}
 
-          {/* Perfil financiero de la tarjeta */}
-          {isCreditCard && (
-            <CreditCardProfilePanel
-              accountId={account.id}
-              initial={account.creditCardProfile}
-            />
-          )}
-        </div>
-
-        {/* Columna lateral — analizador de compra */}
-        {isCreditCard && (
+      {/* Layout principal: perfil + analizador */}
+      {isCreditCard && (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
+          <CreditCardProfilePanel
+            accountId={account.id}
+            initial={account.creditCardProfile}
+          />
           <PurchaseAnalyzer
             statementDay={account.statementDay}
             creditLimit={account.creditLimit}
@@ -177,8 +173,17 @@ export default async function CuentaDetailPage({ params }: Props) {
             interestRateMonthly={account.creditCardProfile?.interestRateMonthly ?? null}
             currency={account.currency}
           />
-        )}
-      </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function Fact({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <dt className="text-text-tertiary text-[11px] uppercase tracking-[0.08em]">{label}</dt>
+      <dd className="text-text-secondary font-mono tabular-nums">{value}</dd>
     </div>
   )
 }

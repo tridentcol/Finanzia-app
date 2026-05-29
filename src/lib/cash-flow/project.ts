@@ -7,15 +7,6 @@ export type CashFlowPoint = {
   events: Array<{ description: string; amount: number; kind: 'income' | 'expense' }>
 }
 
-type FrequencyDays = {
-  daily: 1
-  weekly: 7
-  biweekly: 14
-  monthly: null
-  quarterly: null
-  yearly: null
-}
-
 function wouldFireOnDate(
   rule: RecurringRuleListItem,
   date: Date,

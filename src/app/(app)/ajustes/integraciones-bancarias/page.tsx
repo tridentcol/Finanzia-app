@@ -40,17 +40,13 @@ export default async function IntegracionesBancariasPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-10">
-      <header className="flex min-w-0 flex-col gap-2">
-        <div className="flex items-center gap-2">
-          <Link
-            href="/ajustes"
-            className="text-text-tertiary hover:text-text-secondary text-[13px] transition-colors"
-          >
-            Ajustes
-          </Link>
-          <span className="text-text-tertiary text-[13px]">/</span>
-          <span className="text-text-secondary text-[13px]">Alertas bancarias</span>
-        </div>
+      <header className="flex min-w-0 flex-col gap-1.5">
+        <Link
+          href="/ajustes"
+          className="text-text-tertiary hover:text-text-secondary text-[13px] transition-colors w-fit"
+        >
+          ← Ajustes
+        </Link>
         <h1 className="text-text text-2xl font-semibold tracking-[-0.02em] sm:text-3xl">
           Alertas bancarias por email
         </h1>

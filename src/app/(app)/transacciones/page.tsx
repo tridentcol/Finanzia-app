@@ -110,19 +110,25 @@ export default async function TransaccionesPage({
             <>
               <Link
                 href="/transacciones"
-                className="text-[--text-tertiary] hover:text-[--text-secondary] text-[13px] transition-colors"
+                className="text-text-tertiary hover:text-text-secondary text-[13px] transition-colors w-fit"
               >
-                Transacciones
+                ← Bitácora
               </Link>
-              <h1 className="text-[--text] text-xl font-semibold tracking-[-0.02em] capitalize sm:text-2xl">
+              <h1 className="text-text text-2xl font-semibold tracking-[-0.02em] capitalize sm:text-3xl">
                 {dayLabel}
               </h1>
               {dayNet !== null && (
                 <p
-                  className={`font-mono text-2xl font-semibold tabular-nums sm:text-3xl ${dayNet >= 0 ? 'text-[--positive]' : 'text-[--negative]'}`}
+                  className={`amount mt-1 block truncate text-[28px] sm:text-4xl md:text-5xl ${dayNet >= 0 ? 'text-positive' : 'text-negative'}`}
                 >
                   {dayNet >= 0 ? '+' : ''}
                   {dayNet.toLocaleString('es-CO', { maximumFractionDigits: 0 })}
+                </p>
+              )}
+              {dayNet !== null && (
+                <p className="text-text-tertiary text-xs">
+                  Delta neto del día · {list.length}{' '}
+                  {list.length === 1 ? 'movimiento' : 'movimientos'}
                 </p>
               )}
             </>

@@ -9,6 +9,7 @@ import { listSavingsPeriods, getSavingsHeroData } from '@/lib/db/queries/savings
 import { getActiveSavingsPlan } from '@/app/(app)/ajustes/perfil-financiero/actions'
 import { formatMoney } from '@/lib/currency/format'
 import type { CurrencyCode } from '@/lib/currency/currencies'
+import { Amount } from '@/components/app/amount'
 import { EmptyState } from '@/components/app/empty-state'
 import { SavingsBarChart } from '@/components/app/savings-bar-chart'
 import { SavingsForecastChart } from '@/components/app/savings-forecast-chart'
@@ -40,26 +41,45 @@ function deltaLabel(achieved: number, target: number): { text: string; positive:
   }
 }
 
-function PeriodRow({ period, baseCurrency }: { period: SavingsPeriodRow; baseCurrency: string }) {
+function PeriodRow({
+  period,
+  baseCurrency,
+  isLast,
+}: {
+  period: SavingsPeriodRow
+  baseCurrency: string
+  isLast: boolean
+}) {
   const achieved = Number.parseFloat(period.achievedAmount)
   const target = Number.parseFloat(period.targetAmount)
   const { text, positive } = deltaLabel(achieved, target)
 
   return (
-    <div className="flex items-center justify-between gap-4 py-3 border-b border-border-default last:border-0">
-      <div className="flex flex-col gap-0.5 min-w-0">
-        <p className="text-sm font-medium text-text truncate">{periodLabel(period.periodEnd)}</p>
+    <div
+      className={`flex items-center justify-between gap-4 px-5 py-3.5 ${
+        !isLast ? 'border-border-default/60 border-b' : ''
+      }`}
+    >
+      <div className="flex min-w-0 flex-col gap-0.5">
+        <p className="text-text truncate text-sm capitalize">{periodLabel(period.periodEnd)}</p>
         {target > 0 && (
-          <p className="text-xs text-text-tertiary">
-            Meta: {formatMoney(target, { currency: baseCurrency as CurrencyCode })}
+          <p className="text-text-tertiary text-[11px]">
+            Meta: {formatMoney(target, { currency: baseCurrency as CurrencyCode, compact: true })}
           </p>
         )}
       </div>
-      <div className="flex flex-col items-end gap-0.5 shrink-0">
-        <p className="font-mono text-sm font-medium text-text">
-          {formatMoney(achieved, { currency: baseCurrency as CurrencyCode })}
-        </p>
-        <p className={`text-xs font-medium ${positive ? 'text-positive' : 'text-negative'}`}>
+      <div className="flex shrink-0 flex-col items-end gap-0.5">
+        <Amount
+          value={String(achieved.toFixed(2))}
+          currency={baseCurrency as CurrencyCode}
+          kind={positive ? 'positive' : achieved < 0 ? 'negative' : 'neutral'}
+          className="text-sm"
+        />
+        <p
+          className={`text-[11px] ${
+            positive ? 'text-positive' : 'text-text-tertiary'
+          }`}
+        >
           {text}
         </p>
       </div>
@@ -82,11 +102,14 @@ export default async function AhorroPage() {
 
   if (periods.length === 0) {
     return (
-      <div className="flex flex-col gap-8">
-        <header className="flex flex-col gap-1">
-          <h1 className="text-xl font-semibold text-text sm:text-2xl">Ahorro</h1>
+      <div className="flex flex-col gap-10 lg:gap-12">
+        <header className="flex min-w-0 flex-col gap-1">
+          <p className="text-text-secondary text-sm">Ahorro</p>
+          <h1 className="text-text text-2xl font-semibold tracking-[-0.02em] sm:text-3xl">
+            Tu progreso, mes a mes
+          </h1>
           {activePlan && (
-            <p className="text-sm text-text-secondary">
+            <p className="text-text-tertiary text-xs">
               Plan:{' '}
               {activePlan.method === 'percentage_income'
                 ? `${(activePlan.params as { percent?: number } | null)?.percent ?? 10}% del ingreso`
@@ -120,35 +143,33 @@ export default async function AhorroPage() {
   }
 
   return (
-    <div className="flex flex-col gap-10">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold text-text sm:text-2xl">Ahorro</h1>
-        {activePlan && activePlan.method !== 'none' && activePlan.method !== 'other' && (
-          <p className="text-sm text-text-secondary">
-            Plan activo:{' '}
-            {activePlan.method === 'percentage_income'
-              ? `${(activePlan.params as { percent?: number } | null)?.percent ?? 10}% del ingreso`
-              : `${formatMoney(Number.parseFloat((activePlan.params as { amount?: string } | null)?.amount ?? '0'), { currency: baseCurrency as CurrencyCode })} mensual`}
-          </p>
-        )}
+    <div className="flex flex-col gap-10 lg:gap-12">
+      <header className="flex min-w-0 flex-col gap-1.5">
+        <p className="text-text-secondary text-sm">Ahorro</p>
+        <Amount
+          value={String(hero.totalAchieved.toFixed(2))}
+          currency={baseCurrency as CurrencyCode}
+          display
+          kind={hero.totalAchieved >= 0 ? 'neutral' : 'negative'}
+          className="block truncate text-[28px] sm:text-4xl md:text-5xl lg:text-6xl"
+        />
+        <p className="text-text-tertiary text-xs">
+          Acumulado en {hero.periodsCount} {hero.periodsCount === 1 ? 'mes' : 'meses'}
+          {activePlan && activePlan.method !== 'none' && activePlan.method !== 'other' && (
+            <>
+              {' · '}Plan:{' '}
+              {activePlan.method === 'percentage_income'
+                ? `${(activePlan.params as { percent?: number } | null)?.percent ?? 10}% del ingreso`
+                : `${formatMoney(Number.parseFloat((activePlan.params as { amount?: string } | null)?.amount ?? '0'), { currency: baseCurrency as CurrencyCode })} mensual`}
+            </>
+          )}
+        </p>
       </header>
 
-      {/* Hero */}
-      <section className="flex flex-col gap-1">
-        <p className="text-xs uppercase tracking-[0.06em] text-text-tertiary">
-          Total acumulado ({hero.periodsCount} {hero.periodsCount === 1 ? 'mes' : 'meses'})
-        </p>
-        <p className="font-mono text-4xl font-semibold tabular-nums text-text sm:text-5xl tracking-tight">
-          {formatMoney(hero.totalAchieved, { currency: baseCurrency as CurrencyCode })}
-        </p>
-      </section>
-
       {/* Bar chart histórico */}
-      <section className="flex flex-col gap-3 rounded-[12px] border border-border-default bg-surface p-4">
-        <div className="flex items-center justify-between">
-          <p className="text-xs uppercase tracking-[0.06em] text-text-tertiary">
-            Ahorro por mes
-          </p>
+      <section className="flex flex-col gap-4">
+        <header className="flex items-baseline justify-between gap-3">
+          <h2 className="text-text text-sm font-semibold">Ahorro por mes</h2>
           <div className="flex items-center gap-3 text-[10px] text-text-tertiary">
             <span className="flex items-center gap-1">
               <span className="inline-block h-2 w-2 rounded-[2px] bg-[#7FB89F]" />
@@ -159,45 +180,49 @@ export default async function AhorroPage() {
               Por debajo
             </span>
           </div>
+        </header>
+        <div className="border-border-default bg-surface rounded-[12px] border px-5 py-6">
+          <SavingsBarChart periods={periods} />
         </div>
-        <SavingsBarChart periods={periods} />
       </section>
 
       {/* Proyección */}
       {hasPlan && (
-        <section className="flex flex-col gap-3 rounded-[12px] border border-border-default bg-surface p-4">
-          <div className="flex flex-col gap-0.5">
-            <p className="text-xs uppercase tracking-[0.06em] text-text-tertiary">
-              Proyección — próximos 12 meses
-            </p>
-            <p className="text-[11px] text-text-tertiary">
-              Basada en tu promedio reciente. La banda muestra variabilidad histórica.
-            </p>
+        <section className="flex flex-col gap-4">
+          <header className="flex items-baseline justify-between gap-3">
+            <h2 className="text-text text-sm font-semibold">Proyección a 12 meses</h2>
+            <span className="text-text-tertiary text-[11px] uppercase tracking-[0.08em]">
+              Promedio reciente ±1σ
+            </span>
+          </header>
+          <div className="border-border-default bg-surface rounded-[12px] border px-5 py-6">
+            <SavingsForecastChart periods={periods} />
           </div>
-          <SavingsForecastChart periods={periods} />
         </section>
       )}
 
       {/* Lista editorial */}
-      <section className="flex flex-col gap-3">
-        <h2 className="text-xs uppercase tracking-[0.06em] text-text-tertiary">
-          Historial de períodos
-        </h2>
-        <div className="rounded-[12px] border border-border-default bg-surface px-4">
-          {periods.map((p) => (
-            <PeriodRow key={p.id} period={p} baseCurrency={baseCurrency} />
+      <section className="flex flex-col gap-4">
+        <header className="flex items-baseline justify-between gap-3">
+          <h2 className="text-text text-sm font-semibold">Historial de períodos</h2>
+          <Link
+            href="/ajustes/perfil-financiero"
+            className="text-text-secondary hover:text-text text-[13px] transition-colors"
+          >
+            Cambiar plan
+          </Link>
+        </header>
+        <div className="border-border-default bg-surface rounded-[12px] border">
+          {periods.map((p, i) => (
+            <PeriodRow
+              key={p.id}
+              period={p}
+              baseCurrency={baseCurrency}
+              isLast={i === periods.length - 1}
+            />
           ))}
         </div>
       </section>
-
-      <div className="text-xs text-text-tertiary">
-        <Link
-          href="/ajustes/perfil-financiero"
-          className="underline underline-offset-4 hover:text-text-secondary transition-colors"
-        >
-          Cambiar plan de ahorro
-        </Link>
-      </div>
     </div>
   )
 }

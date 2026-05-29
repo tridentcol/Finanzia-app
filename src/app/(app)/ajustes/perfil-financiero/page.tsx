@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { eq } from 'drizzle-orm'
 
 import { requireCurrentUser } from '@/lib/auth'
@@ -20,13 +21,21 @@ export default async function PerfilFinancieroPage() {
   ])
 
   return (
-    <div className="flex flex-col gap-8 max-w-lg">
-      <div>
-        <h1 className="text-xl font-semibold text-text">Perfil financiero</h1>
-        <p className="text-sm text-text-secondary mt-1">
-          Tu divisa base y método de ahorro.
+    <div className="flex min-w-0 flex-col gap-10 max-w-2xl">
+      <header className="flex min-w-0 flex-col gap-1.5">
+        <Link
+          href="/ajustes"
+          className="text-text-tertiary hover:text-text-secondary text-[13px] transition-colors w-fit"
+        >
+          ← Ajustes
+        </Link>
+        <h1 className="text-text text-2xl font-semibold tracking-[-0.02em] sm:text-3xl">
+          Perfil financiero
+        </h1>
+        <p className="text-text-secondary editorial text-base italic max-w-prose">
+          Tu divisa base, región y el método con el que Finanzia mide tu ahorro.
         </p>
-      </div>
+      </header>
 
       <PerfilFinancieroClient
         baseCurrency={(profile?.baseCurrency ?? 'COP') as 'COP' | 'USD' | 'EUR' | 'MXN'}

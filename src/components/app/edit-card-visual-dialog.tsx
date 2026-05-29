@@ -45,6 +45,8 @@ type Props = {
     cardLastFour: string | null
     cardHolderName: string | null
   }
+  /** Estilo del botón disparador. */
+  variant?: 'pencil' | 'inline'
 }
 
 export function EditCardVisualDialog({
@@ -52,21 +54,33 @@ export function EditCardVisualDialog({
   accountName,
   cardKind,
   initial,
+  variant = 'pencil',
 }: Props) {
   const [open, setOpen] = useState(false)
+  const Pencil = icons.pencil
+
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="text-text-tertiary hover:text-text-secondary hover:bg-surface-hover absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-md transition-colors"
-        aria-label="Editar identidad visual"
-      >
-        {(() => {
-          const Pencil = icons.pencil
-          return <Pencil strokeWidth={1.5} className="h-3.5 w-3.5" />
-        })()}
-      </button>
+      {variant === 'pencil' ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="text-text-tertiary hover:text-text-secondary hover:bg-surface-hover absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-md transition-colors"
+          aria-label="Editar identidad visual"
+        >
+          <Pencil strokeWidth={1.5} className="h-3.5 w-3.5" />
+        </button>
+      ) : (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setOpen(true)}
+        >
+          <Pencil strokeWidth={1.5} className="mr-1.5 h-3.5 w-3.5" />
+          Asignar identidad visual
+        </Button>
+      )}
 
       <Dialog open={open} onOpenChange={setOpen}>
         {open && (

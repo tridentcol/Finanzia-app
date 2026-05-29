@@ -173,10 +173,10 @@ export function OnboardingOverlay({ isOnboarded }: { isOnboarded: boolean }) {
             <p className="text-[11px] uppercase tracking-[0.08em] text-text-tertiary">
               Paso {step + 1} de 3
             </p>
-            <h2 className="editorial italic text-2xl text-text leading-tight">
+            <h2 className="editorial italic text-text leading-[1.1] tracking-tight text-[32px] sm:text-[40px]">
               {current.headline}
             </h2>
-            <p className="text-sm text-text-secondary">{current.sub}</p>
+            <p className="text-sm text-text-secondary mt-1">{current.sub}</p>
           </div>
 
           {/* Step content */}

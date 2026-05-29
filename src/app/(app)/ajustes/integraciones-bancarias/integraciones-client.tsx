@@ -124,10 +124,10 @@ export function IntegracionesBancariasClient({ aliases, accounts }: Props) {
       )}
 
       {/* Crear nuevo alias */}
-      <section className="border-border-default flex flex-col gap-4 rounded-[12px] border p-5">
+      <section className="border-border-default bg-surface flex flex-col gap-4 rounded-[12px] border p-5">
         <div className="flex flex-col gap-1">
           <h2 className="text-text text-sm font-semibold">Crear alias</h2>
-          <p className="text-text-tertiary text-xs">
+          <p className="text-text-tertiary text-xs max-w-prose">
             Obtienes una dirección única. Configura tu banco para reenviar las
             alertas de movimiento a esa dirección — Finanzia las registra
             automáticamente.

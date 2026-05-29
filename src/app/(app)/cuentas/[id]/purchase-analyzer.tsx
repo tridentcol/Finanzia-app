@@ -68,7 +68,7 @@ export function PurchaseAnalyzer({
     v.toLocaleString('es-CO', { maximumFractionDigits: 0 })
 
   return (
-    <div className="border-border-default flex flex-col gap-4 rounded-[12px] border p-5">
+    <div className="border-border-default bg-surface flex flex-col gap-4 rounded-[12px] border p-5">
       <div className="flex flex-col gap-1">
         <h3 className="text-text text-sm font-semibold">Analizador de compra</h3>
         <p className="text-text-tertiary text-xs">

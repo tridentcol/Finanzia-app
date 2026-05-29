@@ -1,8 +1,7 @@
 import 'server-only'
-import { and, eq, sql } from 'drizzle-orm'
+import { sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db/client'
-import { accounts, creditCardProfiles } from '@/lib/db/schema'
 import type { CurrencyCode } from '@/lib/currency/currencies'
 import { getRatesForPairs } from '@/lib/currency/rates'
 
