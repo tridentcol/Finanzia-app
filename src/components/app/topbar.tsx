@@ -71,6 +71,24 @@ export function Topbar({ unreadAlerts = 0 }: { unreadAlerts?: number }) {
 
       <div className="flex items-center gap-2">
         <AlertsBell initialCount={unreadAlerts} />
+        {/* Registrar movimiento — atajo primario en desktop, mismo flujo que
+            el FAB del bottom-nav móvil. */}
+        <button
+          type="button"
+          onClick={() => openDialog('new-transaction')}
+          aria-label="Registrar movimiento"
+          className="hidden h-9 items-center gap-2 rounded-[8px] px-2.5 text-sm font-medium transition-colors md:inline-flex"
+          style={{
+            background: 'var(--purple-base)',
+            color: '#FFFFFF',
+          }}
+        >
+          {(() => {
+            const Plus = icons.plus
+            return <Plus strokeWidth={2} className="size-[14px]" />
+          })()}
+          <span className="hidden lg:inline">Registrar</span>
+        </button>
         <button
           type="button"
           onClick={() => openDialog('copilot')}

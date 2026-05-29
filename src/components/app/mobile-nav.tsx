@@ -7,6 +7,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { icons, type IconName } from '@/lib/design/icons'
 import { cn } from '@/lib/utils'
 import { MobileMoreSheet } from './mobile-more-sheet'
+import { useDialogStore } from './dialog-store'
 
 type NavItem = {
   label: string
@@ -14,9 +15,14 @@ type NavItem = {
   icon: IconName
 }
 
-const ITEMS: NavItem[] = [
+// 2 + FAB + 2. El FAB central abre directamente el dialog de nuevo
+// movimiento — el flujo más común de la app.
+const LEFT_ITEMS: NavItem[] = [
   { label: 'Hoy', href: '/dashboard', icon: 'home' },
   { label: 'Mi dinero', href: '/mi-dinero', icon: 'wallet' },
+]
+
+const RIGHT_ITEMS: NavItem[] = [
   { label: 'Mi plan', href: '/mi-plan', icon: 'target' },
 ]
 
@@ -26,69 +32,92 @@ function isActive(pathname: string, href: string): boolean {
 }
 
 /**
- * Bottom nav fijo para mobile (<md). 3 items primarios (Hoy / Mi dinero /
- * Mi plan) + botón "Más" que abre sheet con Mi historia + Ajustes. El
- * AppSidebar shadcn se desmonta en mobile.
+ * Bottom nav fijo para mobile (<md). Layout: Hoy / Mi dinero / FAB +
+ * central / Mi plan / Más.
  *
- * Patrón estándar fintech (Mercury, Revolut, Wise): pulgar alcanza la base,
- * destinos clave siempre visibles. `safe-area-inset-bottom` respeta el home
- * indicator de iOS.
+ * El FAB central abre directamente NewTransactionDialog — el flujo más
+ * común. Patrón fintech estándar (Cash App, Revolut, Wise): un solo gesto
+ * para el acto que el usuario hace 20 veces al día.
  */
 export function MobileNav() {
   const pathname = usePathname()
   const router = useRouter()
   const [moreOpen, setMoreOpen] = useState(false)
+  const openDialog = useDialogStore((s) => s.open)
   const More = icons['more-horizontal'] ?? icons.settings
+  const Plus = icons.plus
 
   // Warmup eager de las rutas primarias al montar el bottom-nav. Next limita
   // el viewport-prefetch en conexiones lentas; este loop fuerza la descarga
   // del RSC (full prefetch) en cuanto la app es interactiva.
   useEffect(() => {
-    for (const item of ITEMS) {
+    for (const item of [...LEFT_ITEMS, ...RIGHT_ITEMS]) {
       router.prefetch(item.href)
     }
   }, [router])
+
+  function renderNavItem(item: NavItem) {
+    const Icon = icons[item.icon]
+    const active = isActive(pathname, item.href)
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        prefetch
+        onTouchStart={() => router.prefetch(item.href)}
+        aria-current={active ? 'page' : undefined}
+        aria-label={item.label}
+        className={cn(
+          'relative flex flex-1 flex-col items-center justify-center gap-1 px-1 transition-colors',
+          active ? 'text-text' : 'text-text-tertiary',
+        )}
+      >
+        <Icon
+          strokeWidth={1.5}
+          className={cn('size-[18px]', active && 'text-text')}
+        />
+        <span className="text-[10px] font-medium tracking-tight">
+          {item.label}
+        </span>
+        {active && (
+          <span
+            aria-hidden
+            className="absolute top-0 h-0.5 w-7 rounded-full"
+            style={{ background: 'var(--brand-purple-strong)' }}
+          />
+        )}
+      </Link>
+    )
+  }
 
   return (
     <>
       <nav
         aria-label="Navegación principal móvil"
-        className="border-border-default bg-surface/95 fixed inset-x-0 bottom-0 z-40 flex h-[58px] items-stretch border-t backdrop-blur-md md:hidden"
+        className="border-border-default bg-surface/95 fixed inset-x-0 bottom-0 z-40 flex h-[64px] items-stretch border-t backdrop-blur-md md:hidden"
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
-        {ITEMS.map((item) => {
-          const Icon = icons[item.icon]
-          const active = isActive(pathname, item.href)
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              prefetch
-              onTouchStart={() => router.prefetch(item.href)}
-              aria-current={active ? 'page' : undefined}
-              aria-label={item.label}
-              className={cn(
-                'relative flex flex-1 flex-col items-center justify-center gap-1 px-1 transition-colors',
-                active ? 'text-text' : 'text-text-tertiary',
-              )}
-            >
-              <Icon
-                strokeWidth={1.5}
-                className={cn('size-[18px]', active && 'text-text')}
-              />
-              <span className="text-[10px] font-medium tracking-tight">
-                {item.label}
-              </span>
-              {active && (
-                <span
-                  aria-hidden
-                  className="absolute top-0 h-0.5 w-7 rounded-full"
-                  style={{ background: 'var(--brand-purple-strong)' }}
-                />
-              )}
-            </Link>
-          )
-        })}
+        {LEFT_ITEMS.map(renderNavItem)}
+
+        {/* FAB central — abre new-transaction. Visualmente elevado para
+            destacarse como acción primaria. */}
+        <div className="relative flex w-16 shrink-0 items-start justify-center">
+          <button
+            type="button"
+            onClick={() => openDialog('new-transaction')}
+            aria-label="Registrar movimiento"
+            className="bg-text text-bg active:scale-95 absolute -top-4 flex h-12 w-12 items-center justify-center rounded-full shadow-lg transition-transform"
+            style={{
+              background: 'var(--purple-base)',
+              color: '#FFFFFF',
+            }}
+          >
+            <Plus strokeWidth={2} className="size-5" />
+          </button>
+        </div>
+
+        {RIGHT_ITEMS.map(renderNavItem)}
+
         <button
           type="button"
           onClick={() => setMoreOpen(true)}
