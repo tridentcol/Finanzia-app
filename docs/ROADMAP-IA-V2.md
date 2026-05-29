@@ -455,7 +455,7 @@ Crear `<EmptyState>` component variante "rich" con:
 - Informe muestra breakdown por categoría
 - Click en insight lleva a su informe del mes
 
-### Fase E — Ajustes: consolidación (1 sesión)
+### Fase E — Ajustes: consolidación (1 sesión) ✅ `66821b7`
 
 1. Una sola página `/ajustes` con sidebar interno
 2. Migrar contenido de las 5 sub-rutas
