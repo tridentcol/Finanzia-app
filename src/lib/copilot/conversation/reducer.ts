@@ -26,9 +26,39 @@ export const EMPTY_CONTEXT: ConversationContext = {
   turnHistory: [],
 }
 
-const CONNECTOR_RE = /^(y|ademas|tambien|ahora|entonces|y que tal|que tal con)\b/
+const CONNECTOR_RE =
+  /^(y|ademas|tambien|ahora|entonces|ok|dale|que tal|y que|y de|y ahora|y que pasa con)\b/
 
 const SLOT_ONLY_KEYS: SlotKey[] = ['period', 'category', 'merchant', 'account', 'money']
+
+/**
+ * Redirección de dimensión en un follow-up: una frase de cambio de eje remapea
+ * la continuación a otro intent, heredando los slots del turno previo. Solo usa
+ * `lastIntent`/`lastSlots` (no requiere la respuesta anterior). Devuelve el
+ * intent destino o null si la utterance no pide cambio de dimensión.
+ */
+function redirectIntent(
+  text: string,
+  lastIntent: IntentId,
+  presentSlots: ReadonlySet<SlotKey>,
+): IntentId | null {
+  if (/\bpor categoria/.test(text) || /\ben que se (va|me va)\b/.test(text)) {
+    return 'spend-by-category'
+  }
+  if (/\bpor (comercio|tienda)/.test(text) || /\bdonde (mas )?gaste\b/.test(text)) {
+    return 'top-merchants'
+  }
+  if (/\bcomparad|vs (el )?mes pasado|\bcompara\b/.test(text)) {
+    return 'compare-month'
+  }
+  if (
+    presentSlots.has('account') &&
+    (lastIntent === 'show-balance' || lastIntent === 'account-detail')
+  ) {
+    return 'account-detail'
+  }
+  return null
+}
 
 export type ResolvedTurn = {
   intent: IntentId
@@ -61,12 +91,18 @@ export function resolveTurn(params: {
   const weak =
     classification.decision === 'fallback' || classification.confidence <= 0.4
 
-  const isContinuation =
-    context.lastIntent !== null && weak && (hasSlot || startsWithConnector)
+  // Es un follow-up del hilo si arranca con conector o si la señal es débil
+  // pero trae un slot reconocible. En ambos casos heredamos los slots previos.
+  const isFollowUp =
+    context.lastIntent !== null && (startsWithConnector || (weak && hasSlot))
 
-  if (isContinuation && context.lastIntent) {
+  if (isFollowUp && context.lastIntent) {
+    const redirect = redirectIntent(tokens.text, context.lastIntent, presentSlots)
+    // Destino: redirección explícita > intent fuerte recién clasificado (ej.
+    // "y comparado" → compare-month) > reuse del intent previo (elipsis pura).
+    const intent = redirect ?? (weak ? context.lastIntent : classification.intent)
     return {
-      intent: context.lastIntent,
+      intent,
       slots: mergeSlots(context.lastSlots, slots),
       decision: 'execute',
       viaEllipsis: true,
@@ -93,7 +129,7 @@ export function mergeSlots(prev: Slots, next: Slots): Slots {
     account: next.account ?? prev.account,
     money: next.money ?? prev.money,
     ordering: next.ordering ?? prev.ordering,
-    query: next.query ?? undefined,
+    query: next.query ?? prev.query,
   }
 }
 
