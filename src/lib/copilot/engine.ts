@@ -14,6 +14,15 @@ import { extractCategory } from './nlu/slots/category'
 import { extractAccount } from './nlu/slots/account'
 import { extractMerchant } from './nlu/slots/merchant'
 import {
+  listAvailableCategories,
+  listUserAccountsBasic,
+} from '@/lib/db/queries/transactions'
+import {
+  listMerchantsForUser,
+  type MerchantRow,
+  type MerchantsRange,
+} from '@/lib/db/queries/merchants'
+import {
   resolveTurn,
   pushTurn,
   EMPTY_CONTEXT,
@@ -50,15 +59,45 @@ type Analysis = {
 }
 
 /**
- * Extrae slots, clasifica y resuelve elipsis — SIN ejecutar el resolver.
- * `cheap` omite la extracción de merchant (carga histórico) para abaratar la
- * reconstrucción de contexto desde turnos pasados.
+ * Cache de listas base por invocación del engine. Memoiza las cargas que los
+ * slot extractors necesitan (categorías, cuentas, merchants históricos) como
+ * promesas, de modo que un fold de varios turnos comparta una sola query por
+ * lista en vez de recargar en cada turno. Las claves se llenan perezosamente:
+ * los merchants (caros) sólo se cargan si algún turno apunta a búsqueda.
+ */
+type RequestCache = {
+  categories?: Promise<Awaited<ReturnType<typeof listAvailableCategories>>>
+  accounts?: Promise<Awaited<ReturnType<typeof listUserAccountsBasic>>>
+  merchants?: Promise<MerchantRow[]>
+}
+
+function loadCategories(ctx: EngineContext, cache: RequestCache) {
+  return (cache.categories ??= listAvailableCategories(ctx.userId))
+}
+function loadAccounts(ctx: EngineContext, cache: RequestCache) {
+  return (cache.accounts ??= listUserAccountsBasic(ctx.userId))
+}
+function loadMerchants(ctx: EngineContext, cache: RequestCache) {
+  const range: MerchantsRange = {
+    scope: 'this-year',
+    from: '2000-01-01',
+    to: ctx.todayIso,
+    label: 'histórico',
+  }
+  return (cache.merchants ??= listMerchantsForUser(ctx.userId, range, { limit: 200 }))
+}
+
+/**
+ * Extrae slots, clasifica y resuelve elipsis — SIN ejecutar el resolver. Usa
+ * el cache para no recargar listas entre turnos del fold. Merchant se extrae
+ * siempre que el turno apunte a búsqueda (también en turnos previos), de modo
+ * que la continuidad de comercio no se pierde.
  */
 async function analyze(
   message: string,
   ctx: EngineContext,
   context: ConversationContext,
-  cheap: boolean,
+  cache: RequestCache,
 ): Promise<Analysis> {
   const tokens = tokenize(message)
   const slots: Slots = {}
@@ -72,9 +111,13 @@ async function analyze(
   const query = extractQuery(message)
   if (query) slots.query = query
 
+  const [categories, accounts] = await Promise.all([
+    loadCategories(ctx, cache),
+    loadAccounts(ctx, cache),
+  ])
   const [catRes, account] = await Promise.all([
-    extractCategory(message, ctx.userId),
-    extractAccount(message, ctx.userId),
+    extractCategory(message, ctx.userId, categories),
+    extractAccount(message, ctx.userId, accounts),
   ])
   if (catRes?.match) slots.category = catRes.match
   if (catRes?.candidates) slots.categoryCandidates = catRes.candidates
@@ -82,8 +125,9 @@ async function analyze(
 
   let classification = classify(tokens, presentKeys(slots), INTENT_CATALOG)
 
-  if (!cheap && classification.intent === 'search-transactions' && !slots.merchant) {
-    const merchant = await extractMerchant(message, ctx.userId, ctx.todayIso)
+  if (classification.intent === 'search-transactions' && !slots.merchant) {
+    const merchants = await loadMerchants(ctx, cache)
+    const merchant = await extractMerchant(message, ctx.userId, ctx.todayIso, merchants)
     if (merchant) {
       slots.merchant = merchant
       classification = classify(tokens, presentKeys(slots), INTENT_CATALOG)
@@ -110,8 +154,9 @@ export async function runEngine(
   message: string,
   ctx: EngineContext,
   context: ConversationContext = EMPTY_CONTEXT,
+  cache: RequestCache = {},
 ): Promise<EngineResult> {
-  const { resolved, classification } = await analyze(message, ctx, context, false)
+  const { resolved, classification } = await analyze(message, ctx, context, cache)
 
   const payload = await dispatch(resolved.intent, resolved.slots, resolved.decision, ctx, {
     missingSlot: resolved.missingSlot,
@@ -154,13 +199,16 @@ export async function runEngineFromHistory(
   const prior = utterances.slice(0, -1).slice(-4) // máx 4 turnos previos
   const last = utterances[utterances.length - 1] as string
 
+  // Un solo cache compartido por todo el fold: las listas base se cargan una
+  // vez aunque se reconstruyan varios turnos.
+  const cache: RequestCache = {}
   let context = EMPTY_CONTEXT
   for (const u of prior) {
-    const { resolved } = await analyze(u, ctx, context, true)
+    const { resolved } = await analyze(u, ctx, context, cache)
     context = pushTurn(context, { utterance: u, intent: resolved.intent, slots: resolved.slots })
   }
 
-  return runEngine(last, ctx, context)
+  return runEngine(last, ctx, context, cache)
 }
 
 async function dispatch(

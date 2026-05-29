@@ -1,7 +1,11 @@
 import 'server-only'
 
 import type { MerchantSlot } from '../../intents/types'
-import { listMerchantsForUser, type MerchantsRange } from '@/lib/db/queries/merchants'
+import {
+  listMerchantsForUser,
+  type MerchantsRange,
+  type MerchantRow,
+} from '@/lib/db/queries/merchants'
 import { normalize } from '../normalize'
 import { similarity } from '../levenshtein'
 
@@ -15,6 +19,7 @@ export async function extractMerchant(
   input: string,
   userId: string,
   todayIso: string,
+  preloaded?: MerchantRow[],
 ): Promise<MerchantSlot | null> {
   const range: MerchantsRange = {
     scope: 'this-year',
@@ -22,7 +27,8 @@ export async function extractMerchant(
     to: todayIso,
     label: 'histórico',
   }
-  const merchants = await listMerchantsForUser(userId, range, { limit: 200 })
+  const merchants =
+    preloaded ?? (await listMerchantsForUser(userId, range, { limit: 200 }))
   if (merchants.length === 0) return null
 
   const n = normalize(input)

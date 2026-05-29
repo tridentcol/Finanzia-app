@@ -88,8 +88,9 @@ function bestSimilarity(term: string, words: string[], stems: string[]): number 
 export async function extractCategory(
   input: string,
   userId: string,
+  preloaded?: Cat[],
 ): Promise<{ match?: CategorySlot; candidates?: CategorySlot[] } | null> {
-  const cats: Cat[] = await listAvailableCategories(userId)
+  const cats: Cat[] = preloaded ?? (await listAvailableCategories(userId))
   if (cats.length === 0) return null
 
   const n = normalize(input)

@@ -18,11 +18,14 @@ const TYPE_HINTS: Array<{ re: RegExp; type: string }> = [
   { re: /\b(efectivo|cash)\b/, type: 'cash' },
 ]
 
+type BasicAccount = Awaited<ReturnType<typeof listUserAccountsBasic>>[number]
+
 export async function extractAccount(
   input: string,
   userId: string,
+  preloaded?: BasicAccount[],
 ): Promise<AccountSlot | null> {
-  const accounts = await listUserAccountsBasic(userId)
+  const accounts = preloaded ?? (await listUserAccountsBasic(userId))
   if (accounts.length === 0) return null
 
   const n = normalize(input)
