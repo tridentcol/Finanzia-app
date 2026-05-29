@@ -6,7 +6,7 @@ import { and, eq, isNull, or } from 'drizzle-orm'
 
 import { requireCurrentUser } from '@/lib/auth'
 import { db } from '@/lib/db/client'
-import { accounts, budgets, categories } from '@/lib/db/schema'
+import { budgets, categories, profiles } from '@/lib/db/schema'
 import { getCopilotLlmConfig } from '@/lib/ai/copilot/config'
 import { createTransaction } from '@/app/(app)/mi-dinero/movimientos/actions'
 
@@ -168,4 +168,56 @@ export async function isCopilotAvailable(): Promise<{
     provider === 'openai' ? process.env.OPENAI_API_KEY : process.env.ANTHROPIC_API_KEY
   if (operatorKey) return { mode: 'llm', source: 'operator' }
   return { mode: 'heuristic', source: null }
+}
+
+const copilotPrefsSchema = z.object({
+  provider: z.enum(['openai', 'anthropic']).nullable().optional(),
+  model: z.string().max(60).nullable().optional(),
+  reasoningEffort: z.enum(['minimal', 'low', 'medium', 'high']).nullable().optional(),
+  textVerbosity: z.enum(['low', 'medium', 'high']).nullable().optional(),
+})
+
+export type CopilotPrefsInput = z.input<typeof copilotPrefsSchema>
+
+/**
+ * Guarda la preferencia de modelo/proveedor del copiloto del usuario en
+ * `profiles.aiProfile.copilot`. Solo persiste los campos elegidos (los null =
+ * "usar el default del operador" se omiten). Si no queda ninguno, borra la
+ * subclave para volver al default del env. resolveCopilotProvider la aplica.
+ */
+export async function updateCopilotPreferences(
+  input: CopilotPrefsInput,
+): Promise<ActionResult> {
+  const user = await requireCurrentUser()
+  const parsed = copilotPrefsSchema.safeParse(input)
+  if (!parsed.success) {
+    return { ok: false, error: { code: 'validation', message: 'Preferencias inválidas.' } }
+  }
+  const p = parsed.data
+  const copilot: Record<string, string> = {}
+  if (p.provider) copilot.provider = p.provider
+  if (p.model && p.model.trim()) copilot.model = p.model.trim()
+  if (p.reasoningEffort) copilot.reasoningEffort = p.reasoningEffort
+  if (p.textVerbosity) copilot.textVerbosity = p.textVerbosity
+
+  try {
+    const existing = await db.query.profiles.findFirst({
+      where: eq(profiles.userId, user.id),
+      columns: { aiProfile: true },
+    })
+    const base = (existing?.aiProfile as Record<string, unknown> | null) ?? {}
+    const aiProfile: Record<string, unknown> = { ...base }
+    if (Object.keys(copilot).length > 0) aiProfile.copilot = copilot
+    else delete aiProfile.copilot
+
+    await db
+      .update(profiles)
+      .set({ aiProfile, updatedAt: new Date() })
+      .where(eq(profiles.userId, user.id))
+  } catch {
+    return { ok: false, error: { code: 'db_error', message: 'No se pudo guardar.' } }
+  }
+
+  revalidatePath('/ajustes')
+  return { ok: true, data: undefined }
 }

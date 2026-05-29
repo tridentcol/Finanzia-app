@@ -56,6 +56,70 @@ function normalizeVerbosity(v: string | undefined): TextVerbosity {
     : 'low'
 }
 
+/**
+ * Override por usuario (guardado en `profiles.aiProfile.copilot`). Solo cubre la
+ * elección de proveedor/modelo/asertividad; `store` (privacidad) y `forceLLM`
+ * (testing) quedan a nivel operador (env), no se exponen al usuario.
+ */
+export type CopilotUserOverride = {
+  provider?: CopilotProvider
+  model?: string
+  reasoningEffort?: ReasoningEffort
+  textVerbosity?: TextVerbosity
+}
+
+/** Modelos ofrecidos en el selector de la UI, por proveedor. */
+export const COPILOT_MODEL_OPTIONS: Record<CopilotProvider, string[]> = {
+  openai: ['gpt-5.4-mini', 'gpt-5-mini', 'gpt-5.4', 'gpt-5'],
+  anthropic: ['claude-sonnet-4-6'],
+}
+
+/** Aplica el override del usuario sobre la config del entorno. Pura. */
+export function applyUserOverride(
+  base: CopilotLlmConfig,
+  override: CopilotUserOverride | null | undefined,
+): CopilotLlmConfig {
+  if (!override) return base
+  const provider = override.provider ?? base.provider
+  // Si cambió de proveedor sin elegir modelo, usar el default del nuevo.
+  const providerChanged = override.provider !== undefined && override.provider !== base.provider
+  const model =
+    override.model?.trim() ||
+    (providerChanged
+      ? provider === 'openai'
+        ? DEFAULT_OPENAI_MODEL
+        : DEFAULT_ANTHROPIC_MODEL
+      : base.model)
+  return {
+    ...base,
+    provider,
+    model,
+    reasoningEffort: override.reasoningEffort ?? base.reasoningEffort,
+    textVerbosity: override.textVerbosity ?? base.textVerbosity,
+  }
+}
+
+/** Parsea/valida el override leído de jsonb (datos no tipados). */
+export function parseCopilotOverride(raw: unknown): CopilotUserOverride | null {
+  if (typeof raw !== 'object' || raw === null) return null
+  const r = raw as Record<string, unknown>
+  const out: CopilotUserOverride = {}
+  if (r.provider === 'openai' || r.provider === 'anthropic') out.provider = r.provider
+  if (typeof r.model === 'string' && r.model.trim()) out.model = r.model.trim()
+  if (
+    r.reasoningEffort === 'minimal' ||
+    r.reasoningEffort === 'low' ||
+    r.reasoningEffort === 'medium' ||
+    r.reasoningEffort === 'high'
+  ) {
+    out.reasoningEffort = r.reasoningEffort
+  }
+  if (r.textVerbosity === 'low' || r.textVerbosity === 'medium' || r.textVerbosity === 'high') {
+    out.textVerbosity = r.textVerbosity
+  }
+  return Object.keys(out).length > 0 ? out : null
+}
+
 /** Lee y resuelve la config del copiloto desde el entorno. Pura salvo `env`. */
 export function getCopilotLlmConfig(): CopilotLlmConfig {
   const provider: CopilotProvider =

@@ -7,9 +7,18 @@ import {
   type UIMessage,
 } from 'ai'
 
+import { eq } from 'drizzle-orm'
+
+import { db } from '@/lib/db/client'
+import { profiles } from '@/lib/db/schema'
 import { getAnthropic } from '../anthropic'
 import { getOpenAI } from '../openai'
-import { getCopilotLlmConfig, type CopilotLlmConfig } from './config'
+import {
+  applyUserOverride,
+  getCopilotLlmConfig,
+  parseCopilotOverride,
+  type CopilotLlmConfig,
+} from './config'
 import { buildCopilotTools } from './tools'
 import { buildSystemPrompt } from './system-prompt'
 import { buildProfileSnapshot } from './profile-snapshot'
@@ -43,7 +52,21 @@ export type ResolvedCopilotProvider = {
 export async function resolveCopilotProvider(
   userId: string,
 ): Promise<ResolvedCopilotProvider | null> {
-  const config = getCopilotLlmConfig()
+  // Config del operador (env) con el override del usuario superpuesto
+  // (provider/modelo/asertividad guardados en profiles.aiProfile.copilot).
+  let config = getCopilotLlmConfig()
+  try {
+    const profile = await db.query.profiles.findFirst({
+      where: eq(profiles.userId, userId),
+      columns: { aiProfile: true },
+    })
+    const override = parseCopilotOverride(
+      (profile?.aiProfile as { copilot?: unknown } | null)?.copilot,
+    )
+    config = applyUserOverride(config, override)
+  } catch (err) {
+    console.error('[copilot] lectura de override falló:', err)
+  }
 
   if (config.provider === 'openai') {
     const provider = await getOpenAI({ userId, scope: 'chat' })

@@ -7,7 +7,6 @@ import { requireCurrentUser } from '@/lib/auth'
 import { db } from '@/lib/db/client'
 import { conversations, messages, profiles } from '@/lib/db/schema'
 import { resolveCopilotProvider, runCopilotChat } from '@/lib/ai/copilot'
-import { getCopilotLlmConfig } from '@/lib/ai/copilot/config'
 import { routeLocal } from '@/lib/copilot/orchestrator'
 import { retrievalFallback } from '@/lib/copilot/fallback/retrieval'
 import type { ConversationContext } from '@/lib/copilot/conversation/reducer'
@@ -100,8 +99,10 @@ export async function POST(req: Request) {
   // local (gratis, aunque haya LLM key). Si difiere, va al LLM (si hay provider)
   // o al fallback de recuperación. Con COPILOT_FORCE_LLM=1 se salta el
   // local-first y todo va al LLM mientras se evalúa el modelo.
-  const cfg = getCopilotLlmConfig()
+  // Config efectiva (env del operador + override del usuario) viene resuelta
+  // dentro de `resolved.config`. forceLLM es del operador (env), preservado ahí.
   const resolved = await resolveCopilotProvider(user.id)
+  const forceLLM = resolved?.config.forceLLM ?? false
   const utterances = incoming
     .filter((m) => m?.role === 'user')
     .map((m) => textOf(m))
@@ -117,7 +118,7 @@ export async function POST(req: Request) {
   )
 
   // Al LLM si hay provider y (forzamos o el motor local difirió).
-  const goLLM = Boolean(resolved) && (cfg.forceLLM || routed.mode === 'defer')
+  const goLLM = Boolean(resolved) && (forceLLM || routed.mode === 'defer')
 
   if (process.env.FINANZIA_COPILOT_DEBUG === '1') {
     console.log('[copilot:route]', {
@@ -126,9 +127,9 @@ export async function POST(req: Request) {
       intent: routed.result.resolvedIntent,
       confidence: Number(routed.result.classification.confidence.toFixed(2)),
       hasLLM: Boolean(resolved),
-      forceLLM: cfg.forceLLM,
+      forceLLM,
       provider: resolved?.kind ?? null,
-      model: resolved ? cfg.model : null,
+      model: resolved?.config.model ?? null,
     })
   }
 
@@ -202,8 +203,8 @@ export async function POST(req: Request) {
         const toolCalls = Array.isArray(event.toolCalls) ? event.toolCalls.length : 0
         console.log('[copilot:llm]', {
           provider: resolved?.kind ?? null,
-          model: cfg.model,
-          reasoningEffort: cfg.reasoningEffort,
+          model: resolved?.config.model ?? null,
+          reasoningEffort: resolved?.config.reasoningEffort ?? null,
           finishReason: event.finishReason ?? null,
           toolCalls,
           usage: event.usage ?? null,
@@ -241,6 +242,6 @@ export async function POST(req: Request) {
   response.headers.set('x-conversation-id', conversationId)
   response.headers.set('x-copilot-mode', 'llm')
   response.headers.set('x-copilot-provider', resolved?.kind ?? 'unknown')
-  response.headers.set('x-copilot-model', cfg.model)
+  response.headers.set('x-copilot-model', resolved?.config.model ?? 'unknown')
   return response
 }
