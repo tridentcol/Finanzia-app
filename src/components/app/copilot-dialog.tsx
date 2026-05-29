@@ -63,21 +63,13 @@ function hasHeuristicPart(m: LooseMsg): boolean {
 function CopilotChat({ onClose }: { onClose: () => void }) {
   const router = useRouter()
   const [input, setInput] = useState('')
-  // Contexto conversacional efímero: vive en el cliente y se reenvía cada turno.
+  // Contexto conversacional efímero: vive en el cliente y se reenvía cada turno
+  // como `body.context` en sendMessage (se lee en el handler, no en render).
   const contextRef = useRef<ConversationContext>(EMPTY_CONTEXT)
 
-  const transport = useMemo(
-    () =>
-      new DefaultChatTransport({
-        api: '/api/ai/chat',
-        prepareSendMessagesRequest: (options) => ({
-          body: { ...(options.body as Record<string, unknown>), context: contextRef.current },
-        }),
-      }),
-    [],
-  )
-
-  const { messages, sendMessage, status, error, stop, setMessages } = useChat({ transport })
+  const { messages, sendMessage, status, error, stop, setMessages } = useChat({
+    transport: new DefaultChatTransport({ api: '/api/ai/chat' }),
+  })
 
   const isStreaming = status === 'streaming' || status === 'submitted'
 
@@ -123,7 +115,8 @@ function CopilotChat({ onClose }: { onClose: () => void }) {
     const t = text.trim()
     if (!t || isStreaming) return
     setInput('')
-    sendMessage({ text: t })
+    // El contexto se lee aquí (handler), no en render: reenvía el último estado.
+    sendMessage({ text: t }, { body: { context: contextRef.current } })
   }
 
   function onSubmit(e: React.FormEvent) {
