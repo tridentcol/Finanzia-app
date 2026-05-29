@@ -48,10 +48,13 @@ const schema = z.object({
   // Nombre interno (lo que se muestra en listas y selects de transacción).
   name: z.string().trim().min(1, 'Requerido').max(80, 'Máx 80'),
   currency: z.enum(currencyCodes as [string, ...string[]]),
-  // Saldo actual = lo adeudado (negativo). 0 si la tarjeta está al día.
-  initialBalance: z
+  // Saldo adeudado actual — siempre positivo en el form (lo que debes hoy).
+  // Al enviar se convierte a negativo para que en accounts.initial_balance
+  // represente "deuda" como signo negativo, consistente con el resto del
+  // modelo (un balance < 0 = debes).
+  currentDebt: z
     .string()
-    .regex(/^-?\d+(\.\d{1,2})?$/, 'Formato 1234.56'),
+    .regex(/^\d+(\.\d{1,2})?$/, 'Formato 1234 o 1234.56'),
   creditLimit: z
     .string()
     .regex(/^\d+(\.\d{1,2})?$/, 'Cupo requerido')
@@ -99,7 +102,7 @@ function NewCardForm({ onDone }: { onDone: () => void }) {
       cardHolderName: '',
       name: '',
       currency: 'COP',
-      initialBalance: '0',
+      currentDebt: '0',
       creditLimit: '',
       statementDay: '',
       paymentDay: '',
@@ -144,12 +147,16 @@ function NewCardForm({ onDone }: { onDone: () => void }) {
 
   function onSubmit(values: FormValues) {
     setServerError(null)
+    // El form expone el saldo adeudado como positivo (UX natural: "debes
+    // $350,000"); el modelo de accounts guarda deuda como balance negativo.
+    const debt = Number.parseFloat(values.currentDebt) || 0
+    const initialBalance = debt > 0 ? (-debt).toFixed(2) : '0'
     startTransition(async () => {
       const result = await createAccount({
         name: values.name,
         type: 'credit_card',
         currency: values.currency,
-        initialBalance: values.initialBalance,
+        initialBalance,
         creditLimit: values.creditLimit,
         statementDay: values.statementDay
           ? Number.parseInt(values.statementDay, 10)
@@ -367,7 +374,7 @@ function NewCardForm({ onDone }: { onDone: () => void }) {
           <div className="flex flex-col gap-1">
             <h3 className="text-text text-sm font-semibold">Cupo y fechas</h3>
             <p className="text-text-tertiary text-xs">
-              El saldo es negativo cuando debes; 0 si está al día.
+              Lo que debes ahora va como número positivo; 0 si está al día.
             </p>
           </div>
 
@@ -387,17 +394,17 @@ function NewCardForm({ onDone }: { onDone: () => void }) {
             </Field>
 
             <Field
-              label="Saldo actual (deuda)"
-              htmlFor="initial-balance"
-              error={errors.initialBalance?.message}
-              hint="Negativo si debes, ej. -350000"
+              label="Saldo adeudado actual"
+              htmlFor="current-debt"
+              error={errors.currentDebt?.message}
+              hint="Lo que debes hoy. 0 si está al día."
             >
               <Input
-                id="initial-balance"
+                id="current-debt"
                 inputMode="decimal"
                 placeholder="0"
                 className="tabular"
-                {...register('initialBalance')}
+                {...register('currentDebt')}
               />
             </Field>
           </div>

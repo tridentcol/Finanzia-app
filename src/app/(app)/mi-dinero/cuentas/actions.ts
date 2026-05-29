@@ -152,6 +152,8 @@ export async function createAccount(
   }
 
   revalidatePath('/mi-dinero/cuentas')
+  revalidatePath('/mi-dinero/tarjetas')
+  revalidatePath('/mi-dinero/deudas')
   revalidatePath('/dashboard')
   return { ok: true, data: { id: row.id } }
 }

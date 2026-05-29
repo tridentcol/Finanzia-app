@@ -131,8 +131,9 @@ export default async function TarjetasPage() {
         />
       </section>
 
-      {/* Lista */}
-      <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+      {/* Lista — grid de 1/2/3 columnas según ancho. La CardVisual interior
+          tiene max-w para no inflar verticalmente. */}
+      <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {cards.map((c) => (
           <li key={c.id} className="min-w-0">
             <CardListItem card={c} />
@@ -239,19 +240,21 @@ function CardListItem({ card: c }: { card: CardRow }) {
         }}
       />
 
-      <CardVisual
-        bankSlug={c.bankSlug}
-        kind="credit"
-        cardProductSlug={c.cardProductSlug}
-        cardBrand={c.cardBrand}
-        cardLastFour={c.cardLastFour}
-        cardHolderName={c.cardHolderName}
-        showMeta={false}
-      />
+      <div className="mx-auto w-full max-w-[260px]">
+        <CardVisual
+          bankSlug={c.bankSlug}
+          kind="credit"
+          cardProductSlug={c.cardProductSlug}
+          cardBrand={c.cardBrand}
+          cardLastFour={c.cardLastFour}
+          cardHolderName={c.cardHolderName}
+          showMeta={false}
+        />
+      </div>
 
       <header className="flex items-start justify-between gap-3">
         <Link
-          href={`/mi-dinero/cuentas/${c.id}`}
+          href={`/mi-dinero/tarjetas/${c.id}`}
           className="flex min-w-0 flex-col gap-0.5 hover:opacity-80 transition-opacity"
         >
           <span className="text-text truncate text-sm font-semibold">
@@ -323,7 +326,7 @@ function CardListItem({ card: c }: { card: CardRow }) {
       )}
 
       <Link
-        href={`/mi-dinero/cuentas/${c.id}`}
+        href={`/mi-dinero/tarjetas/${c.id}`}
         className="text-text-secondary hover:text-text border-border-default/60 -mb-1 inline-flex items-center justify-between border-t pt-3 text-[13px] transition-colors"
       >
         Detalle
