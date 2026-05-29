@@ -19,7 +19,7 @@ function SelectTrigger({
   return (
     <RadixSelect.Trigger
       className={cn(
-        'bg-bg text-text border-border-default flex h-10 w-full items-center justify-between gap-2 rounded-[8px] border px-3 text-sm',
+        'bg-bg text-text border-border-default flex h-11 w-full items-center justify-between gap-2 rounded-[8px] border px-3 text-base sm:h-10 sm:text-sm',
         'transition-colors duration-150 outline-none',
         'focus:border-border-emphasis focus:ring-2 focus:ring-[color:var(--accent-ai)]/30',
         'disabled:cursor-not-allowed disabled:opacity-50',
@@ -120,7 +120,7 @@ function SelectItem({
     <RadixSelect.Item
       className={cn(
         'text-text-secondary data-[highlighted]:bg-surface-hover data-[highlighted]:text-text',
-        'relative flex h-9 cursor-pointer select-none items-center rounded-[6px] py-1.5 pl-3 pr-8 text-sm outline-none',
+        'relative flex h-9 cursor-pointer select-none items-center rounded-[6px] py-1.5 pl-3 pr-8 text-base outline-none sm:text-sm',
         'data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
         className,
       )}

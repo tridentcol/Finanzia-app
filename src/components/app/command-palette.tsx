@@ -130,7 +130,7 @@ export function CommandPalette() {
                 value={query}
                 onValueChange={setQuery}
                 placeholder="Buscar movimientos o saltar a…"
-                className="text-text placeholder:text-text-tertiary flex-1 bg-transparent py-4 text-[15px] outline-none"
+                className="text-text placeholder:text-text-tertiary flex-1 bg-transparent py-4 text-base outline-none md:text-sm"
               />
             </div>
 

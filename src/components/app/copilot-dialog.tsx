@@ -130,7 +130,7 @@ function CopilotChat({ onClose }: { onClose: () => void }) {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Pregunta cualquier cosa sobre tus finanzas"
-          className="text-text placeholder:text-text-tertiary min-h-[44px] flex-1 bg-transparent px-2 py-2 text-sm outline-none"
+          className="text-text placeholder:text-text-tertiary min-h-[44px] flex-1 bg-transparent px-2 py-2 text-base outline-none sm:text-sm"
           autoFocus
           disabled={false}
         />
