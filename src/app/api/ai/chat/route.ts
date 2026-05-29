@@ -6,8 +6,8 @@ import { createUIMessageStream, createUIMessageStreamResponse } from 'ai'
 import { requireCurrentUser } from '@/lib/auth'
 import { db } from '@/lib/db/client'
 import { conversations, messages, profiles } from '@/lib/db/schema'
-import { runCopilotChat } from '@/lib/ai/copilot'
-import { getAnthropic } from '@/lib/ai/anthropic'
+import { resolveCopilotProvider, runCopilotChat } from '@/lib/ai/copilot'
+import { getCopilotLlmConfig } from '@/lib/ai/copilot/config'
 import { routeLocal } from '@/lib/copilot/orchestrator'
 import { retrievalFallback } from '@/lib/copilot/fallback/retrieval'
 import type { ConversationContext } from '@/lib/copilot/conversation/reducer'
@@ -96,10 +96,12 @@ export async function POST(req: Request) {
   const todayIso = new Date().toISOString().slice(0, 10)
 
   // ---- Ruteo local-first. ----
-  // Siempre intentamos el motor local primero. Si es confiado, responde local
-  // (gratis, aunque haya LLM key). Si no, defiere: al LLM si hay provider; al
-  // fallback de recuperación si no.
-  const provider = await getAnthropic({ userId: user.id })
+  // Por default intentamos el motor local primero: si es confiado responde
+  // local (gratis, aunque haya LLM key). Si difiere, va al LLM (si hay provider)
+  // o al fallback de recuperación. Con COPILOT_FORCE_LLM=1 se salta el
+  // local-first y todo va al LLM mientras se evalúa el modelo.
+  const cfg = getCopilotLlmConfig()
+  const resolved = await resolveCopilotProvider(user.id)
   const utterances = incoming
     .filter((m) => m?.role === 'user')
     .map((m) => textOf(m))
@@ -114,18 +116,25 @@ export async function POST(req: Request) {
     clientContext,
   )
 
+  // Al LLM si hay provider y (forzamos o el motor local difirió).
+  const goLLM = Boolean(resolved) && (cfg.forceLLM || routed.mode === 'defer')
+
   if (process.env.FINANZIA_COPILOT_DEBUG === '1') {
     console.log('[copilot:route]', {
       last: utterances[utterances.length - 1],
-      mode: routed.mode,
+      mode: goLLM ? 'llm' : routed.mode === 'local' ? 'local' : 'fallback',
       intent: routed.result.resolvedIntent,
       confidence: Number(routed.result.classification.confidence.toFixed(2)),
-      hasLLM: Boolean(provider),
+      hasLLM: Boolean(resolved),
+      forceLLM: cfg.forceLLM,
+      provider: resolved?.kind ?? null,
+      model: resolved ? cfg.model : null,
     })
   }
 
-  // Responde local cuando es confiado, o cuando no hay LLM (defer sin destino).
-  if (routed.mode === 'local' || !provider) {
+  // Responde local cuando es confiado y no forzamos LLM, o cuando no hay
+  // provider (defer/forzado sin destino → fallback de recuperación).
+  if (!goLLM) {
     // Confiado → respuesta del motor. Defer sin LLM → fallback de recuperación.
     const payload =
       routed.mode === 'local'
@@ -187,7 +196,19 @@ export async function POST(req: Request) {
   const result = await runCopilotChat({
     ctx: { userId: user.id, baseCurrency },
     messages: incoming as Parameters<typeof runCopilotChat>[0]['messages'],
+    resolved: resolved ?? undefined,
     onFinish: async (event) => {
+      if (process.env.FINANZIA_COPILOT_DEBUG === '1') {
+        const toolCalls = Array.isArray(event.toolCalls) ? event.toolCalls.length : 0
+        console.log('[copilot:llm]', {
+          provider: resolved?.kind ?? null,
+          model: cfg.model,
+          reasoningEffort: cfg.reasoningEffort,
+          finishReason: event.finishReason ?? null,
+          toolCalls,
+          usage: event.usage ?? null,
+        })
+      }
       try {
         await db.insert(messages).values({
           conversationId: conversationId!,
@@ -219,5 +240,7 @@ export async function POST(req: Request) {
   const response = result.toUIMessageStreamResponse()
   response.headers.set('x-conversation-id', conversationId)
   response.headers.set('x-copilot-mode', 'llm')
+  response.headers.set('x-copilot-provider', resolved?.kind ?? 'unknown')
+  response.headers.set('x-copilot-model', cfg.model)
   return response
 }
