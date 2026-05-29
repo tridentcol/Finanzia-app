@@ -397,3 +397,202 @@ export async function bulkRecategorize(): Promise<
   revalidatePath('/dashboard')
   return { ok: true, data: result }
 }
+
+// ──────────────────────────────────────────────────────────────────────
+// Update / Delete transaction
+// ──────────────────────────────────────────────────────────────────────
+
+const updateTransactionSchema = z.object({
+  id: z.string().uuid('ID inválido'),
+  accountId: z.string().uuid('ID inválido'),
+  categoryId: z.string().uuid('ID inválido').optional().nullable(),
+  date: isoDate,
+  amountOriginal: z
+    .string()
+    .regex(/^\d+(\.\d{1,2})?$/, 'Monto inválido (positivo, ej 1234.56)'),
+  description: z.string().trim().min(1, 'Requerido').max(200),
+  notes: z.string().trim().max(500).optional().nullable(),
+})
+
+export type UpdateTransactionInput = z.input<typeof updateTransactionSchema>
+
+/**
+ * Edita una transacción existente. Para mantener invariantes (transfer
+ * group, amount_base, etc.), no permitimos cambiar `kind` ni `currency`
+ * ni el `transferAccountId`. Si necesitas eso, borra y crea de nuevo.
+ *
+ * Recalcula `amount_base` si cambió el monto o la fecha (porque la tasa
+ * de cambio del día puede ser distinta).
+ */
+export async function updateTransaction(
+  input: UpdateTransactionInput,
+): Promise<ActionResult> {
+  const user = await requireCurrentUser()
+  const parsed = updateTransactionSchema.safeParse(input)
+  if (!parsed.success) {
+    const fields: Record<string, string> = {}
+    for (const issue of parsed.error.issues) {
+      const key = issue.path.join('.')
+      if (key) fields[key] = issue.message
+    }
+    return {
+      ok: false,
+      error: { code: 'validation', message: 'Revisa los campos.', fields },
+    }
+  }
+  const data = parsed.data
+
+  const tx = await db.query.transactions.findFirst({
+    where: and(eq(transactions.id, data.id), eq(transactions.userId, user.id)),
+  })
+  if (!tx) {
+    return {
+      ok: false,
+      error: { code: 'not_found', message: 'Transacción no encontrada.' },
+    }
+  }
+
+  // No permitimos editar transfers desde acá — la mecánica de espejo
+  // cross-currency es compleja y mejor borrarla y recrearla.
+  if (tx.kind === 'transfer') {
+    return {
+      ok: false,
+      error: {
+        code: 'transfer_immutable',
+        message:
+          'Las transferencias no se editan. Bórrala y registra una nueva.',
+      },
+    }
+  }
+
+  // Verificar cuenta destino válida.
+  const account = await db.query.accounts.findFirst({
+    where: and(eq(accounts.id, data.accountId), eq(accounts.userId, user.id)),
+  })
+  if (!account) {
+    return {
+      ok: false,
+      error: { code: 'invalid_account', message: 'Cuenta inválida.' },
+    }
+  }
+
+  // Validar categoría si viene.
+  if (data.categoryId) {
+    const cat = await db.query.categories.findFirst({
+      where: and(
+        eq(categories.id, data.categoryId),
+        or(isNull(categories.userId), eq(categories.userId, user.id)),
+      ),
+    })
+    if (!cat) {
+      return {
+        ok: false,
+        error: { code: 'invalid_category', message: 'Categoría inválida.' },
+      }
+    }
+    if (cat.kind !== tx.kind) {
+      return {
+        ok: false,
+        error: {
+          code: 'kind_mismatch',
+          message: `La categoría es de tipo ${cat.kind}, no ${tx.kind}.`,
+        },
+      }
+    }
+  }
+
+  // Si cambió monto o fecha, recalculamos amount_base con la tasa del día.
+  const amountChanged = data.amountOriginal !== tx.amountOriginal
+  const dateChanged = data.date !== tx.date
+  let amountBase = tx.amountBase
+  if (amountChanged || dateChanged) {
+    const profile = await db.query.profiles.findFirst({
+      where: eq(profiles.userId, user.id),
+    })
+    const baseCurrency = profile?.baseCurrency ?? 'COP'
+    if (tx.currency === baseCurrency) {
+      amountBase = data.amountOriginal
+    } else {
+      try {
+        const converted = await convertAmount(
+          data.amountOriginal,
+          tx.currency,
+          baseCurrency,
+          data.date,
+          { fallbackToOne: true },
+        )
+        amountBase = converted.amount
+      } catch {
+        amountBase = data.amountOriginal
+      }
+    }
+  }
+
+  await db
+    .update(transactions)
+    .set({
+      accountId: data.accountId,
+      categoryId: data.categoryId ?? null,
+      date: data.date,
+      amountOriginal: data.amountOriginal,
+      amountBase,
+      description: data.description,
+      notes: data.notes ?? null,
+      updatedAt: new Date(),
+    })
+    .where(eq(transactions.id, data.id))
+
+  revalidatePath('/mi-dinero/movimientos')
+  revalidatePath('/mi-dinero/cuentas')
+  revalidatePath('/mi-dinero/tarjetas')
+  revalidatePath('/dashboard')
+  return { ok: true, data: undefined }
+}
+
+/**
+ * Borra una transacción soft (sets deleted_at). Si es transfer, también
+ * borra la fila espejo (mismo transfer_group_id) para mantener consistencia.
+ */
+export async function deleteTransaction(id: string): Promise<ActionResult> {
+  const user = await requireCurrentUser()
+  if (!z.string().uuid().safeParse(id).success) {
+    return { ok: false, error: { code: 'invalid_id', message: 'ID inválido.' } }
+  }
+
+  const tx = await db.query.transactions.findFirst({
+    where: and(eq(transactions.id, id), eq(transactions.userId, user.id)),
+  })
+  if (!tx) {
+    return {
+      ok: false,
+      error: { code: 'not_found', message: 'Transacción no encontrada.' },
+    }
+  }
+
+  const now = new Date()
+
+  // Soft-delete con deleted_at — preserva historial para auditoría.
+  if (tx.transferGroupId) {
+    // Borra ambas filas del par espejo.
+    await db
+      .update(transactions)
+      .set({ deletedAt: now, updatedAt: now })
+      .where(
+        and(
+          eq(transactions.userId, user.id),
+          eq(transactions.transferGroupId, tx.transferGroupId),
+        ),
+      )
+  } else {
+    await db
+      .update(transactions)
+      .set({ deletedAt: now, updatedAt: now })
+      .where(eq(transactions.id, id))
+  }
+
+  revalidatePath('/mi-dinero/movimientos')
+  revalidatePath('/mi-dinero/cuentas')
+  revalidatePath('/mi-dinero/tarjetas')
+  revalidatePath('/dashboard')
+  return { ok: true, data: undefined }
+}

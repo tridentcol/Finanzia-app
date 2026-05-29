@@ -17,6 +17,7 @@ import { CategoryCell, type CategoryOption } from '@/components/app/category-cel
 import { RecategorizeButton } from '@/components/app/recategorize-button'
 import { ImportDialog } from '@/components/app/import-dialog'
 import { DayPickerNav } from '@/components/app/day-picker-nav'
+import { TransactionActionsMenu } from '@/components/app/transaction-actions-menu'
 import { cn } from '@/lib/utils'
 
 export const metadata: Metadata = {
@@ -218,13 +219,30 @@ export default async function TransaccionesPage({
                         ` → ${tx.transferAccount.name}`}
                     </span>
                   </div>
-                  <Amount
-                    value={tx.amountOriginal}
-                    currency={tx.currency}
-                    kind={kindToTone[tx.kind]}
-                    showPositiveSign={tx.kind === 'income'}
-                    className="shrink-0 text-[14px]"
-                  />
+                  <div className="flex shrink-0 items-center gap-2">
+                    <Amount
+                      value={tx.amountOriginal}
+                      currency={tx.currency}
+                      kind={kindToTone[tx.kind]}
+                      showPositiveSign={tx.kind === 'income'}
+                      className="text-[14px]"
+                    />
+                    <TransactionActionsMenu
+                      transaction={{
+                        id: tx.id,
+                        kind: tx.kind,
+                        accountId: tx.account.id,
+                        categoryId: tx.category?.id ?? null,
+                        date: tx.date,
+                        amountOriginal: tx.amountOriginal,
+                        currency: tx.currency,
+                        description: tx.description,
+                        notes: tx.notes,
+                      }}
+                      accounts={accounts}
+                      categories={categoryOptions}
+                    />
+                  </div>
                 </div>
                 <CategoryCell
                   transactionId={tx.id}
@@ -249,6 +267,7 @@ export default async function TransaccionesPage({
                   <th className="px-5 py-3 text-left font-medium">Cuenta</th>
                   <th className="px-5 py-3 text-left font-medium">Categoría</th>
                   <th className="px-5 py-3 text-right font-medium">Monto</th>
+                  <th className="w-10 px-3 py-3" aria-label="Acciones" />
                 </tr>
               </thead>
               <tbody>
@@ -291,6 +310,23 @@ export default async function TransaccionesPage({
                         kind={kindToTone[tx.kind]}
                         showPositiveSign={tx.kind === 'income'}
                         className="text-sm"
+                      />
+                    </td>
+                    <td className="px-3 py-3.5 text-right">
+                      <TransactionActionsMenu
+                        transaction={{
+                          id: tx.id,
+                          kind: tx.kind,
+                          accountId: tx.account.id,
+                          categoryId: tx.category?.id ?? null,
+                          date: tx.date,
+                          amountOriginal: tx.amountOriginal,
+                          currency: tx.currency,
+                          description: tx.description,
+                          notes: tx.notes,
+                        }}
+                        accounts={accounts}
+                        categories={categoryOptions}
                       />
                     </td>
                   </tr>
