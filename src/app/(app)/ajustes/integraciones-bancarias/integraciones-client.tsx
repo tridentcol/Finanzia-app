@@ -13,13 +13,12 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Field } from '@/components/ui/field'
+import { createEmailAlias, deleteEmailAlias } from './actions'
 import {
-  createEmailAlias,
-  deleteEmailAlias,
   BANK_LABELS,
   SUPPORTED_BANKS,
   type SupportedBank,
-} from './actions'
+} from './bank-config'
 
 const EMAIL_DOMAIN = 'inbox.finanzia.app'
 

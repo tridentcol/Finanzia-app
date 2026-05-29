@@ -7,23 +7,11 @@ import { z } from 'zod'
 import { requireCurrentUser } from '@/lib/auth'
 import { db } from '@/lib/db/client'
 import { emailInboxAliases } from '@/lib/db/schema'
+import { SUPPORTED_BANKS } from './bank-config'
 
 type ActionResult<T = void> =
   | { ok: true; data: T }
   | { ok: false; error: { code: string; message: string } }
-
-const SUPPORTED_BANKS = ['bancolombia', 'nequi', 'davivienda', 'bbva'] as const
-type SupportedBank = (typeof SUPPORTED_BANKS)[number]
-
-const BANK_LABELS: Record<SupportedBank, string> = {
-  bancolombia: 'Bancolombia',
-  nequi: 'Nequi',
-  davivienda: 'Davivienda',
-  bbva: 'BBVA Colombia',
-}
-
-export { SUPPORTED_BANKS, BANK_LABELS }
-export type { SupportedBank }
 
 function generateSlug(length = 8): string {
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789'
