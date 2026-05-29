@@ -24,8 +24,8 @@ type Row = {
   spent: string
 }
 
-const OVER_NOTICE = 0.1
-const OVER_WARNING = 0.3
+export const OVER_NOTICE = 0.1
+export const OVER_WARNING = 0.3
 
 export async function detectForecasts(ctx: InsightContext): Promise<DetectedInsight[]> {
   const rows = await db.execute<Row>(sql`
