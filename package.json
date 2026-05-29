@@ -18,7 +18,8 @@
     "db:bootstrap": "tsx --env-file=.env.local scripts/db-setup.ts",
     "db:seed": "tsx --env-file=.env.local scripts/seed-categories.ts",
     "db:seed:intents": "tsx --env-file=.env.local scripts/seed-intent-examples.ts",
-    "rates:fetch": "tsx --env-file=.env.local scripts/fetch-rates.ts"
+    "rates:fetch": "tsx --env-file=.env.local scripts/fetch-rates.ts",
+    "probe:llm": "tsx --env-file=.env.local scripts/probe-llm.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.79",

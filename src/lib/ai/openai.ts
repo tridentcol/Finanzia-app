@@ -11,9 +11,11 @@ import { getUserApiKey } from '@/lib/integrations/store'
  *  2. `AI_GATEWAY_API_KEY` env (operador) — apunta a Vercel AI Gateway.
  *  3. `OPENAI_API_KEY` env (operador).
  *
- * Sólo se usa para embeddings (`text-embedding-3-small`, 1536 dim) por defecto.
- * Si la key del usuario tiene scope 'chat', se puede usar para generación,
- * pero el copiloto sigue prefiriendo Anthropic.
+ * Con `scope: 'embed'` cubre embeddings (`text-embedding-3-small`, 1536 dim).
+ * Con `scope: 'chat'` es el cerebro del copiloto (modelo configurable en
+ * `src/lib/ai/copilot/config.ts`, default `gpt-5.4-mini`): la key del usuario
+ * en Vault debe tener scope 'chat', o cae a `AI_GATEWAY_API_KEY` /
+ * `OPENAI_API_KEY` del operador.
  */
 const cache = new Map<string, OpenAIProvider>()
 

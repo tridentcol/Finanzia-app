@@ -32,6 +32,22 @@ const serverSchema = z.object({
   ANTHROPIC_API_KEY: optionalString(),
   OPENAI_API_KEY: optionalString(),
 
+  // Copiloto LLM — selección de proveedor/modelo/parámetros. Todas opcionales:
+  // los defaults viven en `src/lib/ai/copilot/config.ts` (no en Zod) para no
+  // acoplar la validación a un set de modelos que cambia seguido.
+  //  - COPILOT_LLM_PROVIDER   openai | anthropic   (default openai)
+  //  - COPILOT_LLM_MODEL      id del modelo         (default gpt-5.4-mini / claude)
+  //  - COPILOT_REASONING_EFFORT  minimal|low|medium|high (default medium)
+  //  - COPILOT_TEXT_VERBOSITY    low|medium|high         (default low)
+  //  - COPILOT_STORE          '1'|'true' → OpenAI guarda el hilo (default false)
+  //  - COPILOT_FORCE_LLM      '1'|'true' → saltar local-first, todo al LLM
+  COPILOT_LLM_PROVIDER: optionalString(),
+  COPILOT_LLM_MODEL: optionalString(),
+  COPILOT_REASONING_EFFORT: optionalString(),
+  COPILOT_TEXT_VERBOSITY: optionalString(),
+  COPILOT_STORE: optionalString(),
+  COPILOT_FORCE_LLM: optionalString(),
+
   // Upstash Redis — opcional hasta Step 8.
   UPSTASH_REDIS_REST_URL: optionalString(z.string().url()),
   UPSTASH_REDIS_REST_TOKEN: optionalString(),
