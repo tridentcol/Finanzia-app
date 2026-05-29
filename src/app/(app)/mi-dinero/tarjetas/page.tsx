@@ -9,7 +9,7 @@ import { listAccountsWithBalance } from '@/lib/db/queries/accounts'
 import { getRatesForPairs } from '@/lib/currency/rates'
 import { Amount } from '@/components/app/amount'
 import { EmptyState } from '@/components/app/empty-state'
-import { NewAccountTrigger } from '@/components/app/new-account-trigger'
+import { NewCardTrigger } from '@/components/app/new-card-trigger'
 import { CardVisual } from '@/components/cards/card-visual'
 import { EditCardVisualDialog } from '@/components/app/edit-card-visual-dialog'
 import { formatMoney } from '@/lib/currency/format'
@@ -45,7 +45,7 @@ export default async function TarjetasPage() {
         <EmptyState
           headline="Aún no registraste ninguna tarjeta."
           body="Agrega una para ver cupos, cortes, próximos pagos y simular compras. Las tarjetas viven separadas de tus cuentas — tienen su propia mecánica."
-          action={<NewAccountTrigger />}
+          action={<NewCardTrigger />}
         />
       </div>
     )
@@ -170,7 +170,7 @@ function Header({
           {partial && ' · conversión parcial'}
         </p>
       </div>
-      <NewAccountTrigger />
+      <NewCardTrigger />
     </header>
   )
 }

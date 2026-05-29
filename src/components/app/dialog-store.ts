@@ -4,6 +4,7 @@ import { create } from 'zustand'
 
 export type AppDialogId =
   | 'new-account'
+  | 'new-card'
   | 'new-transaction'
   | 'new-category'
   | 'edit-category'

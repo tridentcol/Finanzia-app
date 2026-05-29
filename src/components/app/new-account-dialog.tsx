@@ -36,10 +36,12 @@ import {
 import { CardVisual } from '@/components/cards/card-visual'
 import { useDialogStore } from './dialog-store'
 
+// Las tarjetas de crédito viven en /mi-dinero/tarjetas con su propio dialog
+// (NewCardDialog). Aquí se registran cuentas líquidas y activos — sin la
+// mecánica de cupo/corte/pago.
 const accountTypes = [
   { value: 'checking', label: 'Cuenta corriente' },
   { value: 'savings', label: 'Ahorros' },
-  { value: 'credit_card', label: 'Tarjeta de crédito' },
   { value: 'cash', label: 'Efectivo' },
   { value: 'investment', label: 'Inversión' },
   { value: 'crypto', label: 'Cripto' },
@@ -55,10 +57,7 @@ const schema = z.object({
   initialBalance: z
     .string()
     .regex(/^-?\d+(\.\d{1,2})?$/, 'Formato 1234.56'),
-  creditLimit: z.string().optional(),
-  statementDay: z.string().optional(),
-  paymentDay: z.string().optional(),
-  // Card visual identity (opcional)
+  // Identidad visual (opcional) — sólo aplica a checking/savings (débito).
   bankSlug: z.string().optional(),
   cardProductSlug: z.string().optional(),
   cardBrand: z.string().optional(),
@@ -69,7 +68,6 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>
 
 function typeToCardKind(type: string): CardKind | null {
-  if (type === 'credit_card') return 'credit'
   if (type === 'checking' || type === 'savings') return 'debit'
   return null
 }
@@ -112,7 +110,6 @@ function NewAccountForm({ onDone }: { onDone: () => void }) {
   const cardLastFour = watch('cardLastFour')
   const cardHolderName = watch('cardHolderName')
 
-  const isCreditCard = type === 'credit_card'
   const cardKind = typeToCardKind(type)
   const allowsCardVisual = cardKind !== null
 
@@ -122,11 +119,9 @@ function NewAccountForm({ onDone }: { onDone: () => void }) {
   )
 
   const productsForBank = useMemo(() => {
-    if (!selectedBank || !cardKind) return []
-    return cardKind === 'credit'
-      ? selectedBank.creditProducts
-      : selectedBank.debitProducts
-  }, [selectedBank, cardKind])
+    if (!selectedBank) return []
+    return selectedBank.debitProducts
+  }, [selectedBank])
 
   const selectedProduct = useMemo(
     () =>
@@ -145,15 +140,9 @@ function NewAccountForm({ onDone }: { onDone: () => void }) {
         type: values.type as 'checking',
         currency: values.currency,
         initialBalance: values.initialBalance,
-        creditLimit: isCreditCard && values.creditLimit ? values.creditLimit : null,
-        statementDay:
-          isCreditCard && values.statementDay
-            ? Number.parseInt(values.statementDay, 10)
-            : null,
-        paymentDay:
-          isCreditCard && values.paymentDay
-            ? Number.parseInt(values.paymentDay, 10)
-            : null,
+        creditLimit: null,
+        statementDay: null,
+        paymentDay: null,
         bankSlug: showCardVisual ? (values.bankSlug ?? null) : null,
         cardProductSlug: showCardVisual ? (values.cardProductSlug ?? null) : null,
         cardBrand: showCardVisual
@@ -248,7 +237,7 @@ function NewAccountForm({ onDone }: { onDone: () => void }) {
         </div>
 
         <Field
-          label={isCreditCard ? 'Saldo a deuda (negativo si debes)' : 'Saldo inicial'}
+          label="Saldo inicial"
           htmlFor="initial-balance"
           error={errors.initialBalance?.message}
           hint="Sin símbolos, ej. 1500000 o 1500000.50"
@@ -261,55 +250,6 @@ function NewAccountForm({ onDone }: { onDone: () => void }) {
             {...register('initialBalance')}
           />
         </Field>
-
-        {isCreditCard && (
-          <div className="grid grid-cols-3 gap-3">
-            <Field
-              label="Cupo"
-              htmlFor="credit-limit"
-              error={errors.creditLimit?.message}
-              className="col-span-3"
-            >
-              <Input
-                id="credit-limit"
-                inputMode="decimal"
-                placeholder="5000000"
-                className="tabular"
-                {...register('creditLimit')}
-              />
-            </Field>
-            <Field
-              label="Día de corte"
-              htmlFor="statement-day"
-              error={errors.statementDay?.message}
-            >
-              <Input
-                id="statement-day"
-                type="number"
-                min={1}
-                max={31}
-                placeholder="15"
-                className="tabular"
-                {...register('statementDay')}
-              />
-            </Field>
-            <Field
-              label="Día de pago"
-              htmlFor="payment-day"
-              error={errors.paymentDay?.message}
-            >
-              <Input
-                id="payment-day"
-                type="number"
-                min={1}
-                max={31}
-                placeholder="5"
-                className="tabular"
-                {...register('paymentDay')}
-              />
-            </Field>
-          </div>
-        )}
 
         {allowsCardVisual && (
           <div className="border-border-default flex flex-col gap-4 border-t pt-4">

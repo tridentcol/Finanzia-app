@@ -11,6 +11,7 @@ import { MobileNav } from '@/components/app/mobile-nav'
 import { Topbar } from '@/components/app/topbar'
 import { CommandPalette } from '@/components/app/command-palette'
 import { NewAccountDialog } from '@/components/app/new-account-dialog'
+import { NewCardDialog } from '@/components/app/new-card-dialog'
 import { NewDebtDialog } from '@/components/app/new-debt-dialog'
 import { CopilotDialog } from '@/components/app/copilot-dialog'
 import { DialogsBundle } from '@/components/app/dialogs-bundle'
@@ -53,6 +54,7 @@ export default async function AppLayout({
       <MobileNav />
       <CommandPalette />
       <NewAccountDialog />
+      <NewCardDialog />
       <NewDebtDialog />
       <CopilotDialog />
       <Suspense fallback={null}>

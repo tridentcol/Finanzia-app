@@ -138,13 +138,24 @@ export function CommandPalette() {
                   <span className="text-text-tertiary text-[11px] tracking-wider">N T</span>
                 </Command.Item>
                 <Command.Item
-                  value="Nueva cuenta agregar"
+                  value="Nueva cuenta agregar checking savings"
                   onSelect={() => runOpenDialog('new-account')}
                   className="text-text-secondary aria-selected:bg-surface-hover aria-selected:text-text mx-2 flex h-9 cursor-pointer items-center gap-3 rounded-md px-2 text-sm transition-colors"
                 >
                   <Wallet strokeWidth={1.5} className="h-[15px] w-[15px]" />
                   <span className="flex-1">Nueva cuenta</span>
                   <span className="text-text-tertiary text-[11px] tracking-wider">N C</span>
+                </Command.Item>
+                <Command.Item
+                  value="Nueva tarjeta de crédito cupo corte"
+                  onSelect={() => runOpenDialog('new-card')}
+                  className="text-text-secondary aria-selected:bg-surface-hover aria-selected:text-text mx-2 flex h-9 cursor-pointer items-center gap-3 rounded-md px-2 text-sm transition-colors"
+                >
+                  {(() => {
+                    const CC = icons['credit-card']
+                    return <CC strokeWidth={1.5} className="h-[15px] w-[15px]" />
+                  })()}
+                  <span className="flex-1">Nueva tarjeta</span>
                 </Command.Item>
                 <Command.Item
                   value="Nueva categoría crear"

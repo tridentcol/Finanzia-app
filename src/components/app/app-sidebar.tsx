@@ -14,9 +14,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
   useSidebar,
 } from '@/components/ui/sidebar'
 import { icons, type IconName } from '@/lib/design/icons'
@@ -28,51 +25,16 @@ import { BrandWordmark } from '@/components/brand/brand-wordmark'
 const navItemClass =
   'hover:!bg-[var(--nav-hover-bg)] data-[active=true]:!bg-[var(--nav-active-bg)] data-[active=true]:!text-[var(--nav-active-fg)] data-[active=true]:!font-medium'
 
-type SubItem = { label: string; href: string }
-type NavItem = {
-  label: string
-  href: string
-  icon: IconName
-  // Si está presente, el item top-level se expande mostrando subitems cuando
-  // el pathname está dentro de su sección. El click en el item top-level lleva
-  // al primer subitem (el redirect del `page.tsx` index ya lo resuelve).
-  subItems?: SubItem[]
-}
+type NavItem = { label: string; href: string; icon: IconName }
 
+// Top-level items — 4 secciones posesivas. La sub-navegación vive in-page con
+// SectionTabs sticky bajo el topbar; no la duplicamos aquí. Click en un item
+// top-level lleva al index de la sección, que redirige al primer sub-tab.
 const TOP_ITEMS: NavItem[] = [
   { label: 'Hoy', href: '/dashboard', icon: 'home' },
-  {
-    label: 'Mi dinero',
-    href: '/mi-dinero',
-    icon: 'wallet',
-    subItems: [
-      { label: 'Cuentas', href: '/mi-dinero/cuentas' },
-      { label: 'Tarjetas', href: '/mi-dinero/tarjetas' },
-      { label: 'Deudas', href: '/mi-dinero/deudas' },
-      { label: 'Movimientos', href: '/mi-dinero/movimientos' },
-    ],
-  },
-  {
-    label: 'Mi plan',
-    href: '/mi-plan',
-    icon: 'target',
-    subItems: [
-      { label: 'Presupuestos', href: '/mi-plan/presupuestos' },
-      { label: 'Metas', href: '/mi-plan/metas' },
-      { label: 'Ahorro', href: '/mi-plan/ahorro' },
-      { label: 'Cash flow', href: '/mi-plan/cash-flow' },
-      { label: 'Recurrentes', href: '/mi-plan/recurrentes' },
-    ],
-  },
-  {
-    label: 'Mi historia',
-    href: '/mi-historia',
-    icon: 'book-open',
-    subItems: [
-      { label: 'Insights', href: '/mi-historia/insights' },
-      { label: 'Informes', href: '/mi-historia/informes' },
-    ],
-  },
+  { label: 'Mi dinero', href: '/mi-dinero', icon: 'wallet' },
+  { label: 'Mi plan', href: '/mi-plan', icon: 'target' },
+  { label: 'Mi historia', href: '/mi-historia', icon: 'book-open' },
 ]
 
 const FOOTER_ITEMS: NavItem[] = [
@@ -115,7 +77,6 @@ export function AppSidebar() {
               {TOP_ITEMS.map((item) => {
                 const Icon = icons[item.icon]
                 const active = isActive(pathname, item.href)
-                const expanded = active && item.subItems !== undefined
                 return (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
@@ -129,27 +90,6 @@ export function AppSidebar() {
                         <span>{item.label}</span>
                       </Link>
                     </SidebarMenuButton>
-                    {expanded && item.subItems && (
-                      <SidebarMenuSub>
-                        {item.subItems.map((sub) => {
-                          const subActive =
-                            pathname === sub.href ||
-                            pathname.startsWith(`${sub.href}/`)
-                          return (
-                            <SidebarMenuSubItem key={sub.href}>
-                              <SidebarMenuSubButton
-                                asChild
-                                isActive={subActive}
-                              >
-                                <Link href={sub.href} prefetch>
-                                  <span>{sub.label}</span>
-                                </Link>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          )
-                        })}
-                      </SidebarMenuSub>
-                    )}
                   </SidebarMenuItem>
                 )
               })}
