@@ -22,6 +22,7 @@ import {
 import { buildCopilotTools } from './tools'
 import { buildSystemPrompt } from './system-prompt'
 import { buildProfileSnapshot } from './profile-snapshot'
+import { parsePersona, personaToToneHints, type ToneHints } from './persona'
 import type { CopilotContext } from './context'
 
 export type RunChatParams = {
@@ -121,6 +122,20 @@ export async function runCopilotChat(params: RunChatParams) {
     console.error('[copilot] profile snapshot falló:', err)
   }
 
+  // Tono según la persona del usuario (U4). Lectura ligera; sin persona ⇒
+  // toneHints undefined ⇒ cero líneas extra en el prompt.
+  let toneHints: ToneHints | undefined
+  try {
+    const row = await db.query.profiles.findFirst({
+      where: eq(profiles.userId, params.ctx.userId),
+      columns: { aiProfile: true },
+    })
+    const persona = parsePersona((row?.aiProfile as { persona?: unknown } | null)?.persona)
+    if (persona) toneHints = personaToToneHints(persona)
+  } catch (err) {
+    console.error('[copilot] lectura de persona falló:', err)
+  }
+
   const providerOptions =
     resolved.kind === 'openai'
       ? {
@@ -138,6 +153,7 @@ export async function runCopilotChat(params: RunChatParams) {
       baseCurrency: params.ctx.baseCurrency,
       todayIso,
       profileSnapshot,
+      toneHints,
     }),
     messages: await convertToModelMessages(params.messages),
     tools,

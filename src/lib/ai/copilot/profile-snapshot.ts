@@ -15,6 +15,7 @@ import { getDebtsSummary } from '@/lib/db/queries/debts'
 import { listGoalsForUser } from '@/lib/db/queries/goals'
 import { executeQuery } from '@/lib/copilot/query/execute'
 import type { Query } from '@/lib/copilot/query/types'
+import { parsePersona, personaToSnapshotLines } from './persona'
 
 export type SnapshotContext = {
   userId: string
@@ -109,7 +110,7 @@ export async function buildProfileSnapshot(ctx: SnapshotContext): Promise<string
   const tz = profile?.timezone ?? 'America/Bogota'
   lines.push(`- Moneda base ${ctx.baseCurrency} · locale ${locale} · zona ${tz}.`)
   const ai = profile?.aiProfile as
-    | { incomeRange?: string; mainGoal?: string; riskTolerance?: string }
+    | { incomeRange?: string; mainGoal?: string; riskTolerance?: string; persona?: unknown }
     | null
   if (ai?.incomeRange && INCOME_LABEL[ai.incomeRange]) {
     lines.push(`- Ingreso declarado: ${INCOME_LABEL[ai.incomeRange]} (${ctx.baseCurrency}).`)
@@ -120,6 +121,10 @@ export async function buildProfileSnapshot(ctx: SnapshotContext): Promise<string
   if (ai?.riskTolerance) {
     lines.push(`- Tolerancia al riesgo: ${ai.riskTolerance}.`)
   }
+  // Persona de personalización (literacy/commStyle/moneyStyle/horizon/focus).
+  // Ausente ⇒ cero líneas extra (cero ruptura para usuarios sin persona).
+  const persona = parsePersona(ai?.persona)
+  if (persona) lines.push(...personaToSnapshotLines(persona))
 
   // Cuentas + saldo total.
   if (accountsR.status === 'fulfilled') {

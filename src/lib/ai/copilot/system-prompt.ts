@@ -1,12 +1,51 @@
 import 'server-only'
 
+import { hasToneSignal, type ToneHints } from './persona'
+
+/**
+ * Líneas condicionales de tono según la persona del usuario (U4). Sin persona
+ * ⇒ cadena vacía (cero tokens extra). Honesto: ajusta cómo habla, no inventa
+ * cifras ni cambia la identidad base.
+ */
+function buildToneBlock(hints?: ToneHints): string {
+  if (!hints || !hasToneSignal(hints)) return ''
+  const lines: string[] = []
+  if (hints.explainTerms) {
+    lines.push('- Conocimiento básico: define en una frase cualquier término técnico que uses.')
+  }
+  if (hints.assumeKnowledge) {
+    lines.push('- Conocimiento avanzado: usa términos técnicos sin definirlos; ve al fondo.')
+  }
+  if (hints.verbosity === 'low') {
+    lines.push('- Prefiere lo breve: da la conclusión y una o dos acciones, sin rodeos.')
+  } else if (hints.verbosity === 'high') {
+    lines.push('- Aprecia el detalle: aporta algo más de contexto cuando sume.')
+  }
+  if (hints.explainReasoning) {
+    lines.push('- Explica brevemente el porqué de cada recomendación.')
+  }
+  if (hints.moneyStyle === 'espontaneo') {
+    lines.push('- Relación flexible con el dinero: ofrece guías sin tono de regaño ni rigidez.')
+  } else if (hints.moneyStyle === 'planificador') {
+    lines.push('- Es de planear: puedes proponer estructura, reglas y metas concretas.')
+  }
+  if (hints.focusOrder.length > 0) {
+    lines.push(`- Prioriza estos focos del usuario al diagnosticar: ${hints.focusOrder.join(', ')}.`)
+  }
+  if (lines.length === 0) return ''
+  return `\n\n# Cómo hablarle a este usuario (personalización)\n${lines.join('\n')}`
+}
+
 export function buildSystemPrompt(args: {
   baseCurrency: string
   todayIso: string
   /** Bloque compacto con el perfil financiero real del usuario (O4). */
   profileSnapshot?: string
+  /** Ajustes de tono derivados de la persona del usuario (U4). */
+  toneHints?: ToneHints
 }): string {
-  const { baseCurrency, todayIso, profileSnapshot } = args
+  const { baseCurrency, todayIso, profileSnapshot, toneHints } = args
+  const toneBlock = buildToneBlock(toneHints)
 
   return `Eres Finanzia, el asesor financiero personal del usuario. Hablas español de Colombia (es-CO), con tono profesional, claro y sobrio: como un buen asesor de banca privada, no como un chatbot. Tu objetivo es darle al usuario claridad y decisiones accionables sobre SU dinero, personalizadas a su situación real.
 
@@ -44,5 +83,5 @@ export function buildSystemPrompt(args: {
 - Tú NUNCA ejecutas cambios. Para registrar una transacción o ajustar un presupuesto usa proposeCreateTransaction / proposeSetBudget: devuelven una propuesta validada y el usuario la confirma en la UI.
 - Para el costo real de una compra con tarjeta (cuotas, días al corte, intereses, utilización) usa proposeCardPurchase (read-only) y sintetiza sus highlights.
 - NUNCA afirmes que ya registraste o cambiaste algo. Si usaste un propose-*, el usuario aún debe confirmar.
-${profileSnapshot ? `\n# ${profileSnapshot}\n` : ''}`
+${profileSnapshot ? `\n# ${profileSnapshot}\n` : ''}${toneBlock}`
 }
