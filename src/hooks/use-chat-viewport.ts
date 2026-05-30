@@ -16,23 +16,22 @@ type ChatViewportOptions = {
  *     `height` baja). `dvh/svh/lvh` NO reaccionan al teclado → se mide por JS.
  *  2. Scrollea el DOCUMENTO (`scrollY` > 0) para "revelar" el input, y
  *     `overflow:hidden` no lo frena → arrastra al contenedor `fixed` hacia arriba.
- *  3. Suelta los valores del `visualViewport` en POCOS pasos discretos (no frame
- *     a frame), así que aplicarlos crudos se ve escalonado.
  *
- * El hook, en cada `apply()`:
- *  - height/transform = visualViewport.height / translate(offsetLeft, offsetTop),
- *    pero durante la ventana de abrir/cerrar con SEGUIMIENTO AMORTIGUADO (cada
- *    frame se acerca un % al valor real): funde los pasos de iOS en un glide
- *    continuo con sensación de peso, sin el lag fijo de una transición CSS.
+ * El hook, en cada `apply()`, hace SNAP DIRECTO al viewport visible:
+ *  - height    = visualViewport.height                  → mide exacto el área visible
+ *  - transform = translate(offsetLeft, offsetTop)        → reancla al área visible
  *  - lock fuerte (`body { position: fixed }`) + `scrollTo(0,0)` → `scrollY` en 0
  *  - fija el scroll de mensajes al FONDO al enfocar (ves el último mensaje).
  *
- * Al enfocar/desenfocar pollea cada frame durante la ventana (los eventos de iOS
- * no bastan) para avanzar la amortiguación. El breakpoint `sm` se chequea en
- * vivo; en desktop limpia estilos y suelta el lock.
+ * Clave de fluidez: NO añadimos transición/amortiguación propia. El contenedor
+ * mide SIEMPRE exactamente el área visible, así su borde inferior (el input)
+ * queda pegado al tope del teclado sin retraso → nunca se ve el hueco vacío del
+ * teclado al abrir/cerrar. La suavidad la da la animación NATIVA del teclado de
+ * iOS; cualquier transición propia "persigue" al teclado con lag y genera ese
+ * espacio feo. Para no perder ningún frame de la animación nativa, al
+ * enfocar/desenfocar polleamos cada frame ~700ms (los eventos de iOS son
+ * escasos). El breakpoint `sm` se chequea en vivo; en desktop limpia estilos.
  */
-const DAMP = 0.3 // factor de acercamiento por frame (mayor = más snappy)
-
 export function useChatViewport({ containerRef, scrollerRef }: ChatViewportOptions) {
   useEffect(() => {
     const el = containerRef.current
@@ -77,9 +76,6 @@ export function useChatViewport({ containerRef, scrollerRef }: ChatViewportOptio
     }
 
     let pinUntil = 0
-    let animateUntil = 0
-    let curHeight = vv.height
-    let curOffTop = vv.offsetTop
     const apply = () => {
       if (desktopMql.matches) {
         unlock()
@@ -89,19 +85,8 @@ export function useChatViewport({ containerRef, scrollerRef }: ChatViewportOptio
       }
       lock()
       if (window.scrollY !== 0) window.scrollTo(0, 0)
-      const targetHeight = vv.height
-      const targetOffTop = vv.offsetTop
-      if (Date.now() < animateUntil) {
-        curHeight += (targetHeight - curHeight) * DAMP
-        curOffTop += (targetOffTop - curOffTop) * DAMP
-        if (Math.abs(targetHeight - curHeight) < 0.5) curHeight = targetHeight
-        if (Math.abs(targetOffTop - curOffTop) < 0.5) curOffTop = targetOffTop
-      } else {
-        curHeight = targetHeight
-        curOffTop = targetOffTop
-      }
-      el.style.height = `${curHeight}px`
-      el.style.transform = `translate(${vv.offsetLeft}px, ${curOffTop}px)`
+      el.style.height = `${vv.height}px`
+      el.style.transform = `translate(${vv.offsetLeft}px, ${vv.offsetTop}px)`
       const sc = scrollerRef.current
       if (sc) {
         const nearBottom = sc.scrollHeight - sc.scrollTop - sc.clientHeight <= 64
@@ -118,8 +103,8 @@ export function useChatViewport({ containerRef, scrollerRef }: ChatViewportOptio
       })
     }
 
-    // Seguimiento denso durante la animación: pollea cada frame hasta `pollUntil`
-    // para avanzar la amortiguación. `disposed` corta el loop al desmontar.
+    // Sigue la animación nativa del teclado frame a frame: pollea hasta
+    // `pollUntil` (los eventos de iOS son escasos). `disposed` corta el loop.
     let pollUntil = 0
     let polling = false
     let disposed = false
@@ -142,18 +127,13 @@ export function useChatViewport({ containerRef, scrollerRef }: ChatViewportOptio
     }
 
     const onFocusIn = () => {
-      // Al abrir: anima (amortiguado), fija el fondo y sigue denso.
-      const now = Date.now()
-      animateUntil = now + 650
-      pinUntil = now + 700
-      pollUntil = now + 700
+      // Al abrir: fija el fondo (ver el último mensaje) y sigue el teclado denso.
+      pinUntil = Date.now() + 700
+      pollUntil = Date.now() + 700
       poll()
     }
     const onFocusOut = () => {
-      // Al cerrar: anima el regreso a pantalla completa y sigue denso.
-      const now = Date.now()
-      animateUntil = now + 650
-      pollUntil = now + 700
+      pollUntil = Date.now() + 700
       poll()
     }
 
