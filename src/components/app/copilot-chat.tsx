@@ -152,7 +152,7 @@ export function CopilotChat() {
   return (
     <div
       ref={containerRef}
-      className="bg-surface fixed inset-0 flex flex-col overflow-hidden sm:static sm:inset-auto sm:mx-auto sm:h-dvh sm:max-w-3xl"
+      className="bg-surface fixed inset-x-0 top-0 flex h-[100dvh] flex-col overflow-hidden sm:static sm:mx-auto sm:h-dvh sm:max-w-3xl"
     >
       <header
         className="border-border-default flex shrink-0 items-center justify-between gap-2 border-b px-3 py-3"
