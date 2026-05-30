@@ -76,7 +76,7 @@ export async function CategoriasSection({ userId, searchParams }: Props) {
   const systemCount = rows.length - userCount
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex min-w-0 flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-text-tertiary text-xs">
           {userCount > 0
@@ -88,7 +88,7 @@ export async function CategoriasSection({ userId, searchParams }: Props) {
 
       <nav
         aria-label="Filtros de categorías"
-        className="border-border-default -mx-1 flex items-center gap-1 self-start overflow-x-auto rounded-[8px] border p-0.5"
+        className="border-border-default flex max-w-full items-center gap-1 self-start overflow-x-auto rounded-[8px] border p-0.5"
       >
         {kindFilters.map((f) => {
           const selected = (f.value ?? null) === (kindFilter ?? null)
@@ -98,7 +98,7 @@ export async function CategoriasSection({ userId, searchParams }: Props) {
               href={`/ajustes${kindParam(f.value)}`}
               scroll={false}
               className={cn(
-                'rounded-[6px] px-3 py-1.5 text-[13px] whitespace-nowrap transition-colors',
+                'shrink-0 rounded-[6px] px-3 py-1.5 text-[13px] whitespace-nowrap transition-colors',
                 selected
                   ? 'bg-surface-hover text-text'
                   : 'text-text-secondary hover:text-text hover:bg-surface-hover/60',

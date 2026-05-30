@@ -125,7 +125,7 @@ export default async function InsightsPage({
 
       <nav
         aria-label="Filtros"
-        className="border-border-default -mx-1 flex items-center gap-1 self-start overflow-x-auto rounded-[8px] border p-0.5"
+        className="border-border-default flex max-w-full items-center gap-1 self-start overflow-x-auto rounded-[8px] border p-0.5"
       >
         {kindFilters.map((f) => {
           const selected = (f.value ?? null) === (kind ?? null)
@@ -134,7 +134,7 @@ export default async function InsightsPage({
               key={f.label}
               href={`/mi-historia/insights${kindParam(f.value)}`}
               className={cn(
-                'rounded-[6px] px-3 py-1.5 text-[13px] whitespace-nowrap transition-colors',
+                'shrink-0 rounded-[6px] px-3 py-1.5 text-[13px] whitespace-nowrap transition-colors',
                 selected
                   ? 'bg-surface-hover text-text'
                   : 'text-text-secondary hover:text-text hover:bg-surface-hover/60',

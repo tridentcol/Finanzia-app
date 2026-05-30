@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { usePathname } from 'next/navigation'
+import { useUser } from '@clerk/nextjs'
 
 import { icons } from '@/lib/design/icons'
 import { SidebarTrigger } from '@/components/ui/sidebar'
@@ -10,6 +11,7 @@ import { useCommandStore } from './command-store'
 import { useDialogStore } from './dialog-store'
 import { AlertsBell } from './alerts-bell'
 import { MobileAccountSheet } from './mobile-account-sheet'
+import { useUnreadAlerts } from './use-unread-alerts'
 
 type TitleEntry = { match: string; section: string; sub?: string }
 
@@ -59,6 +61,9 @@ export function Topbar({ unreadAlerts = 0 }: { unreadAlerts?: number }) {
   const setOpen = useCommandStore((s) => s.setOpen)
   const openDialog = useDialogStore((s) => s.open)
   const [accountOpen, setAccountOpen] = useState(false)
+  const unread = useUnreadAlerts(unreadAlerts)
+  const { user } = useUser()
+  const avatarUrl = user?.imageUrl
   const Search = icons.search
   const Command = icons.command
   const Spark = icons.sparkles
@@ -76,11 +81,13 @@ export function Topbar({ unreadAlerts = 0 }: { unreadAlerts?: number }) {
           </h1>
         </div>
 
-        {/* Cluster de acciones. Touch targets ≥44px en mobile (h-11 w-11),
-            h-9 en desktop. El copiloto NO está aquí en mobile (es el FAB del
-            bottom-nav); Registrar (marca) sí. */}
+        {/* Cluster de acciones. En mobile sólo lo esencial: Registrar (acción
+            primaria) + Avatar (puerta a búsqueda/notificaciones/ajustes). El
+            copiloto es el FAB del bottom-nav; búsqueda y campana no van en
+            primer plano (viven bajo el avatar). Desktop conserva todo. */}
         <div className="flex shrink-0 items-center gap-1.5 md:gap-2">
-          <AlertsBell initialCount={unreadAlerts} />
+          {/* Campana — sólo desktop (en mobile el badge vive sobre el avatar). */}
+          <AlertsBell count={unread} className="hidden md:flex" />
 
           {/* Registrar movimiento — acción primaria de marca (morado). */}
           <button
@@ -105,34 +112,54 @@ export function Topbar({ unreadAlerts = 0 }: { unreadAlerts?: number }) {
             <span className="hidden lg:inline">Preguntar</span>
           </button>
 
+          {/* Buscar — sólo desktop (en mobile vive bajo el avatar). */}
           <button
             type="button"
             onClick={() => setOpen(true)}
             aria-label="Buscar"
-            className="border-border-default bg-surface hover:bg-surface-hover text-text-secondary hover:text-text flex h-11 w-11 items-center justify-center rounded-[8px] border text-sm transition-colors md:h-9 md:w-auto md:gap-2 md:px-2 lg:pr-1.5 lg:pl-2.5"
+            className="border-border-default bg-surface hover:bg-surface-hover text-text-secondary hover:text-text hidden h-9 items-center gap-2 rounded-[8px] border px-2 text-sm transition-colors md:flex lg:pr-1.5 lg:pl-2.5"
           >
-            <Search strokeWidth={1.5} className="size-[18px] md:size-[14px]" />
+            <Search strokeWidth={1.5} className="size-[14px]" />
             <span className="hidden lg:inline">Buscar</span>
             <span className="border-border-default text-text-tertiary ml-6 hidden items-center gap-0.5 rounded border px-1.5 py-0.5 text-[11px] lg:flex">
               <Command strokeWidth={1.5} className="size-[10px]" />K
             </span>
           </button>
 
-          {/* Avatar — sólo mobile: puerta a config + sesión (Sheet bottom). En
-              desktop la cuenta vive en el pie del sidebar. */}
+          {/* Avatar — sólo mobile: puerta a búsqueda, notificaciones y ajustes
+              (Sheet bottom). Badge lavanda si hay notificaciones. En desktop la
+              cuenta vive en el pie del sidebar. */}
           <button
             type="button"
             onClick={() => setAccountOpen(true)}
-            aria-label="Tu cuenta y ajustes"
+            aria-label={`Tu perfil${unread > 0 ? ` (${unread} sin leer)` : ''}`}
             aria-haspopup="dialog"
-            className="border-border-default bg-surface hover:bg-surface-hover text-text-secondary hover:text-text flex h-11 w-11 items-center justify-center rounded-[8px] border transition-colors md:hidden"
+            className="relative flex h-11 w-11 items-center justify-center rounded-full md:hidden"
           >
-            <UserIcon strokeWidth={1.5} className="size-[18px]" />
+            {avatarUrl ? (
+              <span
+                role="img"
+                aria-label=""
+                className="size-8 rounded-full bg-cover bg-center"
+                style={{ backgroundImage: `url(${avatarUrl})` }}
+              />
+            ) : (
+              <span className="border-border-default bg-surface text-text-secondary flex size-8 items-center justify-center rounded-full border">
+                <UserIcon strokeWidth={1.5} className="size-[18px]" />
+              </span>
+            )}
+            {unread > 0 && (
+              <span
+                aria-hidden
+                className="border-background absolute right-1.5 top-1.5 size-2.5 rounded-full border-2"
+                style={{ background: 'var(--brand-purple-strong)' }}
+              />
+            )}
           </button>
         </div>
       </header>
 
-      <MobileAccountSheet open={accountOpen} onOpenChange={setAccountOpen} />
+      <MobileAccountSheet open={accountOpen} onOpenChange={setAccountOpen} unread={unread} />
     </>
   )
 }

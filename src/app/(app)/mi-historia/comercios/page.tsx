@@ -104,7 +104,7 @@ export default async function ComerciosPage({
 
       <nav
         aria-label="Período"
-        className="border-border-default -mx-1 flex items-center gap-1 self-start overflow-x-auto rounded-[8px] border p-0.5"
+        className="border-border-default flex max-w-full items-center gap-1 self-start overflow-x-auto rounded-[8px] border p-0.5"
       >
         {SCOPES.map((s) => {
           const selected = s.value === scope
@@ -113,7 +113,7 @@ export default async function ComerciosPage({
               key={s.value}
               href={`/mi-historia/comercios?scope=${s.value}`}
               className={cn(
-                'rounded-[6px] px-3 py-1.5 text-[13px] whitespace-nowrap transition-colors',
+                'shrink-0 rounded-[6px] px-3 py-1.5 text-[13px] whitespace-nowrap transition-colors',
                 selected
                   ? 'bg-surface-hover text-text'
                   : 'text-text-secondary hover:text-text hover:bg-surface-hover/60',
