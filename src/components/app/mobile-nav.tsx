@@ -1,12 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 
 import { icons, type IconName } from '@/lib/design/icons'
 import { cn } from '@/lib/utils'
-import { MobileMoreSheet } from './mobile-more-sheet'
 import { useDialogStore } from './dialog-store'
 
 type NavItem = {
@@ -15,8 +14,9 @@ type NavItem = {
   icon: IconName
 }
 
-// 2 + FAB + 2. El FAB central abre directamente el dialog de nuevo
-// movimiento — el flujo más común de la app.
+// 4 secciones posesivas + FAB central. El FAB es el COPILOTO (presencia de IA):
+// el atajo a "preguntar a Finanzia" desde cualquier pantalla. Registrar
+// movimiento subió al cluster del topbar.
 const LEFT_ITEMS: NavItem[] = [
   { label: 'Hoy', href: '/dashboard', icon: 'home' },
   { label: 'Mi dinero', href: '/mi-dinero', icon: 'wallet' },
@@ -24,6 +24,7 @@ const LEFT_ITEMS: NavItem[] = [
 
 const RIGHT_ITEMS: NavItem[] = [
   { label: 'Mi plan', href: '/mi-plan', icon: 'target' },
+  { label: 'Mi historia', href: '/mi-historia', icon: 'book-open' },
 ]
 
 function isActive(pathname: string, href: string): boolean {
@@ -32,24 +33,22 @@ function isActive(pathname: string, href: string): boolean {
 }
 
 /**
- * Bottom nav fijo para mobile (<md). Layout: Hoy / Mi dinero / FAB +
- * central / Mi plan / Más.
+ * Bottom nav fijo para mobile (<md). Layout: Hoy / Mi dinero / [◆ Copiloto] /
+ * Mi plan / Mi historia.
  *
- * El FAB central abre directamente NewTransactionDialog — el flujo más
- * común. Patrón fintech estándar (Cash App, Revolut, Wise): un solo gesto
- * para el acto que el usuario hace 20 veces al día.
+ * El FAB central abre el copiloto — único elemento con color (lavanda
+ * `accent-ai`, uso canónico = presencia de IA). No es una ruta: nunca lleva
+ * indicador de activo. Patrón fintech (Cash App, Revolut): un gesto al pulgar
+ * para el acto central de la app.
  */
 export function MobileNav() {
   const pathname = usePathname()
   const router = useRouter()
-  const [moreOpen, setMoreOpen] = useState(false)
   const openDialog = useDialogStore((s) => s.open)
-  const More = icons['more-horizontal'] ?? icons.settings
-  const Plus = icons.plus
+  const Spark = icons.sparkles
 
-  // Warmup eager de las rutas primarias al montar el bottom-nav. Next limita
-  // el viewport-prefetch en conexiones lentas; este loop fuerza la descarga
-  // del RSC (full prefetch) en cuanto la app es interactiva.
+  // Warmup eager de las 4 rutas primarias al montar — Next limita el
+  // viewport-prefetch en conexiones lentas.
   useEffect(() => {
     for (const item of [...LEFT_ITEMS, ...RIGHT_ITEMS]) {
       router.prefetch(item.href)
@@ -72,11 +71,8 @@ export function MobileNav() {
           active ? 'text-text' : 'text-text-tertiary',
         )}
       >
-        <Icon
-          strokeWidth={1.5}
-          className={cn('size-[18px]', active && 'text-text')}
-        />
-        <span className="text-[10px] font-medium tracking-tight">
+        <Icon strokeWidth={1.5} className={cn('size-[18px]', active && 'text-text')} />
+        <span className="w-full truncate text-center text-[10px] font-medium tracking-tight">
           {item.label}
         </span>
         {active && (
@@ -91,59 +87,35 @@ export function MobileNav() {
   }
 
   return (
-    <>
-      <nav
-        aria-label="Navegación principal móvil"
-        className="border-border-default bg-surface/95 fixed inset-x-0 bottom-0 z-40 border-t backdrop-blur-md md:hidden"
-        style={{ paddingBottom: 'var(--safe-bottom)' }}
-      >
-        {/* Inner row con altura fija — el safe-area inset queda en el
-            <nav> outer como padding extra, no comprime los items. En
-            standalone iOS la home indicator vive sobre el inset; el
-            contenido se queda en sus 64px sanos. */}
-        <div className="flex h-[var(--mobile-nav-h)] items-stretch">
-          {LEFT_ITEMS.map(renderNavItem)}
+    <nav
+      aria-label="Navegación principal móvil"
+      className="border-border-default bg-surface/95 fixed inset-x-0 bottom-0 z-40 border-t backdrop-blur-md md:hidden"
+      style={{ paddingBottom: 'var(--safe-bottom)' }}
+    >
+      {/* Inner row con altura fija — el safe-area inset queda como padding del
+          <nav> outer, no comprime los items (home indicator iOS standalone). */}
+      <div className="flex h-[var(--mobile-nav-h)] items-stretch">
+        {LEFT_ITEMS.map(renderNavItem)}
 
-          {/* FAB central — abre new-transaction. Encajado en la barra,
-              centrado vertical. Tamaño 56px destaca por color, sin
-              sobresalir verticalmente. */}
-          <div className="flex w-[72px] shrink-0 items-center justify-center">
-            <button
-              type="button"
-              onClick={() => openDialog('new-transaction')}
-              aria-label="Registrar movimiento"
-              className="active:scale-95 flex h-14 w-14 items-center justify-center rounded-full transition-transform"
-              style={{
-                background: 'var(--purple-base)',
-                color: '#FFFFFF',
-              }}
-            >
-              <Plus strokeWidth={2.5} className="size-6" />
-            </button>
-          </div>
-
-          {RIGHT_ITEMS.map(renderNavItem)}
-
+        {/* FAB central — abre el copiloto. Lavanda accent-ai (presencia de IA),
+            56px encajado, sin sombra/glow (eso violaría el mandato). Icono
+            oscuro para contraste sobre el lavanda (igual que el badge de
+            alertas). */}
+        <div className="flex w-[72px] shrink-0 items-center justify-center">
           <button
             type="button"
-            onClick={() => setMoreOpen(true)}
-            aria-label="Abrir más opciones"
+            onClick={() => openDialog('copilot')}
+            aria-label="Preguntar a Finanzia"
             aria-haspopup="dialog"
-            aria-expanded={moreOpen}
-            className={cn(
-              'relative flex flex-1 flex-col items-center justify-center gap-1 px-1 transition-colors',
-              moreOpen ? 'text-text' : 'text-text-tertiary',
-            )}
+            className="flex h-14 w-14 items-center justify-center rounded-full transition-transform motion-safe:active:scale-95"
+            style={{ background: 'var(--accent-ai)', color: '#0A0A0B' }}
           >
-            <More
-              strokeWidth={1.5}
-              className={cn('size-[18px]', moreOpen && 'text-text')}
-            />
-            <span className="text-[10px] font-medium tracking-tight">Más</span>
+            <Spark strokeWidth={2} className="size-6" />
           </button>
         </div>
-      </nav>
-      <MobileMoreSheet open={moreOpen} onOpenChange={setMoreOpen} />
-    </>
+
+        {RIGHT_ITEMS.map(renderNavItem)}
+      </div>
+    </nav>
   )
 }

@@ -41,9 +41,9 @@ export function AlertsBell({ initialCount }: Props) {
     <Link
       href="/ajustes#alertas"
       aria-label={`Alertas (${count} sin leer)`}
-      className="border-border-default bg-surface hover:bg-surface-hover text-text-secondary hover:text-text relative flex h-9 items-center justify-center rounded-[8px] border px-2 transition-colors"
+      className="border-border-default bg-surface hover:bg-surface-hover text-text-secondary hover:text-text relative flex h-11 w-11 items-center justify-center rounded-[8px] border transition-colors md:h-9 md:w-9"
     >
-      <Bell strokeWidth={1.5} className="size-[14px]" />
+      <Bell strokeWidth={1.5} className="size-[18px] md:size-[14px]" />
       {count > 0 && (
         <span
           aria-hidden
