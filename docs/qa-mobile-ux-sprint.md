@@ -32,16 +32,27 @@
 
 ## U3 — Layout mobile (sólo <768px; desktop debe quedar igual)
 
+> Actualizado tras el refinamiento: topbar minimal (Registrar + Avatar), búsqueda
+> y notificaciones bajo el avatar.
+
 - [ ] Bottom-nav: **Hoy · Mi dinero · [◆ FAB lavanda] · Mi plan · Mi historia**.
       No existe el botón "Más".
 - [ ] El FAB central (lavanda) abre el **copiloto**; nunca muestra barra de
       sección activa. Los 4 links sí muestran el indicador morado cuando activos.
-- [ ] Topbar: **Registrar** (morado) abre "Nueva transacción"; **Buscar**, la
-      **campana** y el **avatar** son tappables (≥44×44). "Preguntar" ya no está
-      en el topbar móvil.
-- [ ] El **avatar** abre un sheet inferior con Ajustes / Categorías /
-      Integraciones IA / Importar CSV + tu cuenta (UserButton). El sheet se cierra
-      al tocar un destino.
+- [ ] Topbar mobile = sólo **Registrar** (morado, abre "Nueva transacción") +
+      **Avatar** (tu foto). Buscar, campana y "Preguntar" NO están en el topbar
+      móvil. Ambos botones ≥44×44.
+- [ ] El **avatar** muestra tu foto de perfil con un **badge morado** si hay
+      notificaciones sin leer. Lo abres y ves un sheet inferior bien organizado:
+      cabecera (foto + nombre) → **Búsqueda · Notificaciones · Ajustes** → sesión
+      (UserButton). Categorías/Integraciones IA/Importar ya NO aparecen aquí.
+- [ ] **Búsqueda** (en el sheet) cierra el sheet y abre el command palette; el
+      input recibe foco sin quedar un scroll bloqueado. **Notificaciones** lleva a
+      la bandeja (/ajustes#alertas) y muestra el conteo. **Ajustes** lleva a
+      /ajustes.
+- [ ] **Filtros sin desbordar** (era el bug de Insights): en Insights, Comercios,
+      Movimientos y Categorías, el pill de filtros a 320px se queda dentro del
+      ancho y scrollea horizontal — no empuja la página ni genera scroll lateral.
 - [ ] **320px**: las 4 etiquetas del bottom-nav caben (revisa "Mi historia"); el
       título del topbar (p.ej. "Mi dinero · Movimientos") se trunca sin empujar
       los botones del cluster.
