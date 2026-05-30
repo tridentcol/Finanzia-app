@@ -13,6 +13,7 @@ import { derivePhase, PHASE_THINKING } from '@/lib/copilot/render/copilot-phase'
 import type { LoosePart } from '@/lib/copilot/parts'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { useChatViewport } from '@/hooks/use-chat-viewport'
+import { KeyboardDebug } from '@/components/copilot/keyboard-debug'
 import { ChatStream } from '@/components/copilot/chat-stream'
 import { CopilotEmptyState } from '@/components/copilot/empty-state'
 import { CopilotEngineMenu } from '@/components/copilot/engine-menu'
@@ -154,6 +155,8 @@ export function CopilotChat() {
       ref={containerRef}
       className="bg-surface fixed inset-x-0 top-0 flex h-[100dvh] flex-col overflow-hidden sm:static sm:mx-auto sm:h-dvh sm:max-w-3xl"
     >
+      {/* TEMPORAL: sonda de diagnóstico del teclado. BORRAR tras capturar datos. */}
+      <KeyboardDebug targetRef={containerRef} scrollerRef={scrollerRef} />
       <header
         className="border-border-default flex shrink-0 items-center justify-between gap-2 border-b px-3 py-3"
         style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top, 0px))' }}
