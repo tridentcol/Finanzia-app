@@ -204,7 +204,7 @@ function CopilotChat({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="flex h-full flex-col">
-      <header className="border-border-default flex items-center justify-between gap-2 border-b px-4 py-3">
+      <header className="border-border-default flex shrink-0 items-center justify-between gap-2 border-b px-4 py-3">
         <div className="flex min-w-0 items-center gap-2">
           <Spark strokeWidth={1.5} className="size-4 shrink-0" style={{ color: 'var(--accent-ai)' }} />
           <span className="text-text shrink-0 text-sm font-semibold">Finanzia</span>
@@ -234,7 +234,10 @@ function CopilotChat({ onClose }: { onClose: () => void }) {
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto px-5 py-4">
+      {/* min-h-0: imprescindible para que un flex-item con overflow scrollee en
+          vez de crecer y empujar el input fuera. overscroll-contain evita que el
+          scroll encadene al body (y que el VisualViewport salte en iOS). */}
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">
         {messages.length === 0 ? (
           <CopilotEmptyState onPick={submit} />
         ) : (
@@ -243,14 +246,14 @@ function CopilotChat({ onClose }: { onClose: () => void }) {
       </div>
 
       {error && (
-        <div className="border-border-default border-t px-5 py-2">
+        <div className="border-border-default shrink-0 border-t px-5 py-2">
           <p className="text-negative text-xs">{error.message}</p>
         </div>
       )}
 
       <form
         onSubmit={onSubmit}
-        className="border-border-default flex items-center gap-2 border-t px-3 py-2"
+        className="border-border-default flex shrink-0 items-center gap-2 border-t px-3 py-2"
         style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom, 0px))' }}
       >
         <input
