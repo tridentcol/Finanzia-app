@@ -387,5 +387,48 @@
   }
 }
 
+/* ============================================================
+   Modo privacidad (toggle del dashboard)
+   SIN @layer a propósito: el CSS sin capa gana sobre las utilities de Tailwind
+   (que viven en @layer utilities). Si esto estuviera en @layer base, una utility
+   de color como `text-negative` ganaría y dejaría los dígitos legibles bajo los
+   bullets. Enmascara TODO `.amount` dentro del subárbol con `data-balances-hidden`
+   (lo marca PrivacyProvider). Ancho FIJO en `ch` (escala con la fuente, no revela
+   la magnitud). Nota: es privacidad VISUAL (anti-mirón); el valor real sigue en
+   el DOM, así que un lector de pantalla o copiar/pegar aún lo exponen — aceptable
+   para single-user, donde el dueño es quien activa el modo.
+   ============================================================ */
+[data-balances-hidden] .amount {
+  position: relative;
+  display: inline-block;
+  width: 4.5ch;
+  overflow: hidden;
+  color: transparent;
+  vertical-align: bottom;
+  user-select: none;
+}
+[data-balances-hidden] .amount > * {
+  visibility: hidden;
+}
+[data-balances-hidden] .amount::after {
+  content: "•••••";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  white-space: nowrap;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+  pointer-events: none;
+}
+/* Los insights pueden interpolar montos en prosa libre (no son `.amount`): se
+   difuminan en modo privacidad para no filtrarlos. Blur funcional de privacidad,
+   no glassmorphism decorativo. */
+[data-balances-hidden] [data-insight-text] {
+  filter: blur(5px);
+  user-select: none;
+}
+
 /* View Transitions removidas — añadían lag perceptible entre rutas. La
    navegación queda plana, dependiendo del prefetch de Next/Link. */

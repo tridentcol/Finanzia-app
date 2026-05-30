@@ -70,13 +70,19 @@ export function DebtsSummaryCard({
           <div className="flex shrink-0 flex-col items-end gap-0.5 text-[11px]">
             {creditCardDebtInBase > 0 && (
               <span className="text-text-tertiary tabular">
-                {formatMoney(creditCardDebtInBase, { currency, compact: true })} en tarjetas
+                <span className="amount">
+                  {formatMoney(creditCardDebtInBase, { currency, compact: true })}
+                </span>{' '}
+                en tarjetas
               </span>
             )}
             {summary.activeCount > 0 && (
               <span className="text-text-tertiary tabular">
-                {formatMoney(debtsTotal, { currency, compact: true })} en{' '}
-                {summary.activeCount} {summary.activeCount === 1 ? 'préstamo' : 'préstamos'}
+                <span className="amount">
+                  {formatMoney(debtsTotal, { currency, compact: true })}
+                </span>{' '}
+                en {summary.activeCount}{' '}
+                {summary.activeCount === 1 ? 'préstamo' : 'préstamos'}
               </span>
             )}
             {summary.partial && (

@@ -57,8 +57,11 @@ export function CashFlowTeaser({ points, currency, startingBalance }: Props) {
               delta >= 0 ? 'text-positive' : 'text-negative'
             }`}
           >
-            {delta >= 0 ? '+' : ''}
-            {Math.round(delta).toLocaleString('es-CO')} desde hoy
+            <span className="amount">
+              {delta >= 0 ? '+' : ''}
+              {Math.round(delta).toLocaleString('es-CO')}
+            </span>{' '}
+            desde hoy
           </span>
         </div>
         <div className="h-16 w-1/2 max-w-[200px]">

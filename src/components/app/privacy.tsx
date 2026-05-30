@@ -42,6 +42,11 @@ function subscribe(cb: () => void): () => void {
  * `initialHidden` viene del servidor (lectura de la cookie) → SSR ya enmascara,
  * sin flash. `useSyncExternalStore` evita el setState-en-effect (React Compiler)
  * y el mismatch de hidratación.
+ *
+ * El enmascarado es por CSS: marca `data-balances-hidden` en un wrapper
+ * `display:contents` (sin caja, no altera el layout) y globals.css enmascara todo
+ * `.amount` descendiente. Así Amount sigue siendo server y CUALQUIER monto del
+ * subárbol se oculta sin tocar cada componente — escalable por defecto.
  */
 export function PrivacyProvider({
   initialHidden = false,
@@ -52,5 +57,11 @@ export function PrivacyProvider({
 }) {
   const hidden = useSyncExternalStore(subscribe, readCookie, () => initialHidden)
   const toggle = useCallback(() => writeCookie(!readCookie()), [])
-  return <PrivacyContext.Provider value={{ hidden, toggle }}>{children}</PrivacyContext.Provider>
+  return (
+    <PrivacyContext.Provider value={{ hidden, toggle }}>
+      <div className="contents" data-balances-hidden={hidden ? '' : undefined}>
+        {children}
+      </div>
+    </PrivacyContext.Provider>
+  )
 }

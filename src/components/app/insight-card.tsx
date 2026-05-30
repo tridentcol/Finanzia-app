@@ -139,7 +139,9 @@ export function InsightCard({
         </button>
       </div>
 
-      <div className="flex flex-col gap-1.5">
+      {/* data-insight-text: el modo privacidad del dashboard difumina esta prosa
+          porque puede contener montos crudos interpolados (no son `.amount`). */}
+      <div className="flex flex-col gap-1.5" data-insight-text>
         <h3 className={cn('text-text font-semibold', compact ? 'text-sm' : 'text-base')}>
           {insight.title}
         </h3>
