@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { eq } from 'drizzle-orm'
 
+import { cookies } from 'next/headers'
+
 import { requireCurrentUser } from '@/lib/auth'
 import { db } from '@/lib/db/client'
 import { profiles } from '@/lib/db/schema'
@@ -14,6 +16,8 @@ import { getRatesForPairs } from '@/lib/currency/rates'
 import { projectCashFlow } from '@/lib/cash-flow/project'
 import { getDailyVolatility } from '@/lib/cash-flow/volatility'
 import { Amount } from '@/components/app/amount'
+import { PrivacyProvider, PRIVACY_COOKIE } from '@/components/app/privacy'
+import { HideBalancesToggle } from '@/components/app/hide-balances-toggle'
 import { CashFlowTeaser } from '@/components/app/cash-flow-teaser'
 import { DebtsSummaryCard } from '@/components/app/debts-summary-card'
 import { EmptyState } from '@/components/app/empty-state'
@@ -55,6 +59,8 @@ function relativeDateLabel(iso: string): string {
 
 export default async function DashboardPage() {
   const user = await requireCurrentUser()
+  // Estado del modo privacidad para el render inicial (evita el flash de saldos).
+  const balancesHidden = (await cookies()).get(PRIVACY_COOKIE)?.value === '1'
   const profile = await db.query.profiles.findFirst({
     where: eq(profiles.userId, user.id),
   })
@@ -183,6 +189,7 @@ export default async function DashboardPage() {
   const Bell = icons.bell
 
   return (
+    <PrivacyProvider initialHidden={balancesHidden}>
     <div className="flex min-w-0 flex-col gap-10 lg:gap-12">
       {/* Hero — saludo + saldo + lo siguiente, todo junto en un bloque
           editorial corto */}
@@ -190,7 +197,10 @@ export default async function DashboardPage() {
         <p className="text-text-tertiary text-[11px] uppercase tracking-[0.12em]">
           {greeting}
         </p>
-        <p className="text-text-secondary text-sm">Saldo en cuentas</p>
+        <div className="flex items-center gap-2">
+          <p className="text-text-secondary text-sm">Saldo en cuentas</p>
+          <HideBalancesToggle />
+        </div>
         <Amount
           value={totalBase}
           currency={baseCurrency}
@@ -343,5 +353,6 @@ export default async function DashboardPage() {
         </>
       )}
     </div>
+    </PrivacyProvider>
   )
 }

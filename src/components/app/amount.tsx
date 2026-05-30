@@ -1,6 +1,9 @@
+'use client'
+
 import { cn } from '@/lib/utils'
 import { formatMoney, type FormatMoneyOptions } from '@/lib/currency/format'
 import type { CurrencyCode } from '@/lib/currency/currencies'
+import { usePrivacy } from './privacy'
 
 type AmountKind = 'neutral' | 'positive' | 'negative'
 
@@ -26,6 +29,10 @@ type AmountProps = {
  * Componente canónico para representar dinero. Siempre Geist Mono tabular
  * (regla 10 del mandato). Acepta string (caso típico Postgres numeric) o
  * number, sin perder precisión razonable.
+ *
+ * Es client porque respeta el modo privacidad (`usePrivacy`). Fuera de un
+ * `PrivacyProvider` el contexto es `hidden:false`, así que se comporta igual que
+ * antes; la única superficie con proveedor hoy es el dashboard.
  */
 export function Amount({
   value,
@@ -38,6 +45,23 @@ export function Amount({
   locale,
   className,
 }: AmountProps) {
+  const { hidden } = usePrivacy()
+
+  // Modo privacidad (sólo dentro de un PrivacyProvider, p.ej. el dashboard):
+  // máscara de longitud fija — no filtra la magnitud del saldo. Conserva la
+  // tipografía mono y el tamaño (display/className) para no romper el layout.
+  if (hidden) {
+    return (
+      <span
+        role="img"
+        aria-label="Saldo oculto"
+        className={cn('amount text-text-secondary select-none', display && 'display', className)}
+      >
+        <span aria-hidden="true">•••••</span>
+      </span>
+    )
+  }
+
   const options: FormatMoneyOptions = {
     currency,
     showPositiveSign,
