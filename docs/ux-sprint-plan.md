@@ -2,6 +2,8 @@
 
 > Creado 2026-05-29. Documento vivo: si una fase contradice este archivo tras implementarse, se actualiza el archivo.
 >
+> **ESTADO (2026-05-29): U1–U4 ✅ implementadas.** Una revisión adversarial por fase, hallazgos corregidos. Ver `docs/PROGRESS.md` (filas U1–U4) y el QA visual pendiente en `docs/qa-mobile-ux-sprint.md`. Desvíos del plan ya reconciliados: rutas IA v2 (`/mi-dinero`·`/mi-plan`·`/mi-historia`), topbar mantuvo 56px (los 44px caben; no se tocó `--topbar-total`), Importar quedó en el account sheet (sin CTA contextual aún), wizard en ~10 pantallas (mini-test = 3 sub).
+>
 > **Contexto previo** (ver `docs/PROGRESS.md` Step 19 + `docs/copilot-llm.md`): el LLM (OpenAI gpt-5.4-mini) ya es el cerebro del copiloto — lee todos los datos del usuario vía tools + `queryTransactions`, responde como asesor con un *profile snapshot*, confirma mutaciones con tarjeta, y el usuario elige el motor (Local por default / un modelo de IA con key) desde un selector discreto en el header del copiloto. **Este sprint es 100% experiencia de usuario**, sobre esa base ya funcional.
 
 ## Objetivo
