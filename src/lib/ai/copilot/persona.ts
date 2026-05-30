@@ -108,13 +108,28 @@ export const TEST_QUESTIONS: {
 
 // ============ Zod ============
 
+/** Valores válidos de una pregunta del test, derivados de TEST_QUESTIONS (sin drift). */
+function testValues(id: TestAnswerId): [string, ...string[]] {
+  const opts = TEST_QUESTIONS.find((q) => q.id === id)?.options.map((o) => o.value) ?? []
+  return opts as [string, ...string[]]
+}
+
+/** Respuestas del mini-test restringidas a los valores reales del catálogo. */
+export const testAnswersSchema = z
+  .object({
+    p1: z.enum(testValues('p1')),
+    p2: z.enum(testValues('p2')),
+    p3: z.enum(testValues('p3')),
+  })
+  .partial()
+
 export const personaSchema = z.object({
   literacy: z.enum(LITERACY).optional(),
   commStyle: z.enum(COMM_STYLE).optional(),
   moneyStyle: z.enum(MONEY_STYLE).optional(),
   horizon: z.enum(HORIZON).optional(),
   focus: z.array(z.enum(FOCUS)).max(2).optional(),
-  testAnswers: z.object({ p1: z.string(), p2: z.string(), p3: z.string() }).partial().optional(),
+  testAnswers: testAnswersSchema.optional(),
   updatedAt: z.string().optional(),
 })
 export type Persona = z.infer<typeof personaSchema>

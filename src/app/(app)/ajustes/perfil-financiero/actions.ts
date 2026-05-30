@@ -14,6 +14,7 @@ import {
   LITERACY,
   MONEY_STYLE,
   derivePersona,
+  testAnswersSchema,
 } from '@/lib/ai/copilot/persona'
 
 type ActionResult<T = void> =
@@ -26,7 +27,7 @@ const onboardingPersonaSchema = z.object({
   literacy: z.enum(LITERACY).optional(),
   commStyle: z.enum(COMM_STYLE).optional(),
   focus: z.array(z.enum(FOCUS)).max(2).optional(),
-  testAnswers: z.object({ p1: z.string(), p2: z.string(), p3: z.string() }).partial().optional(),
+  testAnswers: testAnswersSchema.optional(),
 })
 
 const onboardingSchema = z.object({

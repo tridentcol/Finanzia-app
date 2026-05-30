@@ -1,7 +1,7 @@
 'use client'
 
 import { useReducer, useState, useTransition } from 'react'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { completeOnboarding, type OnboardingInput } from '@/app/(app)/ajustes/perfil-financiero/actions'
 import { INITIAL_STATE, wizardReducer, type WizardState } from './onboarding/types'
@@ -94,7 +94,13 @@ export function OnboardingOverlay({ isOnboarded }: { isOnboarded: boolean }) {
   const total = SCREENS.length
   const screen = SCREENS[step]!
   const testIndex = screen.key.startsWith('test') ? Number(screen.key.slice(4)) : null
-  const canAdvance = screen.key === 'savings' ? state.method !== null : true
+  const validFixedAmount = state.fixedAmount.trim() !== '' && Number(state.fixedAmount) > 0
+  // savings exige un método; con "monto fijo" además un monto válido (si no, se
+  // crearía un plan fixed_amount sin objetivo). El resto de pasos avanzan libres.
+  const canAdvance =
+    screen.key === 'savings'
+      ? state.method !== null && (state.method !== 'fixed_amount' || validFixedAmount)
+      : true
 
   function handleSkip() {
     const until = new Date()
@@ -162,19 +168,24 @@ export function OnboardingOverlay({ isOnboarded }: { isOnboarded: boolean }) {
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) handleSkip() }}>
       <DialogContent
-        className="border-border-default bg-surface max-w-lg gap-0 p-0"
+        className="flex max-w-lg flex-col gap-0 overflow-hidden p-0 pt-[var(--safe-top)] pb-[var(--safe-bottom)] sm:pt-0 sm:pb-0"
         hideClose
+        aria-describedby={undefined}
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
-        <div className="bg-border-default h-[2px] w-full overflow-hidden rounded-t-[16px]">
+        {/* Nombre accesible del diálogo (Radix lo exige); el headline visible es
+            editorial y vive abajo. */}
+        <DialogTitle className="sr-only">{screen.headline}</DialogTitle>
+
+        <div className="bg-border-default h-[2px] w-full shrink-0 overflow-hidden sm:rounded-t-[16px]">
           <div
-            className="bg-text-secondary h-full transition-all duration-300"
+            className="bg-text-secondary h-full transition-all duration-300 motion-reduce:transition-none"
             style={{ width: `${((step + 1) / total) * 100}%` }}
           />
         </div>
 
-        <div className="flex max-h-[70dvh] flex-col gap-6 overflow-y-auto p-6 sm:p-8">
+        <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-6 sm:p-8">
           <div className="flex flex-col gap-1">
             {testIndex !== null ? (
               <div className="flex items-center gap-1.5" aria-hidden>
@@ -201,7 +212,7 @@ export function OnboardingOverlay({ isOnboarded }: { isOnboarded: boolean }) {
           {error && <p className="text-negative text-sm">{error}</p>}
         </div>
 
-        <div className="border-border-default flex items-center justify-between border-t px-6 py-4 sm:px-8">
+        <div className="border-border-default flex shrink-0 items-center justify-between border-t px-6 py-4 sm:px-8">
           <button
             type="button"
             onClick={handleSkip}

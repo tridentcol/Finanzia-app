@@ -15,7 +15,7 @@ import { getDebtsSummary } from '@/lib/db/queries/debts'
 import { listGoalsForUser } from '@/lib/db/queries/goals'
 import { executeQuery } from '@/lib/copilot/query/execute'
 import type { Query } from '@/lib/copilot/query/types'
-import { parsePersona, personaToSnapshotLines } from './persona'
+import { parsePersona, personaToSnapshotLines, personaToToneHints, type ToneHints } from './persona'
 
 export type SnapshotContext = {
   userId: string
@@ -59,8 +59,14 @@ function thisMonth(todayIso: string): { from: string; to: string } {
  * cifras aquí son aproximadas (compactas) y orientativas; para montos exactos
  * el LLM debe consultar los tools. Reusa queries existentes (todas baratas) y
  * tolera fallos por sección (Promise.allSettled). Objetivo: ≤ ~600 tokens.
+ *
+ * Devuelve también los `toneHints` derivados de la MISMA lectura de la persona,
+ * para que el caller no relea `profiles` ni arriesgue una persona desincronizada
+ * entre el snapshot y los hints (U4).
  */
-export async function buildProfileSnapshot(ctx: SnapshotContext): Promise<string> {
+export async function buildProfileSnapshot(
+  ctx: SnapshotContext,
+): Promise<{ text: string; toneHints?: ToneHints }> {
   const currency = ctx.baseCurrency as CurrencyCode
   const money = (v: number | string) =>
     formatMoney(v, { currency, compact: true })
@@ -122,9 +128,11 @@ export async function buildProfileSnapshot(ctx: SnapshotContext): Promise<string
     lines.push(`- Tolerancia al riesgo: ${ai.riskTolerance}.`)
   }
   // Persona de personalización (literacy/commStyle/moneyStyle/horizon/focus).
-  // Ausente ⇒ cero líneas extra (cero ruptura para usuarios sin persona).
+  // Ausente ⇒ cero líneas extra (cero ruptura para usuarios sin persona). Los
+  // toneHints salen de esta MISMA persona para que snapshot y tono coincidan.
   const persona = parsePersona(ai?.persona)
   if (persona) lines.push(...personaToSnapshotLines(persona))
+  const toneHints = persona ? personaToToneHints(persona) : undefined
 
   // Cuentas + saldo total.
   if (accountsR.status === 'fulfilled') {
@@ -202,11 +210,17 @@ export async function buildProfileSnapshot(ctx: SnapshotContext): Promise<string
   }
 
   if (lines.length <= 1) {
-    return 'PERFIL FINANCIERO DEL USUARIO: usuario nuevo, sin datos suficientes aún. Sé acogedor y ayúdalo a empezar (registrar cuentas/movimientos).'
+    return {
+      text: 'PERFIL FINANCIERO DEL USUARIO: usuario nuevo, sin datos suficientes aún. Sé acogedor y ayúdalo a empezar (registrar cuentas/movimientos).',
+      toneHints,
+    }
   }
 
-  return [
-    'PERFIL FINANCIERO DEL USUARIO (datos reales y aproximados — úsalos para personalizar el consejo; para montos exactos consulta los tools):',
-    ...lines,
-  ].join('\n')
+  return {
+    text: [
+      'PERFIL FINANCIERO DEL USUARIO (datos reales y aproximados — úsalos para personalizar el consejo; para montos exactos consulta los tools):',
+      ...lines,
+    ].join('\n'),
+    toneHints,
+  }
 }

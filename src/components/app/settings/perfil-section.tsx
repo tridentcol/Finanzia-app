@@ -4,6 +4,7 @@ import { db } from '@/lib/db/client'
 import { profiles } from '@/lib/db/schema'
 import { getActiveSavingsPlan } from '@/app/(app)/ajustes/perfil-financiero/actions'
 import { PerfilFinancieroClient } from '@/app/(app)/ajustes/perfil-financiero/perfil-financiero-client'
+import { parsePersona } from '@/lib/ai/copilot/persona'
 
 type Props = { userId: string }
 
@@ -22,6 +23,8 @@ export async function PerfilSection({ userId }: Props) {
       ? ai.riskTolerance
       : null
 
+  const persona = parsePersona(ai.persona)
+
   return (
     <PerfilFinancieroClient
       baseCurrency={(profile?.baseCurrency ?? 'COP') as 'COP' | 'USD' | 'EUR' | 'MXN'}
@@ -30,6 +33,13 @@ export async function PerfilSection({ userId }: Props) {
       isOnboarded={!!profile?.onboardedAt}
       mainGoal={mainGoal}
       riskTolerance={riskTolerance}
+      persona={{
+        literacy: persona?.literacy ?? null,
+        commStyle: persona?.commStyle ?? null,
+        moneyStyle: persona?.moneyStyle ?? null,
+        horizon: persona?.horizon ?? null,
+        focus: persona?.focus ?? [],
+      }}
     />
   )
 }

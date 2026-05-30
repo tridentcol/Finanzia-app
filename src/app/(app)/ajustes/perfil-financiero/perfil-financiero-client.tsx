@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import type { SavingsPlan } from '@/lib/db/schema'
 import { updateFinancialPersona, updateSavingsPlan, type UpdatePlanInput } from './actions'
+import { CopilotToneCard, type ToneCardProps } from './copilot-tone-card'
 
 type Currency = 'COP' | 'USD' | 'EUR' | 'MXN'
 type Locale = 'es-CO' | 'es-ES' | 'en-US' | 'es-MX'
@@ -80,6 +81,7 @@ export function PerfilFinancieroClient({
   isOnboarded,
   mainGoal: initialMainGoal,
   riskTolerance: initialRisk,
+  persona,
 }: {
   baseCurrency: Currency
   locale: Locale
@@ -87,6 +89,7 @@ export function PerfilFinancieroClient({
   isOnboarded: boolean
   mainGoal: string
   riskTolerance: RiskTolerance | null
+  persona: ToneCardProps
 }) {
   const [goal, setGoal] = useState(initialMainGoal)
   const [risk, setRisk] = useState<RiskTolerance | null>(initialRisk)
@@ -209,6 +212,9 @@ export function PerfilFinancieroClient({
           {personaPending ? 'Guardando…' : 'Guardar persona'}
         </Button>
       </div>
+
+      {/* Cómo te habla el copiloto — señales de tono (literacy/commStyle/etc.) */}
+      <CopilotToneCard {...persona} />
 
       {/* Savings plan */}
       {!editing ? (

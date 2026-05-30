@@ -19,7 +19,7 @@ function buildToneBlock(hints?: ToneHints): string {
   if (hints.verbosity === 'low') {
     lines.push('- Prefiere lo breve: da la conclusión y una o dos acciones, sin rodeos.')
   } else if (hints.verbosity === 'high') {
-    lines.push('- Aprecia el detalle: aporta algo más de contexto cuando sume.')
+    lines.push('- Aporta una frase más de contexto o el porqué cuando aclare la decisión, sin perder concisión.')
   }
   if (hints.explainReasoning) {
     lines.push('- Explica brevemente el porqué de cada recomendación.')
@@ -30,7 +30,9 @@ function buildToneBlock(hints?: ToneHints): string {
     lines.push('- Es de planear: puedes proponer estructura, reglas y metas concretas.')
   }
   if (hints.focusOrder.length > 0) {
-    lines.push(`- Prioriza estos focos del usuario al diagnosticar: ${hints.focusOrder.join(', ')}.`)
+    // El listado de focos ya vive en el snapshot (PERFIL); aquí sólo la
+    // instrucción de comportamiento, sin repetir los datos.
+    lines.push('- Prioriza el "Foco actual" del usuario (ver su perfil) al diagnosticar y recomendar.')
   }
   if (lines.length === 0) return ''
   return `\n\n# Cómo hablarle a este usuario (personalización)\n${lines.join('\n')}`

@@ -22,7 +22,7 @@ import {
 import { buildCopilotTools } from './tools'
 import { buildSystemPrompt } from './system-prompt'
 import { buildProfileSnapshot } from './profile-snapshot'
-import { parsePersona, personaToToneHints, type ToneHints } from './persona'
+import type { ToneHints } from './persona'
 import type { CopilotContext } from './context'
 
 export type RunChatParams = {
@@ -109,31 +109,20 @@ export async function runCopilotChat(params: RunChatParams) {
   const todayIso = new Date().toISOString().slice(0, 10)
   const { config } = resolved
 
-  // Snapshot del perfil para personalizar. Tolerante a fallos: si la DB falla,
-  // el copiloto sigue funcionando sin el bloque de contexto.
+  // Snapshot del perfil + tono de la persona, de UNA sola lectura (U4). Tolerante
+  // a fallos: si la DB falla, el copiloto sigue funcionando sin contexto ni tono.
   let profileSnapshot: string | undefined
+  let toneHints: ToneHints | undefined
   try {
-    profileSnapshot = await buildProfileSnapshot({
+    const snap = await buildProfileSnapshot({
       userId: params.ctx.userId,
       baseCurrency: params.ctx.baseCurrency,
       todayIso,
     })
+    profileSnapshot = snap.text
+    toneHints = snap.toneHints
   } catch (err) {
     console.error('[copilot] profile snapshot falló:', err)
-  }
-
-  // Tono según la persona del usuario (U4). Lectura ligera; sin persona ⇒
-  // toneHints undefined ⇒ cero líneas extra en el prompt.
-  let toneHints: ToneHints | undefined
-  try {
-    const row = await db.query.profiles.findFirst({
-      where: eq(profiles.userId, params.ctx.userId),
-      columns: { aiProfile: true },
-    })
-    const persona = parsePersona((row?.aiProfile as { persona?: unknown } | null)?.persona)
-    if (persona) toneHints = personaToToneHints(persona)
-  } catch (err) {
-    console.error('[copilot] lectura de persona falló:', err)
   }
 
   const providerOptions =

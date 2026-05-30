@@ -6,6 +6,8 @@ import {
   personaToSnapshotLines,
   personaToToneHints,
   hasToneSignal,
+  testAnswersSchema,
+  TEST_QUESTIONS,
   type Persona,
 } from '@/lib/ai/copilot/persona'
 
@@ -46,6 +48,23 @@ describe('derivePersona — determinista y auditable', () => {
 
   it('valores fuera del catálogo se ignoran', () => {
     expect(derivePersona({ p2: 'inexistente' })).toEqual({})
+  })
+})
+
+describe('testAnswersSchema — valores cerrados, sin drift', () => {
+  it('acepta todos los valores reales del catálogo', () => {
+    for (const q of TEST_QUESTIONS) {
+      for (const o of q.options) {
+        expect(testAnswersSchema.safeParse({ [q.id]: o.value }).success).toBe(true)
+      }
+    }
+  })
+  it('rechaza un valor fuera del catálogo', () => {
+    expect(testAnswersSchema.safeParse({ p1: 'basura' }).success).toBe(false)
+  })
+  it('parcial: acepta sólo algunas respuestas', () => {
+    expect(testAnswersSchema.safeParse({ p2: 'anio' }).success).toBe(true)
+    expect(testAnswersSchema.safeParse({}).success).toBe(true)
   })
 })
 
