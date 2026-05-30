@@ -25,11 +25,17 @@ import {
 
 /**
  * Copiloto Finanzia como PÁGINA (ruta /copilot), no como ventana flotante. Es un
- * chat normal: header arriba, mensajes scrolleables, input abajo. Al ser una
- * página (no un modal radix) el navegador maneja el teclado de forma nativa y se
- * puede navegar libremente (botón atrás). En mobile fijamos la altura al viewport
- * VISIBLE con VisualViewport (en iOS `100dvh` no encoge con el teclado): el alto
- * baja con el teclado → input justo encima, mensajes scrollean, header fijo.
+ * chat normal: header arriba, mensajes scrolleables, input abajo. Se navega libre
+ * (botón atrás / historial); sin modal radix → sin focus-trap ni "tocar fuera".
+ *
+ * Teclado en mobile (clave): en iOS, con el contenedor en flujo normal, enfocar
+ * el input hace que el navegador desplace TODO el documento para "revelar" el
+ * input → sube todo y el input queda arriba. Lo que hace un chat LLM real: el
+ * contenedor es `fixed` (fuera de flujo, el documento no puede desplazarse) y su
+ * alto = viewport VISIBLE (VisualViewport; en iOS `100dvh` no encoge con el
+ * teclado). Anclado arriba (top:0), el alto baja desde abajo con el teclado: el
+ * header no se mueve, el input queda justo encima del teclado, los mensajes
+ * scrollean adentro. En desktop vuelve a flujo normal, centrado.
  */
 type LooseMsg = { id: string; role: string; parts?: LoosePart[] }
 
@@ -65,6 +71,19 @@ export function CopilotChat() {
     return () => {
       vv.removeEventListener('resize', sync)
       vv.removeEventListener('scroll', sync)
+    }
+  }, [])
+
+  // Bloquea el scroll del documento mientras el chat está montado. Combinado con
+  // el contenedor `fixed`, evita que iOS desplace TODA la página al enfocar el
+  // input (eso subía todo y dejaba el input arriba). Con esto el layout no se
+  // mueve: solo encoge la altura del chat desde abajo cuando sube el teclado.
+  useEffect(() => {
+    const html = document.documentElement
+    const prev = html.style.overflow
+    html.style.overflow = 'hidden'
+    return () => {
+      html.style.overflow = prev
     }
   }, [])
 
@@ -159,7 +178,7 @@ export function CopilotChat() {
   return (
     <div
       style={vh ? ({ ['--copilot-vh']: `${vh}px` } as React.CSSProperties) : undefined}
-      className="bg-surface mx-auto flex h-[var(--copilot-vh,100dvh)] w-full max-w-3xl flex-col overflow-hidden"
+      className="bg-surface fixed inset-x-0 top-0 flex h-[var(--copilot-vh,100dvh)] flex-col overflow-hidden sm:static sm:mx-auto sm:h-dvh sm:max-w-3xl"
     >
       <header
         className="border-border-default flex shrink-0 items-center justify-between gap-2 border-b px-3 py-3"
