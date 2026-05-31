@@ -98,7 +98,10 @@ export async function tickRule(
       amountOriginal: rule.amount,
       currency: rule.currency,
       amountBase: conv.amount,
-      exchangeRate: conv.rate,
+      // Sin tasa (camino automatizado, sin UI para rechazar): provisional con
+      // exchange_rate=NULL para backfill, igual que el webhook — en vez de un
+      // 1:1 silencioso que distorsiona la base (regla #4).
+      exchangeRate: conv.missing ? null : conv.rate,
       description: rule.description,
       kind: rule.kind,
       recurringRuleId: rule.id,

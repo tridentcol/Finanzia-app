@@ -113,6 +113,16 @@ export async function runImport(input: ImportInput): Promise<ImportResult> {
         result.date,
         { fallbackToOne: true },
       )
+      if (conv.missing) {
+        // Sin tasa no persistimos una base 1:1 corrupta: saltamos la fila y la
+        // reportamos como omitida, en vez de distorsionar amount_base (regla #4).
+        errors.push({
+          row: i,
+          reason: `No hay tasa de cambio ${account.currency}→${baseCurrency} para ${result.date}.`,
+          raw: data.rows[i] as Record<string, unknown>,
+        })
+        continue
+      }
       amountBase = conv.amount
       exchangeRate = conv.rate
     } else {
