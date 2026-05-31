@@ -170,9 +170,9 @@ export async function isCopilotAvailable(): Promise<{
     m.getUserApiKey({ userId: user.id, provider, requiredScope: 'chat' }),
   )
   if (userKey) return { mode: 'llm', source: 'user' }
-  if (process.env.AI_GATEWAY_API_KEY) return { mode: 'llm', source: 'gateway' }
+  if (env.AI_GATEWAY_API_KEY) return { mode: 'llm', source: 'gateway' }
   const operatorKey =
-    provider === 'openai' ? process.env.OPENAI_API_KEY : process.env.ANTHROPIC_API_KEY
+    provider === 'openai' ? env.OPENAI_API_KEY : env.ANTHROPIC_API_KEY
   if (operatorKey) return { mode: 'llm', source: 'operator' }
   return { mode: 'heuristic', source: null }
 }

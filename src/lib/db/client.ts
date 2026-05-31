@@ -17,7 +17,7 @@ const queryClient =
     max_lifetime: 60 * 30,
   })
 
-if (process.env.NODE_ENV !== 'production') globalForDb.queryClient = queryClient
+if (env.NODE_ENV !== 'production') globalForDb.queryClient = queryClient
 
 export const db = drizzle(queryClient, { schema, casing: 'snake_case' })
 export { schema }

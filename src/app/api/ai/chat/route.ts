@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { createUIMessageStream, createUIMessageStreamResponse } from 'ai'
 
 import { requireCurrentUser } from '@/lib/auth'
+import { env } from '@/lib/env'
 import { db } from '@/lib/db/client'
 import { conversations, messages, profiles } from '@/lib/db/schema'
 import { resolveCopilotProvider, runCopilotChat } from '@/lib/ai/copilot'
@@ -126,7 +127,7 @@ export async function POST(req: Request) {
   // o el operador fuerza. Sin auto-defer: 'local' nunca usa IA.
   const goLLM = Boolean(resolved) && (routing === 'llm' || forceLLM)
 
-  if (process.env.FINANZIA_COPILOT_DEBUG === '1') {
+  if (env.FINANZIA_COPILOT_DEBUG === '1') {
     console.log('[copilot:route]', {
       last: utterances[utterances.length - 1],
       mode: goLLM ? 'llm' : routed.mode === 'local' ? 'local' : 'fallback',
@@ -206,7 +207,7 @@ export async function POST(req: Request) {
     messages: incoming as Parameters<typeof runCopilotChat>[0]['messages'],
     resolved: resolved ?? undefined,
     onFinish: async (event) => {
-      if (process.env.FINANZIA_COPILOT_DEBUG === '1') {
+      if (env.FINANZIA_COPILOT_DEBUG === '1') {
         const toolCalls = Array.isArray(event.toolCalls) ? event.toolCalls.length : 0
         console.log('[copilot:llm]', {
           provider: resolved?.kind ?? null,

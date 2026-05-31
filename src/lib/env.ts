@@ -47,6 +47,8 @@ const serverSchema = z.object({
   COPILOT_TEXT_VERBOSITY: optionalString(),
   COPILOT_STORE: optionalString(),
   COPILOT_FORCE_LLM: optionalString(),
+  //  - FINANZIA_COPILOT_DEBUG '1' → loggea trazas de depuración del copiloto
+  FINANZIA_COPILOT_DEBUG: optionalString(),
 
   // Upstash Redis — opcional hasta Step 8.
   UPSTASH_REDIS_REST_URL: optionalString(z.string().url()),

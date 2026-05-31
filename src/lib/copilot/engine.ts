@@ -23,6 +23,7 @@ import {
   type MerchantRow,
   type MerchantsRange,
 } from '@/lib/db/queries/merchants'
+import { env } from '@/lib/env'
 import {
   resolveTurn,
   pushTurn,
@@ -164,7 +165,7 @@ async function analyze(
   // Si hay un match por significado más fuerte y válido, pisa al keyword.
   if (classification.confidence <= 0.6) {
     const sem = await classifySemantic(message, ctx)
-    if (process.env.FINANZIA_COPILOT_DEBUG === '1') {
+    if (env.FINANZIA_COPILOT_DEBUG === '1') {
       console.log('[copilot:fusion]', {
         kw: classification.intent,
         kwConf: Number(classification.confidence.toFixed(2)),
