@@ -15,44 +15,61 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { createDebt } from '@/app/(app)/mi-dinero/deudas/actions'
-import { useDialogStore } from './dialog-store'
+import { updateDebt } from '@/app/(app)/mi-dinero/deudas/actions'
+import type { Debt } from '@/lib/db/schema'
 import {
   DebtFormFields,
   debtFormSchema,
   type DebtFormValues,
 } from './debt-form-fields'
 
-export function NewDebtDialog() {
-  const active = useDialogStore((s) => s.active)
-  const close = useDialogStore((s) => s.close)
-  const open = active === 'new-debt'
+type Props = {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  debt: Debt
+}
+
+/**
+ * Edición de una deuda existente. Reusa el formulario compartido y la action
+ * canónica updateDebt. Actualizar "Saldo actual" es la forma de registrar el
+ * avance de un pago (la cuota baja el saldo pendiente).
+ */
+export function EditDebtDialog({ open, onOpenChange, debt }: Props) {
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && close()}>
-      {open && <NewDebtForm onDone={close} />}
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {open && <EditDebtForm debt={debt} onDone={() => onOpenChange(false)} />}
     </Dialog>
   )
 }
 
-function NewDebtForm({ onDone }: { onDone: () => void }) {
+function EditDebtForm({ debt, onDone }: { debt: Debt; onDone: () => void }) {
   const router = useRouter()
   const [serverError, setServerError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
   const form = useForm<DebtFormValues>({
     resolver: zodResolver(debtFormSchema),
     defaultValues: {
-      name: '',
-      type: 'loan_personal',
-      currency: 'COP',
-      principal: '',
-      currentBalance: '',
+      name: debt.name,
+      lender: debt.lender ?? undefined,
+      type: debt.type,
+      currency: debt.currency,
+      principal: debt.principal,
+      currentBalance: debt.currentBalance,
+      interestRate: debt.interestRate ?? undefined,
+      installmentAmount: debt.installmentAmount ?? undefined,
+      termMonths: debt.termMonths != null ? String(debt.termMonths) : undefined,
+      originDate: debt.originDate ?? undefined,
+      nextPaymentDate: debt.nextPaymentDate ?? undefined,
+      paymentDay: debt.paymentDay != null ? String(debt.paymentDay) : undefined,
+      notes: debt.notes ?? undefined,
     },
   })
 
   function onSubmit(values: DebtFormValues) {
     setServerError(null)
     startTransition(async () => {
-      const result = await createDebt({
+      const result = await updateDebt({
+        id: debt.id,
         name: values.name,
         lender: values.lender?.trim() || null,
         type: values.type as 'loan_personal',
@@ -74,7 +91,7 @@ function NewDebtForm({ onDone }: { onDone: () => void }) {
         return
       }
 
-      toast.success('Deuda registrada.')
+      toast.success('Deuda actualizada.')
       router.refresh()
       onDone()
     })
@@ -83,10 +100,10 @@ function NewDebtForm({ onDone }: { onDone: () => void }) {
   return (
     <DialogContent>
       <DialogHeader>
-        <DialogTitle>Nueva deuda</DialogTitle>
+        <DialogTitle>Editar deuda</DialogTitle>
         <DialogDescription>
-          Registra un préstamo, hipoteca o cualquier obligación de pago. Las tarjetas
-          de crédito viven en Mi dinero · Tarjetas.
+          Actualiza los datos de {debt.name}. Bajar el saldo actual registra el avance
+          de tus pagos.
         </DialogDescription>
       </DialogHeader>
 
@@ -94,7 +111,7 @@ function NewDebtForm({ onDone }: { onDone: () => void }) {
         onSubmit={form.handleSubmit(onSubmit)}
         className="flex max-h-[calc(100dvh-var(--safe-top)-var(--safe-bottom)-32px)] flex-col gap-4 overflow-y-auto pr-1"
       >
-        <DebtFormFields form={form} />
+        <DebtFormFields form={form} balanceHint="Lo que aún debes — bajalo al pagar" />
 
         {serverError && <p className="text-negative text-xs">{serverError}</p>}
 
@@ -103,7 +120,7 @@ function NewDebtForm({ onDone }: { onDone: () => void }) {
             Cancelar
           </Button>
           <Button type="submit" disabled={pending}>
-            {pending ? 'Registrando…' : 'Registrar deuda'}
+            {pending ? 'Guardando…' : 'Guardar cambios'}
           </Button>
         </DialogFooter>
       </form>

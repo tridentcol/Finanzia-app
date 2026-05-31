@@ -10,6 +10,7 @@ import { listDebts, getDebtsSummary } from '@/lib/db/queries/debts'
 import { Amount } from '@/components/app/amount'
 import { EmptyState } from '@/components/app/empty-state'
 import { NewDebtTrigger } from '@/components/app/new-debt-trigger'
+import { DebtActionsMenu } from '@/components/app/debt-actions-menu'
 import { formatMoney } from '@/lib/currency/format'
 import { icons, type IconName } from '@/lib/design/icons'
 import type { CurrencyCode } from '@/lib/currency/currencies'
@@ -199,9 +200,12 @@ export default async function DeudasPage() {
                               </span>
                             </div>
                           </div>
-                          <span className="text-text-tertiary shrink-0 text-[11px] tracking-wider">
-                            {d.currency}
-                          </span>
+                          <div className="flex shrink-0 items-center gap-2">
+                            <span className="text-text-tertiary text-[11px] tracking-wider">
+                              {d.currency}
+                            </span>
+                            <DebtActionsMenu debt={d} />
+                          </div>
                         </header>
 
                         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
