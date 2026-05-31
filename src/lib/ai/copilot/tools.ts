@@ -6,6 +6,7 @@ import { listRecentTransactionsTool } from './tools/list-recent-transactions'
 import { getBudgetStatusTool } from './tools/get-budget-status'
 import { listActiveInsightsTool } from './tools/list-active-insights'
 import { searchTransactionsTool } from './tools/search-transactions'
+import { semanticSearchTransactionsTool } from './tools/semantic-search-transactions'
 import { getDebtsTool } from './tools/get-debts'
 import { listRecurringTool } from './tools/list-recurring'
 import { getSavingsTool } from './tools/get-savings'
@@ -37,6 +38,7 @@ export function buildCopilotTools(ctx: CopilotContext) {
     getAccounts: getAccountsTool(ctx),
     listRecentTransactions: listRecentTransactionsTool(ctx),
     searchTransactions: searchTransactionsTool(ctx),
+    semanticSearchTransactions: semanticSearchTransactionsTool(ctx),
     queryTransactions: queryTransactionsTool(ctx),
     getBudgetStatus: getBudgetStatusTool(ctx),
     getDebts: getDebtsTool(ctx),
