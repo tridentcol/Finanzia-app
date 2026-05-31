@@ -88,7 +88,7 @@ Diseñado inicialmente para uso personal (single-tenant MVP, Colombia, COP/USD m
 | DB | Supabase Postgres | RLS por usuario, pgvector para embeddings, real-time disponible |
 | ORM | Drizzle ORM | Performance + tipos limpios + SQL-like sin abstracción pesada |
 | Auth | Clerk | MFA + passkeys gratis, multi-tenant nativo, webhook a Supabase para sync |
-| IA | Vercel AI SDK 5 + Anthropic Claude Sonnet 4.6 | Streaming, tool-calling, structured output |
+| IA | Vercel AI SDK — OpenAI `gpt-5.4-mini` (copiloto default) + Claude Sonnet 4.6 (fallback de categorización e insights) | Streaming, tool-calling, structured output. Resolución: key del usuario → AI Gateway → operador |
 | Embeddings | OpenAI `text-embedding-3-small` via Vercel AI SDK | Costo bajo, 1536d, integrable con pgvector |
 | Background jobs | Vercel Cron + Trigger.dev v4 | Cron diario para insights; Trigger para jobs largos (CSV import, sync futura) |
 | Validación | Zod | Esquemas en cada frontera (Server Action, API, formulario, env) |
@@ -1388,7 +1388,7 @@ Webapp de finanzas personales con IA — multi-tenant ready, single-user MVP. N�
 
 ## Tech Stack
 
-Next.js 15 (App Router) + TypeScript strict + Tailwind v4 + shadcn/ui + Supabase Postgres + Drizzle + Clerk + Vercel AI SDK (Claude Sonnet 4.6) + Visx + Motion + Vercel.
+Next.js 16 (App Router) + TypeScript strict + Tailwind v4 + shadcn/ui + Supabase Postgres + Drizzle + Clerk + Vercel AI SDK (OpenAI `gpt-5.4-mini` copiloto + embeddings; Claude Sonnet 4.6 en fallback de categorización e insights) + Visx + Motion + Vercel.
 
 ## Architecture
 

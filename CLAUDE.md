@@ -17,7 +17,9 @@ Webapp de finanzas personales con IA — multi-tenant ready, single-user MVP. N�
 
 ## Tech Stack
 
-Next.js 16 (App Router) + TypeScript strict + Tailwind v4 + shadcn/ui + Supabase Postgres + Drizzle + Clerk + Vercel AI SDK (Claude Sonnet 4.6) + Visx + Motion + Vercel.
+Next.js 16 (App Router) + TypeScript strict + Tailwind v4 + shadcn/ui + Supabase Postgres + Drizzle + Clerk + Vercel AI SDK + Visx + Motion + Vercel.
+
+**Stack de IA (real, dual):** OpenAI es el default — embeddings `text-embedding-3-small` (categorización kNN, retrieval, intents) y copiloto chat (`gpt-5.4-mini`, ver `src/lib/ai/copilot/config.ts`). Claude (Sonnet 4.6) solo en el fallback LLM de categorización y en recomendaciones de insights. La resolución de key prefiere la del usuario (Vault) → Vercel AI Gateway (`AI_GATEWAY_API_KEY`, recomendado en operador para observabilidad de costo/latencia) → key directa del operador.
 
 ## Architecture
 
