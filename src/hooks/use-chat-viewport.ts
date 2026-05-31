@@ -21,9 +21,11 @@ type ChatViewportOptions = {
  *  1. `body { position: fixed }` → ABSORBE el scroll del documento: queda como un
  *     "fantasma" (reportado pero sin efecto visual). Así solo queda el paneo.
  *  2. NO pelear el scroll (sin `scrollTo`) → sin rebote.
- *  3. COMPENSAR solo el paneo: `transform: translate(0, offsetTop)`, aplicado de
- *     forma SINCRÓNICA en el evento de scroll/pan (sin esperar a rAF) → la barra
- *     queda en su sitio sin lag.
+ *  3. COMPENSAR el desplazamiento MIDIÉNDOLO, no calculándolo: con el transform
+ *     en neutro se lee `getBoundingClientRect().top` (el desplazamiento REAL que
+ *     iOS provocó, venga del scroll, del paneo o de ambos) y se cancela exacto.
+ *     Calcular `offsetTop` se quedaba corto (el real ≈ scroll + paneo). Se aplica
+ *     SINCRÓNICAMENTE en el evento de scroll/pan (sin lag) → barra clavada.
  * La altura (= `visualViewport.height`) se ajusta aparte; el cierre se anticipa a
  * pantalla completa; el fondo del documento va del color del chat (huecos
  * invisibles). El breakpoint `sm` se chequea en vivo; en desktop limpia estilos.
@@ -88,9 +90,17 @@ export function useChatViewport({ containerRef, scrollerRef }: ChatViewportOptio
       if (Date.now() < pinUntil || nearBottom) sc.scrollTop = sc.scrollHeight
     }
 
-    // Compensa el paneo SINCRÓNICAMENTE (clava la barra, sin lag ni rebote).
+    // Clava la barra MIDIENDO el desplazamiento real y cancelándolo: pone el
+    // transform en neutro, lee dónde quedó el borde superior y lo lleva a y=0.
+    // (En el mismo tick síncrono no hay repintado intermedio → sin parpadeo.)
     const setTransform = () => {
-      el.style.transform = isClosing() ? 'translate(0px, 0px)' : `translate(0px, ${vv.offsetTop}px)`
+      if (isClosing()) {
+        el.style.transform = 'translate(0px, 0px)'
+        return
+      }
+      el.style.transform = 'none'
+      const top = el.getBoundingClientRect().top
+      if (top) el.style.transform = `translate(0px, ${-top}px)`
     }
 
     const apply = () => {
