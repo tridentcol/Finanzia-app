@@ -74,3 +74,19 @@ export function convertMoney(amount: string, rate: string): string {
   const denom = 10n ** BigInt(productScale - 2)
   return formatScale2(divHalfEven(product, denom))
 }
+
+/**
+ * Parsea un monto decimal string a centavos (BigInt, escala 2). Para sumar
+ * dinero de forma exacta sin float. Redondea half-even si el monto trae más
+ * de 2 decimales (no debería en columnas `numeric(15,2)`).
+ */
+export function toCents(amount: string): bigint {
+  const a = parseDecimal(amount)
+  if (a.scale <= 2) return a.value * 10n ** BigInt(2 - a.scale)
+  return divHalfEven(a.value, 10n ** BigInt(a.scale - 2))
+}
+
+/** Formatea centavos (BigInt, escala 2) a string "x.xx". */
+export function fromCents(cents: bigint): string {
+  return formatScale2(cents)
+}

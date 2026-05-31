@@ -4,6 +4,7 @@ import { sql } from 'drizzle-orm'
 import { db } from '@/lib/db/client'
 import type { CurrencyCode } from '@/lib/currency/currencies'
 import { getRatesForPairs } from '@/lib/currency/rates'
+import { convertMoney, fromCents, toCents } from '@/lib/currency/convert'
 
 export type AccountDetail = AccountListItem & {
   creditCardProfile: {
@@ -324,20 +325,20 @@ export async function getTotalBalanceInBase(
         )
       : new Map<string, string>()
 
-  let total = 0
+  let total = 0n
   let partial = false
   for (const acc of list) {
     if (acc.currency === baseCurrency) {
-      total += Number.parseFloat(acc.currentBalance)
+      total += toCents(acc.currentBalance)
       continue
     }
     const rate = rates.get(`${acc.currency}->${baseCurrency}`)
     if (rate === undefined) {
       partial = true
-      total += Number.parseFloat(acc.currentBalance)
+      total += toCents(acc.currentBalance)
       continue
     }
-    total += Number.parseFloat(acc.currentBalance) * Number.parseFloat(rate)
+    total += toCents(convertMoney(acc.currentBalance, rate))
   }
-  return { total: total.toFixed(2), partial }
+  return { total: fromCents(total), partial }
 }

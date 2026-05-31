@@ -5,6 +5,7 @@ import { db } from '@/lib/db/client'
 import { debts, type Debt } from '@/lib/db/schema'
 import type { CurrencyCode } from '@/lib/currency/currencies'
 import { getRatesForPairs } from '@/lib/currency/rates'
+import { convertMoney, fromCents, toCents } from '@/lib/currency/convert'
 
 export type DebtListItem = Debt
 
@@ -73,20 +74,20 @@ export async function getDebtsSummary(
         )
       : new Map<string, string>()
 
-  let total = 0
+  let total = 0n
   let partial = false
   for (const d of active) {
     if (d.currency === baseCurrency) {
-      total += Number.parseFloat(d.currentBalance)
+      total += toCents(d.currentBalance)
       continue
     }
     const rate = rates.get(`${d.currency}->${baseCurrency}`)
     if (rate === undefined) {
       partial = true
-      total += Number.parseFloat(d.currentBalance)
+      total += toCents(d.currentBalance)
       continue
     }
-    total += Number.parseFloat(d.currentBalance) * Number.parseFloat(rate)
+    total += toCents(convertMoney(d.currentBalance, rate))
   }
 
   // Próximo pago: la deuda activa con nextPaymentDate más temprana (>= hoy).
@@ -105,7 +106,7 @@ export async function getDebtsSummary(
     : null
 
   return {
-    totalBalanceInBase: total.toFixed(2),
+    totalBalanceInBase: fromCents(total),
     partial,
     activeCount: list.filter((d) => d.status === 'active').length,
     nextPayment,

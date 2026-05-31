@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { convertMoney } from './convert'
+import { convertMoney, fromCents, toCents } from './convert'
 
 /**
  * Tests de precisión de la conversión de dinero.
@@ -90,5 +90,30 @@ describe('convertMoney', () => {
       expect(() => convertMoney('100.00', 'x')).toThrow()
       expect(() => convertMoney('100.00', '')).toThrow()
     })
+  })
+})
+
+describe('toCents / fromCents', () => {
+  it('round-trip exacto', () => {
+    for (const v of ['0.00', '1234.56', '999999999.99', '0.01', '-50.00']) {
+      expect(fromCents(toCents(v))).toBe(v)
+    }
+  })
+
+  it('suma dinero sin deriva de float', () => {
+    // 0.1 + 0.2 en float = 0.30000000000000004; en centavos es exacto.
+    const cents = toCents('0.10') + toCents('0.20')
+    expect(fromCents(cents)).toBe('0.30')
+  })
+
+  it('suma grandes montos COP exacta', () => {
+    const values = ['9999999999.99', '0.01', '1234567.89']
+    const total = values.reduce((acc, v) => acc + toCents(v), 0n)
+    expect(fromCents(total)).toBe('10001234567.89')
+  })
+
+  it('normaliza montos sin decimales o con uno', () => {
+    expect(fromCents(toCents('100'))).toBe('100.00')
+    expect(fromCents(toCents('100.5'))).toBe('100.50')
   })
 })
