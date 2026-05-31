@@ -215,19 +215,21 @@ export async function deleteCategory(id: string): Promise<ActionResult> {
     }
   }
 
-  // Verificar dependencias: transacciones, presupuestos, hijas.
+  // Verificar dependencias: transacciones, presupuestos, hijas. Filtramos por
+  // userId también (defensa en profundidad: RLS no actúa en runtime, así que
+  // no dependemos solo de que el categoryId/parentId sea del dueño).
   const [txCountRow] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(transactions)
-    .where(eq(transactions.categoryId, id))
+    .where(and(eq(transactions.categoryId, id), eq(transactions.userId, user.id)))
   const [budgetCountRow] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(budgets)
-    .where(eq(budgets.categoryId, id))
+    .where(and(eq(budgets.categoryId, id), eq(budgets.userId, user.id)))
   const [childCountRow] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(categories)
-    .where(eq(categories.parentId, id))
+    .where(and(eq(categories.parentId, id), eq(categories.userId, user.id)))
 
   const txCount = txCountRow?.count ?? 0
   const budgetCount = budgetCountRow?.count ?? 0
