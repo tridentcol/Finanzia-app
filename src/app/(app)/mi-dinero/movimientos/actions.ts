@@ -177,6 +177,17 @@ export async function createTransaction(
       data.date,
       { fallbackToOne: true },
     )
+    // Sin tasa para algún tramo no podemos persistir un amount_base correcto:
+    // rechazamos en vez de asumir 1:1 (regla #4).
+    if (srcBase.missing || dstAmount.missing || dstBase.missing) {
+      return {
+        ok: false,
+        error: {
+          code: 'rate_unavailable',
+          message: `No hay tasa de cambio disponible todavía para esta transferencia entre ${sourceAccount.currency} y ${targetAccount.currency}. Intentá de nuevo más tarde.`,
+        },
+      }
+    }
 
     const insertRows = [
       // Origen: amount_original en moneda origen, transfer_account_id apunta a destino.
@@ -232,13 +243,23 @@ export async function createTransaction(
   }
 
   // Caso simple (income/expense/same-currency transfer).
-  const { amount: amountBase, rate: exchangeRate } = await convertAmount(
+  const simpleConv = await convertAmount(
     data.amountOriginal,
     sourceAccount.currency,
     baseCurrency,
     data.date,
     { fallbackToOne: true },
   )
+  if (simpleConv.missing) {
+    return {
+      ok: false,
+      error: {
+        code: 'rate_unavailable',
+        message: `No hay tasa de cambio ${sourceAccount.currency}→${baseCurrency} disponible todavía. Intentá de nuevo más tarde.`,
+      },
+    }
+  }
+  const { amount: amountBase, rate: exchangeRate } = simpleConv
 
   // Si el usuario no eligió categoría y el kind no es transfer, le pedimos
   // a la IA que sugiera (kNN + LLM fallback). Si las keys no están
@@ -513,18 +534,26 @@ export async function updateTransaction(
     if (tx.currency === baseCurrency) {
       amountBase = data.amountOriginal
     } else {
-      try {
-        const converted = await convertAmount(
-          data.amountOriginal,
-          tx.currency,
-          baseCurrency,
-          data.date,
-          { fallbackToOne: true },
-        )
-        amountBase = converted.amount
-      } catch {
-        amountBase = data.amountOriginal
+      const converted = await convertAmount(
+        data.amountOriginal,
+        tx.currency,
+        baseCurrency,
+        data.date,
+        { fallbackToOne: true },
+      )
+      // Sin tasa no recalculamos: antes se asignaba el monto en moneda
+      // extranjera como base (corrompía amount_base). Rechazamos y dejamos
+      // la fila intacta (regla #4).
+      if (converted.missing) {
+        return {
+          ok: false,
+          error: {
+            code: 'rate_unavailable',
+            message: `No hay tasa de cambio ${tx.currency}→${baseCurrency} disponible para ${data.date}. La transacción no se modificó.`,
+          },
+        }
       }
+      amountBase = converted.amount
     }
   }
 

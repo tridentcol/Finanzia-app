@@ -2,10 +2,11 @@ import { NextResponse } from 'next/server'
 import { and, eq } from 'drizzle-orm'
 
 import { db } from '@/lib/db/client'
-import { emailInboxAliases, transactions, accounts } from '@/lib/db/schema'
+import { emailInboxAliases, transactions, accounts, profiles } from '@/lib/db/schema'
 import { env } from '@/lib/env'
 import { parseBancolombiaEmail } from '@/lib/email-parsers/bancolombia'
 import { getRate } from '@/lib/currency/rates'
+import { convertMoney } from '@/lib/currency/convert'
 
 /**
  * Resend Inbound Email webhook.
@@ -94,20 +95,29 @@ export async function POST(req: Request): Promise<Response> {
   const tx = parsed.data
   const today = new Date().toISOString().slice(0, 10)
 
-  // Compute base amount if currencies differ
-  const baseCurrency = acct.currency
+  // La base es la moneda del PERFIL del usuario (igual que el resto de la app),
+  // no la de la cuenta. amount_base se calcula con aritmética entera (regla #4).
+  const [profile] = await db
+    .select({ baseCurrency: profiles.baseCurrency })
+    .from(profiles)
+    .where(eq(profiles.userId, alias.userId))
+    .limit(1)
+  const baseCurrency = profile?.baseCurrency ?? 'COP'
+
   let amountBase = tx.amount
-  let exchangeRate = '1'
+  // exchange_rate es nullable: NULL marca una conversión PENDIENTE (sin tasa)
+  // para que un backfill futuro la reprocese — distinto de un 1:1 legítimo.
+  let exchangeRate: string | null = '1.000000'
 
   if (tx.currency !== baseCurrency) {
-    try {
-      const rate = await getRate(tx.currency, baseCurrency, today)
-      if (rate) {
-        amountBase = (Number.parseFloat(tx.amount) * Number.parseFloat(rate)).toFixed(2)
-        exchangeRate = rate
-      }
-    } catch {
+    const rate = await getRate(tx.currency, baseCurrency, today)
+    if (rate) {
+      amountBase = convertMoney(tx.amount, rate)
+      exchangeRate = rate
+    } else {
+      // Provisional: sin tasa dejamos el monto original y marcamos para backfill.
       amountBase = tx.amount
+      exchangeRate = null
     }
   }
 
