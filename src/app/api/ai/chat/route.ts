@@ -5,6 +5,7 @@ import { createUIMessageStream, createUIMessageStreamResponse } from 'ai'
 
 import { requireCurrentUser } from '@/lib/auth'
 import { env } from '@/lib/env'
+import { getCopilotRatelimit } from '@/lib/ratelimit'
 import { db } from '@/lib/db/client'
 import { conversations, messages, profiles } from '@/lib/db/schema'
 import { resolveCopilotProvider, runCopilotChat } from '@/lib/ai/copilot'
@@ -66,6 +67,24 @@ export async function POST(req: Request) {
       { ok: false, error: { code: 'unauthorized', message: 'No autenticado.' } },
       { status: 401 },
     )
+  }
+
+  // Rate limit por usuario antes de pagar LLM/tool calls (no-op sin Upstash).
+  const limiter = getCopilotRatelimit()
+  if (limiter) {
+    const { success } = await limiter.limit(user.id)
+    if (!success) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: {
+            code: 'rate_limited',
+            message: 'Demasiadas solicitudes. Esperá un momento e intentá de nuevo.',
+          },
+        },
+        { status: 429 },
+      )
+    }
   }
 
   let parsedBody: z.infer<typeof bodySchema>
