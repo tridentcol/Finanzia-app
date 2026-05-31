@@ -49,6 +49,7 @@ function isActive(pathname: string, href: string): boolean {
 export function AppSidebar() {
   const pathname = usePathname()
   const { isMobile } = useSidebar()
+  const Spark = icons.sparkles
 
   // En mobile usamos MobileNav (bottom-nav fijo + sheet "Más").
   // El sidebar es exclusivo de >=md.
@@ -93,6 +94,22 @@ export function AppSidebar() {
                   </SidebarMenuItem>
                 )
               })}
+
+              {/* Copiloto — destino de primer nivel discreto, paridad con el FAB
+                  mobile. El sparkles en accent-ai marca presencia de IA (mandato). */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isActive(pathname, '/copilot')}
+                  tooltip="Copiloto"
+                  className={navItemClass}
+                >
+                  <Link href="/copilot" prefetch>
+                    <Spark strokeWidth={1.5} className="text-[var(--accent-ai)]" />
+                    <span>Copiloto</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

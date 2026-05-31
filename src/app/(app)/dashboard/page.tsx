@@ -22,6 +22,7 @@ import { EmptyState } from '@/components/app/empty-state'
 import { InsightCard } from '@/components/app/insight-card'
 import { NewAccountTrigger } from '@/components/app/new-account-trigger'
 import { NewTransactionTrigger } from '@/components/app/new-transaction-trigger'
+import { Button } from '@/components/ui/button'
 import { icons } from '@/lib/design/icons'
 import { formatMoney } from '@/lib/currency/format'
 import type { CurrencyCode } from '@/lib/currency/currencies'
@@ -306,8 +307,15 @@ export default async function DashboardPage() {
             {recent.length === 0 ? (
               <EmptyState
                 headline="Aún no hay movimientos."
-                body="Registra el primero — Finanzia comienza a construir tu bitácora desde el primer asiento."
-                action={<NewTransactionTrigger label="Registrar movimiento" />}
+                body="Registra el primero a mano, o importa un extracto y Finanzia construye tu bitácora de una."
+                action={
+                  <div className="flex flex-wrap items-center gap-2">
+                    <NewTransactionTrigger label="Registrar movimiento" />
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href="/mi-dinero/movimientos?import=open">Importar CSV</Link>
+                    </Button>
+                  </div>
+                }
               />
             ) : (
               <ul className="border-border-default bg-surface flex flex-col rounded-[12px] border">
