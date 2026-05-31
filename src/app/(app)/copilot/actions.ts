@@ -265,6 +265,9 @@ export async function markCopilotToneIntroSeen(): Promise<ActionResult> {
   } catch {
     return { ok: false, error: { code: 'db_error', message: 'No se pudo guardar.' } }
   }
+  // Busta el router cache del cliente para /copilot: sin esto, la próxima
+  // navegación serviría el RSC previo (toneIntroSeen=false) y re-abriría.
+  revalidatePath('/copilot')
   return { ok: true, data: undefined }
 }
 

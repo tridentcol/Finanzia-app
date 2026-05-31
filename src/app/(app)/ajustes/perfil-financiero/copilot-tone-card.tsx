@@ -87,8 +87,9 @@ export type ToneCardProps = {
  */
 export function CopilotToneCard({
   variant = 'card',
+  onSaved,
   ...initial
-}: ToneCardProps & { variant?: 'card' | 'sheet' }) {
+}: ToneCardProps & { variant?: 'card' | 'sheet'; onSaved?: () => void }) {
   const [literacy, setLiteracy] = useState(initial.literacy)
   const [commStyle, setCommStyle] = useState(initial.commStyle)
   const [moneyStyle, setMoneyStyle] = useState(initial.moneyStyle)
@@ -103,8 +104,10 @@ export function CopilotToneCard({
   function save() {
     start(async () => {
       const res = await updateFinancialPersona({ literacy, commStyle, moneyStyle, horizon, focus })
-      if (res.ok) toast.success('Personalización guardada.')
-      else toast.error(res.error.message)
+      if (res.ok) {
+        toast.success('Personalización guardada.')
+        onSaved?.()
+      } else toast.error(res.error.message)
     })
   }
 
