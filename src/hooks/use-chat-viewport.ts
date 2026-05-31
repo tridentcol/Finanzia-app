@@ -11,21 +11,22 @@ type ChatViewportOptions = {
  * Maneja el teclado virtual en el chat a pantalla completa con la BARRA SUPERIOR
  * fija (problema clásico de iOS Safari/PWA).
  *
- * Medido en dispositivo real al abrir el teclado: iOS scrollea el DOCUMENTO
- * (`window.scrollY` ~347) Y panea el viewport (`visualViewport.offsetTop` ~347)
- * para "revelar" el input — y NO lo frena ni `overflow:hidden` ni `body:fixed`.
- * Eso desplaza el contenedor `fixed` hacia arriba (su `rect.top` se va a -347).
+ * Medido en dispositivo real al abrir el teclado, iOS hace DOS desplazamientos:
+ *  - scrollea el DOCUMENTO (`window.scrollY` ~347), y
+ *  - panea el viewport (`visualViewport.offsetTop` ~347).
+ * Si dejas el body normal, AMBOS mueven el contenedor (se suman ≈694). Si peleas
+ * el scroll con `scrollTo(0,0)`, iOS y tú rebotáis y la barra tiembla.
  *
- * Lección clave: pelear el scroll con `scrollTo(0,0)` hace que iOS y nosotros
- * rebotemos (0 ↔ 347) y la barra TIEMBLE. La cura es NO pelear: COMPENSAR el
- * desplazamiento moviendo el contenedor `translate(0, offsetTop)` de forma
- * SINCRÓNICA en el evento de scroll (sin esperar a rAF), para que la barra quede
- * clavada sin rebote. La altura (= `visualViewport.height`) se ajusta aparte.
- *
- * CERRAR: iOS reporta el crecimiento del viewport tarde, así que anticipamos
- * pantalla completa de inmediato. Fondo del documento del color del chat para que
- * cualquier hueco transitorio sea invisible. El breakpoint `sm` se chequea en
- * vivo; en desktop limpia estilos.
+ * La combinación correcta (la que clava la barra):
+ *  1. `body { position: fixed }` → ABSORBE el scroll del documento: queda como un
+ *     "fantasma" (reportado pero sin efecto visual). Así solo queda el paneo.
+ *  2. NO pelear el scroll (sin `scrollTo`) → sin rebote.
+ *  3. COMPENSAR solo el paneo: `transform: translate(0, offsetTop)`, aplicado de
+ *     forma SINCRÓNICA en el evento de scroll/pan (sin esperar a rAF) → la barra
+ *     queda en su sitio sin lag.
+ * La altura (= `visualViewport.height`) se ajusta aparte; el cierre se anticipa a
+ * pantalla completa; el fondo del documento va del color del chat (huecos
+ * invisibles). El breakpoint `sm` se chequea en vivo; en desktop limpia estilos.
  */
 export function useChatViewport({ containerRef, scrollerRef }: ChatViewportOptions) {
   useEffect(() => {
@@ -41,6 +42,11 @@ export function useChatViewport({ containerRef, scrollerRef }: ChatViewportOptio
       bodyOverflow: body.style.overflow,
       bodyOverscroll: body.style.overscrollBehavior,
       bodyBackground: body.style.background,
+      bodyPosition: body.style.position,
+      bodyTop: body.style.top,
+      bodyLeft: body.style.left,
+      bodyRight: body.style.right,
+      bodyWidth: body.style.width,
     }
 
     let locked = false
@@ -48,6 +54,11 @@ export function useChatViewport({ containerRef, scrollerRef }: ChatViewportOptio
       if (locked) return
       locked = true
       html.style.overflow = 'hidden'
+      body.style.position = 'fixed'
+      body.style.top = '0'
+      body.style.left = '0'
+      body.style.right = '0'
+      body.style.width = '100%'
       body.style.overflow = 'hidden'
       body.style.overscrollBehavior = 'none'
       body.style.background = getComputedStyle(el).backgroundColor
@@ -56,6 +67,11 @@ export function useChatViewport({ containerRef, scrollerRef }: ChatViewportOptio
       if (!locked) return
       locked = false
       html.style.overflow = saved.htmlOverflow
+      body.style.position = saved.bodyPosition
+      body.style.top = saved.bodyTop
+      body.style.left = saved.bodyLeft
+      body.style.right = saved.bodyRight
+      body.style.width = saved.bodyWidth
       body.style.overflow = saved.bodyOverflow
       body.style.overscrollBehavior = saved.bodyOverscroll
       body.style.background = saved.bodyBackground
@@ -72,7 +88,7 @@ export function useChatViewport({ containerRef, scrollerRef }: ChatViewportOptio
       if (Date.now() < pinUntil || nearBottom) sc.scrollTop = sc.scrollHeight
     }
 
-    // Compensa el desplazamiento del contenedor SINCRÓNICAMENTE (clava la barra).
+    // Compensa el paneo SINCRÓNICAMENTE (clava la barra, sin lag ni rebote).
     const setTransform = () => {
       el.style.transform = isClosing() ? 'translate(0px, 0px)' : `translate(0px, ${vv.offsetTop}px)`
     }
@@ -99,8 +115,6 @@ export function useChatViewport({ containerRef, scrollerRef }: ChatViewportOptio
       })
     }
 
-    // Compensación sincrónica en cada evento de scroll/pan (sin rebote), + ajuste
-    // de altura/pin por rAF.
     const onViewport = () => {
       setTransform()
       schedule()
