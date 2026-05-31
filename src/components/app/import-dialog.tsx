@@ -84,11 +84,8 @@ export function ImportDialog({ accounts, batches }: Props) {
                 <ul className="flex flex-col">
                   {batches.slice(0, 6).map((b) => {
                     const omitted = b.totalRows - b.importedRows
-                    return (
-                      <li
-                        key={b.id}
-                        className="border-border-default/60 flex items-center justify-between gap-3 border-b py-2.5 text-[12px] last:border-b-0"
-                      >
+                    const summary = (
+                      <div className="flex items-center justify-between gap-3 py-2.5 text-[12px]">
                         <div className="flex min-w-0 flex-col">
                           <span className="text-text truncate">{b.filename}</span>
                           <span className="text-text-tertiary truncate text-[11px]">
@@ -104,6 +101,37 @@ export function ImportDialog({ accounts, batches }: Props) {
                             </span>
                           )}
                         </div>
+                      </div>
+                    )
+                    return (
+                      <li
+                        key={b.id}
+                        className="border-border-default/60 border-b last:border-b-0"
+                      >
+                        {b.errorDetails.length > 0 ? (
+                          <details className="group">
+                            <summary className="flex cursor-pointer list-none items-center gap-2 rounded-[6px] outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-ai)]/40">
+                              <span className="flex-1">{summary}</span>
+                              <ChevronToggle />
+                            </summary>
+                            <ul className="text-text-tertiary flex flex-col gap-1 pb-3 pl-1 text-[11px]">
+                              {b.errorDetails.map((e, i) => (
+                                <li key={i} className="flex gap-2">
+                                  <span className="tabular shrink-0">Fila {e.row + 1}</span>
+                                  <span className="text-text-secondary">{e.reason}</span>
+                                </li>
+                              ))}
+                              {omitted > b.errorDetails.length && (
+                                <li className="text-text-tertiary italic">
+                                  {(omitted - b.errorDetails.length).toLocaleString('es-CO')}{' '}
+                                  más omitidas por duplicado o ya importadas.
+                                </li>
+                              )}
+                            </ul>
+                          </details>
+                        ) : (
+                          summary
+                        )}
                       </li>
                     )
                   })}
@@ -114,6 +142,17 @@ export function ImportDialog({ accounts, batches }: Props) {
         </DialogContent>
       </Dialog>
     </>
+  )
+}
+
+function ChevronToggle() {
+  const Chevron = icons['chevron-down']
+  return (
+    <Chevron
+      strokeWidth={1.5}
+      className="text-text-tertiary size-3.5 shrink-0 transition-transform group-open:rotate-180"
+      aria-hidden
+    />
   )
 }
 
