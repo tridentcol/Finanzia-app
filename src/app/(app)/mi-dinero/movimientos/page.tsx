@@ -22,6 +22,8 @@ import { ImportDialog } from '@/components/app/import-dialog'
 import { DayPickerNav } from '@/components/app/day-picker-nav'
 import { TransactionActionsMenu } from '@/components/app/transaction-actions-menu'
 import { MovimientosFilters } from '@/components/app/movimientos-filters'
+import { formatMoney } from '@/lib/currency/format'
+import type { CurrencyCode } from '@/lib/currency/currencies'
 import { cn } from '@/lib/utils'
 
 export const metadata: Metadata = {
@@ -275,6 +277,7 @@ export default async function TransaccionesPage({
           list={list}
           accounts={accounts}
           categoryOptions={categoryOptions}
+          baseCurrency={baseCurrency}
         />
       ) : (
         // Vista bitácora: agrupada por día con header sticky + neto del día.
@@ -282,6 +285,7 @@ export default async function TransaccionesPage({
           groups={groupByDay(list, baseCurrency)}
           accounts={accounts}
           categoryOptions={categoryOptions}
+          baseCurrency={baseCurrency}
         />
       )}
     </div>
@@ -344,10 +348,12 @@ function FlatList({
   list,
   accounts,
   categoryOptions,
+  baseCurrency,
 }: {
   list: TxItem[]
   accounts: AccountBasic[]
   categoryOptions: CategoryOption[]
+  baseCurrency: string
 }) {
   return (
     <>
@@ -358,6 +364,7 @@ function FlatList({
             tx={tx}
             accounts={accounts}
             categoryOptions={categoryOptions}
+            baseCurrency={baseCurrency}
           />
         ))}
       </ul>
@@ -370,6 +377,7 @@ function FlatList({
               tx={tx}
               accounts={accounts}
               categoryOptions={categoryOptions}
+              baseCurrency={baseCurrency}
             />
           ))}
         </div>
@@ -382,10 +390,12 @@ function GroupedList({
   groups,
   accounts,
   categoryOptions,
+  baseCurrency,
 }: {
   groups: DayGroup[]
   accounts: AccountBasic[]
   categoryOptions: CategoryOption[]
+  baseCurrency: string
 }) {
   return (
     <div className="flex flex-col gap-6">
@@ -401,6 +411,7 @@ function GroupedList({
                   tx={tx}
                   accounts={accounts}
                   categoryOptions={categoryOptions}
+                  baseCurrency={baseCurrency}
                 />
               ))}
             </ul>
@@ -419,6 +430,7 @@ function GroupedList({
                 tx={tx}
                 accounts={accounts}
                 categoryOptions={categoryOptions}
+                baseCurrency={baseCurrency}
               />
             ))}
           </div>
@@ -498,10 +510,12 @@ function DesktopRow({
   tx,
   accounts,
   categoryOptions,
+  baseCurrency,
 }: {
   tx: TxItem
   accounts: AccountBasic[]
   categoryOptions: CategoryOption[]
+  baseCurrency: string
 }) {
   return (
     <div
@@ -541,6 +555,11 @@ function DesktopRow({
           showPositiveSign={tx.kind === 'income'}
           className="text-sm"
         />
+        {tx.currency !== baseCurrency && (
+          <span className="text-text-tertiary tabular block text-[11px]">
+            ≈ {formatMoney(tx.amountBase, { currency: baseCurrency as CurrencyCode, compact: true })}
+          </span>
+        )}
       </div>
       <div className="text-right">
         <TransactionActionsMenu
@@ -567,10 +586,12 @@ function MobileRow({
   tx,
   accounts,
   categoryOptions,
+  baseCurrency,
 }: {
   tx: TxItem
   accounts: AccountBasic[]
   categoryOptions: CategoryOption[]
+  baseCurrency: string
 }) {
   return (
     <li className="border-border-default bg-surface flex min-w-0 flex-col gap-2 rounded-[12px] border p-4">
@@ -586,13 +607,20 @@ function MobileRow({
           </span>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <Amount
-            value={tx.amountOriginal}
-            currency={tx.currency}
-            kind={kindToTone[tx.kind]}
-            showPositiveSign={tx.kind === 'income'}
-            className="text-[14px]"
-          />
+          <div className="flex flex-col items-end">
+            <Amount
+              value={tx.amountOriginal}
+              currency={tx.currency}
+              kind={kindToTone[tx.kind]}
+              showPositiveSign={tx.kind === 'income'}
+              className="text-[14px]"
+            />
+            {tx.currency !== baseCurrency && (
+              <span className="text-text-tertiary tabular text-[11px]">
+                ≈ {formatMoney(tx.amountBase, { currency: baseCurrency as CurrencyCode, compact: true })}
+              </span>
+            )}
+          </div>
           <TransactionActionsMenu
             transaction={{
               id: tx.id,

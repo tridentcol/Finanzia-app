@@ -329,13 +329,20 @@ export default async function DashboardPage() {
                         {tx.category && ` · ${tx.category.name}`}
                       </span>
                     </div>
-                    <Amount
-                      value={tx.amountOriginal}
-                      currency={tx.currency}
-                      kind={kindToTone[tx.kind]}
-                      showPositiveSign={tx.kind === 'income'}
-                      className="shrink-0 text-sm"
-                    />
+                    <div className="flex shrink-0 flex-col items-end">
+                      <Amount
+                        value={tx.amountOriginal}
+                        currency={tx.currency}
+                        kind={kindToTone[tx.kind]}
+                        showPositiveSign={tx.kind === 'income'}
+                        className="text-sm"
+                      />
+                      {tx.currency !== baseCurrency && (
+                        <span className="text-text-tertiary tabular text-[11px]">
+                          ≈ {formatMoney(tx.amountBase, { currency: baseCurrency, compact: true })}
+                        </span>
+                      )}
+                    </div>
                   </li>
                 ))}
               </ul>
