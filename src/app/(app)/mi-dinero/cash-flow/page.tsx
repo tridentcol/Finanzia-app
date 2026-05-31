@@ -1,9 +1,7 @@
 import type { Metadata } from 'next'
-import { eq } from 'drizzle-orm'
 
 import { requireCurrentUser } from '@/lib/auth'
-import { db } from '@/lib/db/client'
-import { profiles } from '@/lib/db/schema'
+import { getProfile } from '@/lib/db/queries/profile'
 import { listRecurringForUser } from '@/lib/db/queries/recurring'
 import {
   getTotalBalanceInBase,
@@ -32,7 +30,7 @@ export default async function CashFlowPage() {
   const [rules, accountsList, profile, volatility] = await Promise.all([
     listRecurringForUser(user.id),
     listAccountsWithBalance(user.id),
-    db.query.profiles.findFirst({ where: eq(profiles.userId, user.id) }),
+    getProfile(user.id),
     getDailyVolatility(user.id),
   ])
 

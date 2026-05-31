@@ -5,7 +5,8 @@ import { and, eq } from 'drizzle-orm'
 
 import { requireCurrentUser } from '@/lib/auth'
 import { db } from '@/lib/db/client'
-import { monthlyReports, profiles } from '@/lib/db/schema'
+import { getProfile } from '@/lib/db/queries/profile'
+import { monthlyReports } from '@/lib/db/schema'
 import { getExpensesByParentCategory } from '@/lib/db/queries/expenses-by-parent'
 import { listInsightsForUser } from '@/lib/db/queries/insights'
 import { formatMoney } from '@/lib/currency/format'
@@ -35,9 +36,7 @@ export default async function InformePage({ params }: Props) {
 
   const user = await requireCurrentUser()
 
-  const profile = await db.query.profiles.findFirst({
-    where: eq(profiles.userId, user.id),
-  })
+  const profile = await getProfile(user.id)
   const currency = (profile?.baseCurrency ?? 'COP') as CurrencyCode
 
   const [report, expensesByParent, monthInsights] = await Promise.all([

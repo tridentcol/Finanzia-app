@@ -1,10 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { eq } from 'drizzle-orm'
 
 import { requireCurrentUser } from '@/lib/auth'
-import { db } from '@/lib/db/client'
-import { profiles } from '@/lib/db/schema'
+import { getProfile } from '@/lib/db/queries/profile'
 import {
   countUnclassifiedTransactions,
   listAvailableCategories,
@@ -124,7 +122,7 @@ export default async function TransaccionesPage({
     dayFilter ? Promise.resolve(0) : countUnclassifiedTransactions(user.id),
     listUserAccountsBasic(user.id),
     listImportBatchesForUser(user.id, 12),
-    db.query.profiles.findFirst({ where: eq(profiles.userId, user.id) }),
+    getProfile(user.id),
   ])
   const baseCurrency = profile?.baseCurrency ?? 'COP'
   const categoryOptions: CategoryOption[] = available.map((c) => ({

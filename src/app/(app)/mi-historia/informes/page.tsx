@@ -4,7 +4,8 @@ import { desc, eq } from 'drizzle-orm'
 
 import { requireCurrentUser } from '@/lib/auth'
 import { db } from '@/lib/db/client'
-import { monthlyReports, profiles } from '@/lib/db/schema'
+import { getProfile } from '@/lib/db/queries/profile'
+import { monthlyReports } from '@/lib/db/schema'
 import { EmptyState } from '@/components/app/empty-state'
 import { Amount } from '@/components/app/amount'
 import type { CurrencyCode } from '@/lib/currency/currencies'
@@ -53,7 +54,7 @@ export default async function InformesPage() {
       .from(monthlyReports)
       .where(eq(monthlyReports.userId, user.id))
       .orderBy(desc(monthlyReports.period)),
-    db.query.profiles.findFirst({ where: eq(profiles.userId, user.id) }),
+    getProfile(user.id),
   ])
 
   const currency = (profile?.baseCurrency ?? 'COP') as CurrencyCode

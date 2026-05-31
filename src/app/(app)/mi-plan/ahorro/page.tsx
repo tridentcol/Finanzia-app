@@ -1,10 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { eq } from 'drizzle-orm'
 
 import { requireCurrentUser } from '@/lib/auth'
-import { db } from '@/lib/db/client'
-import { profiles } from '@/lib/db/schema'
+import { getProfile } from '@/lib/db/queries/profile'
 import { listSavingsPeriods, getSavingsHeroData } from '@/lib/db/queries/savings'
 import { listGoalsForUser } from '@/lib/db/queries/goals'
 import { getActiveSavingsPlan } from '@/app/(app)/ajustes/perfil-financiero/actions'
@@ -94,7 +92,7 @@ export default async function AhorroPage() {
   const [periods, hero, profile, activePlan, goals] = await Promise.all([
     listSavingsPeriods(user.id),
     getSavingsHeroData(user.id),
-    db.query.profiles.findFirst({ where: eq(profiles.userId, user.id) }),
+    getProfile(user.id),
     getActiveSavingsPlan(user.id),
     listGoalsForUser(user.id),
   ])

@@ -1,10 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { eq } from 'drizzle-orm'
 
 import { requireCurrentUser } from '@/lib/auth'
-import { db } from '@/lib/db/client'
-import { profiles } from '@/lib/db/schema'
+import { getProfile } from '@/lib/db/queries/profile'
 import {
   listMerchantsForUser,
   resolveRange,
@@ -77,7 +75,7 @@ export default async function ComerciosPage({
   const range = resolveRange(scope)
 
   const [profile, merchants] = await Promise.all([
-    db.query.profiles.findFirst({ where: eq(profiles.userId, user.id) }),
+    getProfile(user.id),
     listMerchantsForUser(user.id, range, { limit: 80 }),
   ])
   const baseCurrency = (profile?.baseCurrency ?? 'COP') as CurrencyCode

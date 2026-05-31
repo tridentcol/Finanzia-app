@@ -1,10 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { eq } from 'drizzle-orm'
 
 import { requireCurrentUser } from '@/lib/auth'
-import { db } from '@/lib/db/client'
-import { profiles } from '@/lib/db/schema'
+import { getProfile } from '@/lib/db/queries/profile'
 import { listAccountsWithBalance } from '@/lib/db/queries/accounts'
 import { listDebts, getDebtsSummary } from '@/lib/db/queries/debts'
 import { Amount } from '@/components/app/amount'
@@ -45,9 +43,7 @@ function daysUntil(dateIso: string | null): number | null {
 
 export default async function DeudasPage() {
   const user = await requireCurrentUser()
-  const profile = await db.query.profiles.findFirst({
-    where: eq(profiles.userId, user.id),
-  })
+  const profile = await getProfile(user.id)
   const baseCurrency = (profile?.baseCurrency ?? 'COP') as CurrencyCode
 
   const [accountsList, debtsList, summary] = await Promise.all([

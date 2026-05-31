@@ -1,10 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { eq } from 'drizzle-orm'
 
 import { requireCurrentUser } from '@/lib/auth'
-import { db } from '@/lib/db/client'
-import { profiles } from '@/lib/db/schema'
+import { getProfile } from '@/lib/db/queries/profile'
 import { listAccountsWithBalance } from '@/lib/db/queries/accounts'
 import { getRatesForPairs } from '@/lib/currency/rates'
 import { Amount } from '@/components/app/amount'
@@ -29,9 +27,7 @@ function daysToMonthDay(target: number | null): number | null {
 
 export default async function TarjetasPage() {
   const user = await requireCurrentUser()
-  const profile = await db.query.profiles.findFirst({
-    where: eq(profiles.userId, user.id),
-  })
+  const profile = await getProfile(user.id)
   const baseCurrency = (profile?.baseCurrency ?? 'COP') as CurrencyCode
 
   const accountsList = await listAccountsWithBalance(user.id)

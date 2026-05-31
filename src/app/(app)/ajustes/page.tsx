@@ -1,10 +1,9 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { eq } from 'drizzle-orm'
 
 import { requireCurrentUser } from '@/lib/auth'
-import { db } from '@/lib/db/client'
-import { profiles } from '@/lib/db/schema'
+import { getProfile } from '@/lib/db/queries/profile'
+import type { Profile } from '@/lib/db/schema'
 import { PerfilSection } from '@/components/app/settings/perfil-section'
 import { CategoriasSection } from '@/components/app/settings/categorias-section'
 import { IntegracionesBancariasSection } from '@/components/app/settings/integraciones-bancarias-section'
@@ -57,9 +56,7 @@ export default async function AjustesPage({
 }) {
   const user = await requireCurrentUser()
   const params = await searchParams
-  const profile = await db.query.profiles.findFirst({
-    where: eq(profiles.userId, user.id),
-  })
+  const profile = await getProfile(user.id)
 
   return (
     <div className="flex min-w-0 flex-col gap-10 lg:gap-12">
@@ -133,7 +130,7 @@ async function SectionContent({
 }: {
   id: string
   user: Awaited<ReturnType<typeof requireCurrentUser>>
-  profile: typeof profiles.$inferSelect | null
+  profile: Profile | null
   searchParams: { kind?: string }
 }) {
   switch (id) {

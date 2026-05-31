@@ -1,9 +1,7 @@
 import type { Metadata } from 'next'
-import { eq } from 'drizzle-orm'
 
 import { requireCurrentUser } from '@/lib/auth'
-import { db } from '@/lib/db/client'
-import { profiles } from '@/lib/db/schema'
+import { getProfile } from '@/lib/db/queries/profile'
 import { listBudgetsWithProgress } from '@/lib/db/queries/budgets'
 import { EmptyState } from '@/components/app/empty-state'
 import { BudgetProgressCard } from '@/components/app/budget-progress'
@@ -57,7 +55,7 @@ function normalizeBudgetTotals(
 export default async function PresupuestosPage() {
   const user = await requireCurrentUser()
   const [profile, budgets] = await Promise.all([
-    db.query.profiles.findFirst({ where: eq(profiles.userId, user.id) }),
+    getProfile(user.id),
     listBudgetsWithProgress(user.id),
   ])
   const currency = (profile?.baseCurrency ?? 'COP') as CurrencyCode
