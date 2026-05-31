@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db/client'
 import { emailInboxAliases, transactions, accounts, profiles } from '@/lib/db/schema'
@@ -7,6 +7,7 @@ import { env } from '@/lib/env'
 import { parseBancolombiaEmail } from '@/lib/email-parsers/bancolombia'
 import { getRate } from '@/lib/currency/rates'
 import { convertMoney } from '@/lib/currency/convert'
+import { transactionExternalId } from '@/lib/import/external-id'
 
 /**
  * Resend Inbound Email webhook.
@@ -121,19 +122,35 @@ export async function POST(req: Request): Promise<Response> {
     }
   }
 
-  await db.insert(transactions).values({
-    userId: alias.userId,
-    accountId: alias.accountId,
-    kind: tx.kind,
-    date: tx.date,
-    amountOriginal: tx.amount,
-    currency: tx.currency,
-    amountBase,
-    exchangeRate,
-    description: tx.description,
-    merchant: tx.merchant,
-    notes: `Importado desde email (${alias.bank})`,
-  })
+  // Idempotente: si Resend reentrega el mismo email (mismo contenido), el
+  // externalId coincide y onConflictDoNothing evita duplicar la transacción.
+  await db
+    .insert(transactions)
+    .values({
+      userId: alias.userId,
+      accountId: alias.accountId,
+      kind: tx.kind,
+      date: tx.date,
+      amountOriginal: tx.amount,
+      currency: tx.currency,
+      amountBase,
+      exchangeRate,
+      description: tx.description,
+      merchant: tx.merchant,
+      notes: `Importado desde email (${alias.bank})`,
+      externalId: transactionExternalId({
+        source: `email:${alias.bank}`,
+        accountId: alias.accountId,
+        date: tx.date,
+        amount: tx.amount,
+        currency: tx.currency,
+        description: tx.description,
+      }),
+    })
+    .onConflictDoNothing({
+      target: [transactions.userId, transactions.externalId],
+      where: sql`external_id IS NOT NULL`,
+    })
 
   return NextResponse.json({ ok: true })
 }

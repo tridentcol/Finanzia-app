@@ -162,3 +162,58 @@ vercel logs <deployment-url> --json | tail -5
 ```bash
 vercel env add NAME preview "" --value "VAL" --yes --force
 ```
+
+---
+
+## 9. Migraciones de base de datos
+
+> **Nota**: §5 dice "no usamos vercel.json" pero hoy sí existe (`regions` + `crons`). Los headers siguen en `next.config.ts`.
+
+### Flujo canónico: `db:migrate` (no `db:push`)
+
+Producción usa **migraciones versionadas**, no `db:push`. El ciclo:
+
+```bash
+pnpm db:generate            # crea drizzle/migrations/NNNN_*.sql desde schema.ts (offline)
+pnpm db:migrate             # aplica las pendientes usando DIRECT_URL
+```
+
+- `db:generate` es offline: diffea `schema.ts` contra el último snapshot en `meta/` y emite el `.sql` + snapshot + entrada en `_journal.json`.
+- `db:migrate` aplica las migraciones que falten, registrándolas en `drizzle.__drizzle_migrations` (las ya aplicadas se saltan por hash).
+- `db:push` queda **solo para prototipado local** — nunca contra prod (es lo que causó el drift histórico).
+
+### Reset a baseline (2026-05-31)
+
+El historial estaba driftado: el journal/snapshots llegaban a `0003` pero 5 migraciones posteriores se habían aplicado con `db:push` (sin journal, con numeración duplicada). Como esos snapshots intermedios no se podían reconstruir de forma fiable, se **regeneró un baseline limpio** desde el `schema.ts` de ese momento:
+
+- `0000_baseline.sql` — todo el schema vigente a esa fecha (lo que prod ya tenía).
+- `0001_external_id.sql` — primer cambio nuevo real (idempotencia de ingestas).
+
+Los 9 `.sql` viejos quedan en el historial de git (commits previos a `de1e5b4`), no en el chain activo.
+
+### Reconciliación única en prod (one-time)
+
+Prod **ya tiene** el schema del baseline (se construyó con push), así que NO hay que recrearlo. Hay que decirle a drizzle que el baseline ya está aplicado, y dejar que `db:migrate` aplique `0001` en adelante:
+
+1. Calcular el hash que drizzle espera para el baseline (sha256 del archivo):
+   ```bash
+   node -e "const fs=require('fs'),c=require('crypto');console.log(c.createHash('sha256').update(fs.readFileSync('drizzle/migrations/0000_baseline.sql')).digest('hex'))"
+   ```
+2. Sembrar ese registro en la tabla de bookkeeping (Supabase SQL editor o `psql` con `DIRECT_URL`):
+   ```sql
+   CREATE SCHEMA IF NOT EXISTS drizzle;
+   CREATE TABLE IF NOT EXISTS drizzle.__drizzle_migrations (
+     id SERIAL PRIMARY KEY,
+     hash text NOT NULL,
+     created_at bigint
+   );
+   -- Reemplazar <HASH> por la salida del paso 1; created_at = `when` de 0000 en _journal.json
+   INSERT INTO drizzle.__drizzle_migrations (hash, created_at)
+   VALUES ('<HASH>', 1780208308691);
+   ```
+3. Aplicar lo pendiente (creará la columna `external_id` + índice único parcial):
+   ```bash
+   pnpm db:migrate
+   ```
+
+De aquí en más, cada cambio de schema es `db:generate` → revisar el `.sql` → `db:migrate`. Sin pasos manuales.

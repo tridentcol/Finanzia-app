@@ -1,0 +1,2 @@
+ALTER TABLE "transactions" ADD COLUMN "external_id" text;--> statement-breakpoint
+CREATE UNIQUE INDEX "transactions_user_external_id_unique" ON "transactions" USING btree ("user_id","external_id") WHERE external_id IS NOT NULL;

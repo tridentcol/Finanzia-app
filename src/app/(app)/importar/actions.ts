@@ -2,7 +2,7 @@
 
 import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 
 import { requireCurrentUser } from '@/lib/auth'
 import { db } from '@/lib/db/client'
@@ -10,6 +10,7 @@ import { accounts, importBatches, profiles, transactions } from '@/lib/db/schema
 import { parseRow, type ParseRowError } from '@/lib/import/parse-row'
 import type { ColumnMapping } from '@/lib/import/infer-columns'
 import { convertAmount, getRate } from '@/lib/currency/rates'
+import { transactionExternalId } from '@/lib/import/external-id'
 import { categorizeBatch } from '@/lib/ai/categorize'
 
 const importSchema = z.object({
@@ -96,6 +97,9 @@ export async function runImport(input: ImportInput): Promise<ImportResult> {
 
   const errors: ParseRowError[] = []
   const toInsert: typeof transactions.$inferInsert[] = []
+  // Cuenta ocurrencias de filas idénticas dentro de este import para
+  // desambiguar el externalId (dos compras iguales el mismo día sobreviven).
+  const occurrences = new Map<string, number>()
 
   for (let i = 0; i < data.rows.length; i++) {
     const result = parseRow(data.rows[i] as Record<string, unknown>, mapping, i)
@@ -129,6 +133,10 @@ export async function runImport(input: ImportInput): Promise<ImportResult> {
       // Persistimos también la tasa cached por consistencia (1.000000).
       exchangeRate = await rateFor(result.date)
     }
+    const occKey = `${result.date}|${result.amount}|${result.description}`
+    const occurrence = occurrences.get(occKey) ?? 0
+    occurrences.set(occKey, occurrence + 1)
+
     toInsert.push({
       userId: user.id,
       accountId: account.id,
@@ -142,6 +150,15 @@ export async function runImport(input: ImportInput): Promise<ImportResult> {
       merchant: result.merchant,
       kind: result.kind,
       importBatchId: batch.id,
+      externalId: transactionExternalId({
+        source: 'csv',
+        accountId: account.id,
+        date: result.date,
+        amount: result.amount,
+        currency: account.currency,
+        description: result.description,
+        occurrence,
+      }),
     })
   }
 
@@ -170,14 +187,24 @@ export async function runImport(input: ImportInput): Promise<ImportResult> {
     }
   }
 
-  // Inserción por chunks para no exceder param limits
+  // Inserción por chunks para no exceder param limits. onConflictDoNothing
+  // sobre el índice único parcial (user_id, external_id): reimportar el mismo
+  // archivo no duplica — las filas ya presentes se omiten. Contamos las
+  // realmente insertadas vía returning, no el tamaño del chunk.
   const CHUNK = 200
   let imported = 0
   if (toInsert.length > 0) {
     for (let i = 0; i < toInsert.length; i += CHUNK) {
       const chunk = toInsert.slice(i, i + CHUNK)
-      await db.insert(transactions).values(chunk)
-      imported += chunk.length
+      const inserted = await db
+        .insert(transactions)
+        .values(chunk)
+        .onConflictDoNothing({
+          target: [transactions.userId, transactions.externalId],
+          where: sql`external_id IS NOT NULL`,
+        })
+        .returning({ id: transactions.id })
+      imported += inserted.length
     }
   }
 

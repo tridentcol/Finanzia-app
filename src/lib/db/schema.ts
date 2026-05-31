@@ -369,6 +369,13 @@ export const transactions = pgTable(
     importBatchId: uuid('import_batch_id').references(() => importBatches.id, {
       onDelete: 'set null',
     }),
+    /**
+     * Huella estable del registro de origen para idempotencia de ingestas
+     * (CSV/email). NULL en transacciones creadas a mano — no las restringe.
+     * El índice único parcial de abajo evita duplicar la misma fila al
+     * reimportar o reprocesar un email.
+     */
+    externalId: text('external_id'),
     aiCategorized: boolean('ai_categorized').notNull().default(false),
     aiConfidence: numeric('ai_confidence', { precision: 3, scale: 2 }),
     userCorrected: boolean('user_corrected').notNull().default(false),
@@ -383,6 +390,12 @@ export const transactions = pgTable(
     index('idx_transactions_account').on(t.accountId),
     index('idx_transactions_transfer_group').on(t.transferGroupId),
     index('idx_transactions_embedding').using('hnsw', t.embedding.op('vector_cosine_ops')),
+    // Idempotencia de ingestas: una fila (usuario, external_id) no se duplica.
+    // Parcial: solo aplica cuando external_id no es NULL (ingestas), nunca a
+    // las transacciones manuales.
+    uniqueIndex('transactions_user_external_id_unique')
+      .on(t.userId, t.externalId)
+      .where(sql`external_id IS NOT NULL`),
   ],
 )
 
