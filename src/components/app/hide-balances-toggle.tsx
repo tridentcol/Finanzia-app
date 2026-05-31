@@ -18,7 +18,7 @@ export function HideBalancesToggle() {
       onClick={toggle}
       aria-pressed={hidden}
       aria-label={hidden ? 'Mostrar saldos' : 'Ocultar saldos'}
-      className="text-text-tertiary hover:text-text -m-1.5 rounded-[6px] p-1.5 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-ai)]/40"
+      className="text-text-tertiary hover:text-text -m-1.5 inline-flex min-h-11 min-w-11 items-center justify-center rounded-[6px] p-1.5 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-ai)]/40 sm:min-h-0 sm:min-w-0"
     >
       <Icon strokeWidth={1.5} className="size-4" />
     </button>

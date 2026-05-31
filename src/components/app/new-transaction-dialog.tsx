@@ -397,7 +397,7 @@ function NewTransactionForm({
                     type="button"
                     onClick={() => setDate(opt.value)}
                     className={cn(
-                      'rounded-[6px] px-2.5 py-1 text-[12px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-ai)]/40',
+                      'inline-flex min-h-11 items-center justify-center rounded-[6px] px-2.5 py-1 text-[12px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-ai)]/40 sm:min-h-0',
                       selected
                         ? 'bg-surface-hover text-text'
                         : 'text-text-secondary hover:bg-surface-hover/60',

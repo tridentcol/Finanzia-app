@@ -133,7 +133,7 @@ export function InsightCard({
           onClick={onDismiss}
           disabled={pending}
           aria-label="Descartar"
-          className="text-text-tertiary hover:text-text -m-1 rounded-[6px] p-1 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-ai)]/40"
+          className="text-text-tertiary hover:text-text -m-1 inline-flex min-h-11 min-w-11 items-center justify-center rounded-[6px] p-1 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-ai)]/40 sm:min-h-0 sm:min-w-0"
         >
           <X strokeWidth={1.5} className="size-3.5" />
         </button>

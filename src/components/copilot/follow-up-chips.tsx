@@ -18,7 +18,7 @@ export function FollowUpChips({
           key={c.utterance}
           type="button"
           onClick={() => onPick(c.utterance)}
-          className="border-border-default hover:bg-surface-hover hover:text-text text-text-secondary rounded-full border px-3 py-1 text-[12px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-ai)]/40"
+          className="border-border-default hover:bg-surface-hover hover:text-text text-text-secondary inline-flex min-h-11 items-center justify-center rounded-full border px-3 py-1 text-[12px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-ai)]/40 sm:min-h-0"
         >
           {c.label}
         </button>
