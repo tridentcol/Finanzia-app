@@ -9,6 +9,7 @@ import { PerfilSection } from '@/components/app/settings/perfil-section'
 import { CategoriasSection } from '@/components/app/settings/categorias-section'
 import { IntegracionesBancariasSection } from '@/components/app/settings/integraciones-bancarias-section'
 import { IntegracionesIASection } from '@/components/app/settings/integraciones-ia-section'
+import { CategorizationQualitySection } from '@/components/app/settings/categorization-quality-section'
 import { AlertasSection } from '@/components/app/settings/alertas-section'
 import { AparienciaSection } from '@/components/app/settings/apariencia-section'
 import { SesionSection } from '@/components/app/settings/sesion-section'
@@ -38,6 +39,11 @@ const SECTIONS: Section[] = [
     id: 'integraciones-ia',
     label: 'Integraciones IA',
     description: 'Tus claves Anthropic / OpenAI',
+  },
+  {
+    id: 'calidad-ia',
+    label: 'Calidad de IA',
+    description: 'Qué tan bien categoriza',
   },
   { id: 'alertas', label: 'Alertas', description: 'Bandeja accionable' },
   { id: 'apariencia', label: 'Apariencia', description: 'Modo oscuro o claro' },
@@ -139,6 +145,8 @@ async function SectionContent({
       return <IntegracionesBancariasSection userId={user.id} />
     case 'integraciones-ia':
       return <IntegracionesIASection userId={user.id} />
+    case 'calidad-ia':
+      return <CategorizationQualitySection userId={user.id} />
     case 'alertas':
       return <AlertasSection userId={user.id} />
     case 'apariencia':
