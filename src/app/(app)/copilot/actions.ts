@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { and, eq, isNull, or } from 'drizzle-orm'
 
 import { requireCurrentUser } from '@/lib/auth'
+import { revalidateUserData } from '@/lib/cache/data'
 import { env } from '@/lib/env'
 import { db } from '@/lib/db/client'
 import { budgets, categories, profiles } from '@/lib/db/schema'
@@ -119,6 +120,7 @@ export async function confirmProposedBudget(input: {
       .returning({ id: budgets.id })
     revalidatePath('/mi-plan/presupuestos')
     revalidatePath('/dashboard')
+    revalidateUserData(user.id)
     if (!row) {
       return {
         ok: false,
@@ -143,6 +145,7 @@ export async function confirmProposedBudget(input: {
     .returning({ id: budgets.id })
   revalidatePath('/mi-plan/presupuestos')
   revalidatePath('/dashboard')
+  revalidateUserData(user.id)
   if (!row) {
     return {
       ok: false,
