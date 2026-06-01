@@ -6,6 +6,7 @@ import { and, eq, isNull, or } from 'drizzle-orm'
 import { randomUUID } from 'node:crypto'
 
 import { requireCurrentUser } from '@/lib/auth'
+import { revalidateDashboard } from '@/lib/cache/dashboard'
 import { db } from '@/lib/db/client'
 import { accounts, categories, profiles, transactions } from '@/lib/db/schema'
 import { currencyCodes } from '@/lib/currency/currencies'
@@ -238,7 +239,7 @@ export async function createTransaction(
 
     revalidatePath('/mi-dinero/movimientos')
     revalidatePath('/mi-dinero/cuentas')
-    revalidatePath('/dashboard')
+    revalidateDashboard(user.id)
     return { ok: true, data: { id: inserted[0]!.id } }
   }
 
@@ -314,7 +315,7 @@ export async function createTransaction(
 
   revalidatePath('/mi-dinero/movimientos')
   revalidatePath('/mi-dinero/cuentas')
-  revalidatePath('/dashboard')
+  revalidateDashboard(user.id)
   return { ok: true, data: { id: row.id } }
 }
 
@@ -400,7 +401,7 @@ export async function setTransactionCategory(input: {
     .where(eq(transactions.id, transactionId))
 
   revalidatePath('/mi-dinero/movimientos')
-  revalidatePath('/dashboard')
+  revalidateDashboard(user.id)
   revalidatePath('/mi-plan/presupuestos')
   return { ok: true, data: undefined }
 }
@@ -415,7 +416,7 @@ export async function bulkRecategorize(): Promise<
   const user = await requireCurrentUser()
   const result = await recategorizeUnclassified(user.id, { limit: 200 })
   revalidatePath('/mi-dinero/movimientos')
-  revalidatePath('/dashboard')
+  revalidateDashboard(user.id)
   return { ok: true, data: result }
 }
 
@@ -574,7 +575,7 @@ export async function updateTransaction(
   revalidatePath('/mi-dinero/movimientos')
   revalidatePath('/mi-dinero/cuentas')
   revalidatePath('/mi-dinero/tarjetas')
-  revalidatePath('/dashboard')
+  revalidateDashboard(user.id)
   return { ok: true, data: undefined }
 }
 
@@ -622,6 +623,6 @@ export async function deleteTransaction(id: string): Promise<ActionResult> {
   revalidatePath('/mi-dinero/movimientos')
   revalidatePath('/mi-dinero/cuentas')
   revalidatePath('/mi-dinero/tarjetas')
-  revalidatePath('/dashboard')
+  revalidateDashboard(user.id)
   return { ok: true, data: undefined }
 }

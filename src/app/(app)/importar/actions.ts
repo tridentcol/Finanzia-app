@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { and, eq, sql } from 'drizzle-orm'
 
 import { requireCurrentUser } from '@/lib/auth'
+import { revalidateDashboard } from '@/lib/cache/dashboard'
 import { db } from '@/lib/db/client'
 import { accounts, importBatches, profiles, transactions } from '@/lib/db/schema'
 import { parseRow, type ParseRowError } from '@/lib/import/parse-row'
@@ -221,7 +222,7 @@ export async function runImport(input: ImportInput): Promise<ImportResult> {
   revalidatePath('/importar')
   revalidatePath('/mi-dinero/movimientos')
   revalidatePath('/mi-dinero/cuentas')
-  revalidatePath('/dashboard')
+  revalidateDashboard(user.id)
 
   return {
     ok: true,

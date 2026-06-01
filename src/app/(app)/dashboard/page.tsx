@@ -5,14 +5,8 @@ import { cookies } from 'next/headers'
 
 import { requireCurrentUser } from '@/lib/auth'
 import { getProfile } from '@/lib/db/queries/profile'
-import { listAccountsWithBalance } from '@/lib/db/queries/accounts'
-import { listTransactionsForUser } from '@/lib/db/queries/transactions'
-import { listUnreadInsights } from '@/lib/db/queries/insights'
-import { getDebtsSummary } from '@/lib/db/queries/debts'
-import { listRecurringForUser } from '@/lib/db/queries/recurring'
-import { getRatesForPairs } from '@/lib/currency/rates'
+import { getDashboardData } from '@/lib/db/queries/dashboard'
 import { projectCashFlow } from '@/lib/cash-flow/project'
-import { getDailyVolatility } from '@/lib/cash-flow/volatility'
 import { Amount } from '@/components/app/amount'
 import { PrivacyProvider, PRIVACY_COOKIE } from '@/components/app/privacy'
 import { HideBalancesToggle } from '@/components/app/hide-balances-toggle'
@@ -65,30 +59,21 @@ export default async function DashboardPage() {
   const balancesHidden = cookieStore.get(PRIVACY_COOKIE)?.value === '1'
   const baseCurrency = (profile?.baseCurrency ?? 'COP') as CurrencyCode
 
-  const [
+  // Datos cacheados cross-request (tag dashboard:${userId}, backstop 30s). Las
+  // mutaciones de saldo bustean el tag → tras una acción tuya ves fresco. La
+  // lógica derivada de fecha/hora (saludo, proyección) se computa abajo, fuera
+  // del cache.
+  const today = new Date().toISOString().slice(0, 10)
+  const {
     accountsList,
     recent,
     unreadInsights,
     debtsSummary,
     recurringRules,
     volatility,
-  ] = await Promise.all([
-    listAccountsWithBalance(user.id),
-    listTransactionsForUser(user.id, { limit: 5 }),
-    listUnreadInsights(user.id, 1),
-    getDebtsSummary(user.id, baseCurrency),
-    listRecurringForUser(user.id),
-    getDailyVolatility(user.id),
-  ])
-
-  const today = new Date().toISOString().slice(0, 10)
-  const ratePairs = accountsList
-    .filter((a) => a.currency !== baseCurrency)
-    .map((a) => ({ from: a.currency, to: baseCurrency }))
-  const rates =
-    ratePairs.length > 0
-      ? await getRatesForPairs(ratePairs, today)
-      : new Map<string, string>()
+    ratesObj,
+  } = await getDashboardData(user.id, baseCurrency, today)
+  const rates = new Map<string, string>(Object.entries(ratesObj))
 
   const ownedAccounts = accountsList.filter((a) => a.type !== 'credit_card')
   let totalNum = 0

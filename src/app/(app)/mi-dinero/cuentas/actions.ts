@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { and, eq } from 'drizzle-orm'
 
 import { requireCurrentUser } from '@/lib/auth'
+import { revalidateDashboard } from '@/lib/cache/dashboard'
 import { db } from '@/lib/db/client'
 import { accounts } from '@/lib/db/schema'
 import { currencyCodes } from '@/lib/currency/currencies'
@@ -41,9 +42,9 @@ export type ActionResult<T = void> =
   | { ok: true; data: T }
   | { ok: false; error: { code: string; message: string; fields?: Record<string, string> } }
 
-function revalidateAccountPaths() {
+function revalidateAccountPaths(userId: string) {
   revalidatePath('/mi-dinero/cuentas')
-  revalidatePath('/dashboard')
+  revalidateDashboard(userId)
 }
 
 export async function createAccount(
@@ -85,7 +86,7 @@ export async function createAccount(
     }
   }
 
-  revalidateAccountPaths()
+  revalidateAccountPaths(user.id)
   return { ok: true, data: { id: row.id } }
 }
 
@@ -118,6 +119,6 @@ export async function archiveAccount(id: string): Promise<ActionResult> {
     .set({ archived: true, updatedAt: new Date() })
     .where(and(eq(accounts.id, id), eq(accounts.userId, user.id)))
 
-  revalidateAccountPaths()
+  revalidateAccountPaths(user.id)
   return { ok: true, data: undefined }
 }
