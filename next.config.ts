@@ -51,6 +51,17 @@ const iaRedirects = [
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   experimental: {
+    // Router Cache del cliente: cuánto tiempo se reusa el RSC ya renderizado de
+    // una ruta antes de re-fetchear. El default `dynamic: 0` descarta toda ruta
+    // dinámica al instante → cada navegación entre secciones vuelve a cargar de
+    // cero (skeleton + fetch) aunque ya la hayas visitado. Con `dynamic: 30` una
+    // sección visitada/prefetcheada se reusa 30s → volver a ella es instantáneo,
+    // sin reload. Las Server Actions hacen revalidatePath, que bustea este cache
+    // apenas mutás algo, así que los datos no quedan viejos tras un cambio.
+    staleTimes: {
+      dynamic: 30,
+      static: 180,
+    },
     // Tree-shaking dirigido de paquetes con barrels pesados: solo entra al
     // bundle lo que se importa, no el index completo.
     optimizePackageImports: [
