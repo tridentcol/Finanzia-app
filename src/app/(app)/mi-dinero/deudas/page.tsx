@@ -3,8 +3,7 @@ import Link from 'next/link'
 
 import { requireCurrentUser } from '@/lib/auth'
 import { getProfile } from '@/lib/db/queries/profile'
-import { listAccountsWithBalance } from '@/lib/db/queries/accounts'
-import { listDebts, getDebtsSummary } from '@/lib/db/queries/debts'
+import { getDeudasData } from '@/lib/db/queries/debts'
 import { Amount } from '@/components/app/amount'
 import { EmptyState } from '@/components/app/empty-state'
 import { NewDebtTrigger } from '@/components/app/new-debt-trigger'
@@ -45,17 +44,17 @@ export default async function DeudasPage() {
   const user = await requireCurrentUser()
   const profile = await getProfile(user.id)
   const baseCurrency = (profile?.baseCurrency ?? 'COP') as CurrencyCode
+  const today = new Date().toISOString().slice(0, 10)
 
-  const [accountsList, debtsList, summary] = await Promise.all([
-    listAccountsWithBalance(user.id),
-    listDebts(user.id),
-    getDebtsSummary(user.id, baseCurrency),
-  ])
+  const { creditCards, debtsList, summary } = await getDeudasData(
+    user.id,
+    baseCurrency,
+    today,
+  )
 
   // Total deuda en tarjetas (saldo negativo = lo adeudado). Solo se usa
   // para el KPI hero de contexto — el detalle de tarjetas vive en
   // /mi-dinero/tarjetas, así que no se duplica acá.
-  const creditCards = accountsList.filter((a) => a.type === 'credit_card')
   const totalCreditCardDebt = creditCards.reduce((sum, c) => {
     const balance = Number.parseFloat(c.currentBalance)
     return balance < 0 ? sum + Math.abs(balance) : sum

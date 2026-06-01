@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { and, eq } from 'drizzle-orm'
 
 import { requireCurrentUser } from '@/lib/auth'
+import { revalidateUserData } from '@/lib/cache/data'
 import { db } from '@/lib/db/client'
 import { accounts, creditCardProfiles } from '@/lib/db/schema'
 import { currencyCodes } from '@/lib/currency/currencies'
@@ -23,7 +24,7 @@ export type ActionResult<T = void> =
  * neto en /mi-dinero/cuentas también se afecta (activos − tarjetas − deudas),
  * por eso lo incluimos.
  */
-function revalidateCardPaths(accountId?: string) {
+function revalidateCardPaths(userId: string, accountId?: string) {
   revalidatePath('/mi-dinero/tarjetas')
   revalidatePath('/mi-dinero/deudas')
   revalidatePath('/mi-dinero/cuentas')
@@ -31,6 +32,7 @@ function revalidateCardPaths(accountId?: string) {
   if (accountId) {
     revalidatePath(`/mi-dinero/tarjetas/${accountId}`)
   }
+  revalidateUserData(userId)
 }
 
 // ──────────────────────────────────────────────────────────────────────
@@ -132,7 +134,7 @@ export async function createCard(
     }
   }
 
-  revalidateCardPaths(row.id)
+  revalidateCardPaths(user.id, row.id)
   return { ok: true, data: { id: row.id } }
 }
 
@@ -226,7 +228,7 @@ export async function updateCard(
     })
     .where(and(eq(accounts.id, accountId), eq(accounts.userId, user.id)))
 
-  revalidateCardPaths(accountId)
+  revalidateCardPaths(user.id, accountId)
   return { ok: true, data: undefined }
 }
 
@@ -294,7 +296,7 @@ export async function upsertCreditCardProfile(
       },
     })
 
-  revalidateCardPaths(data.accountId)
+  revalidateCardPaths(user.id, data.accountId)
   return { ok: true, data: undefined }
 }
 
@@ -323,6 +325,6 @@ export async function archiveCard(id: string): Promise<ActionResult> {
     .set({ archived: true, updatedAt: new Date() })
     .where(and(eq(accounts.id, id), eq(accounts.userId, user.id)))
 
-  revalidateCardPaths(id)
+  revalidateCardPaths(user.id, id)
   return { ok: true, data: undefined }
 }

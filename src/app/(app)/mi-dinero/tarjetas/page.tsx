@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { requireCurrentUser } from '@/lib/auth'
 import { getProfile } from '@/lib/db/queries/profile'
 import { listAccountsWithBalance } from '@/lib/db/queries/accounts'
-import { getRatesForPairs } from '@/lib/currency/rates'
+import { getTarjetasData } from '@/lib/db/queries/cards'
 import { Amount } from '@/components/app/amount'
 import { EmptyState } from '@/components/app/empty-state'
 import { NewCardTrigger } from '@/components/app/new-card-trigger'
@@ -30,8 +30,8 @@ export default async function TarjetasPage() {
   const profile = await getProfile(user.id)
   const baseCurrency = (profile?.baseCurrency ?? 'COP') as CurrencyCode
 
-  const accountsList = await listAccountsWithBalance(user.id)
-  const cards = accountsList.filter((a) => a.type === 'credit_card')
+  const today = new Date().toISOString().slice(0, 10)
+  const { cards, ratesObj } = await getTarjetasData(user.id, baseCurrency, today)
 
   if (cards.length === 0) {
     return (
@@ -48,15 +48,7 @@ export default async function TarjetasPage() {
 
   // Convertir saldo de cada tarjeta a base currency. Las tarjetas pueden estar
   // en moneda distinta del usuario (e.g. visa USD).
-  const today = new Date().toISOString().slice(0, 10)
-  const nonBase = cards.filter((c) => c.currency !== baseCurrency)
-  const rates =
-    nonBase.length > 0
-      ? await getRatesForPairs(
-          nonBase.map((c) => ({ from: c.currency, to: baseCurrency })),
-          today,
-        )
-      : new Map<string, string>()
+  const rates = new Map(Object.entries(ratesObj))
 
   function toBase(amount: number, currency: string): number {
     if (currency === baseCurrency) return amount

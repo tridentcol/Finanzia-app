@@ -1,8 +1,11 @@
 import 'server-only'
 import { and, asc, eq } from 'drizzle-orm'
+import { unstable_cache } from 'next/cache'
 
 import { db } from '@/lib/db/client'
 import { debts, type Debt } from '@/lib/db/schema'
+import { userDataTag } from '@/lib/cache/data'
+import { listAccountsWithBalance } from '@/lib/db/queries/accounts'
 import type { CurrencyCode } from '@/lib/currency/currencies'
 import { getRatesForPairs } from '@/lib/currency/rates'
 import { convertMoney, fromCents, toCents } from '@/lib/currency/convert'
@@ -111,4 +114,37 @@ export async function getDebtsSummary(
     activeCount: list.filter((d) => d.status === 'active').length,
     nextPayment,
   }
+}
+
+/**
+ * Lecturas crudas de /mi-dinero/deudas: las tarjetas (para el saldo adeudado
+ * que suma al KPI hero), la lista de deudas formales y el resumen agregado.
+ * Los derivados de tiempo (días hasta el próximo pago) viven en la page.
+ */
+async function loadDeudasData(userId: string, baseCurrency: CurrencyCode) {
+  const [accountsList, debtsList, summary] = await Promise.all([
+    listAccountsWithBalance(userId),
+    listDebts(userId),
+    getDebtsSummary(userId, baseCurrency),
+  ])
+  const creditCards = accountsList.filter((a) => a.type === 'credit_card')
+  return { creditCards, debtsList, summary }
+}
+
+/**
+ * Datos de /mi-dinero/deudas cacheados cross-request (unstable_cache). La key
+ * incluye userId/baseCurrency/today (today porque el resumen depende de la
+ * fecha: tasas del día y próximo pago >= hoy); el tag coarse `data:${userId}`
+ * lo bustea cualquier Server Action que muta. `revalidate: 30` es backstop.
+ */
+export function getDeudasData(
+  userId: string,
+  baseCurrency: CurrencyCode,
+  today: string,
+) {
+  return unstable_cache(
+    () => loadDeudasData(userId, baseCurrency),
+    ['deudas-data', userId, baseCurrency, today],
+    { tags: [userDataTag(userId)], revalidate: 30 },
+  )()
 }

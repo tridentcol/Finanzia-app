@@ -3,14 +3,8 @@ import type { Metadata } from 'next'
 import { requireCurrentUser } from '@/lib/auth'
 import { getProfile } from '@/lib/db/queries/profile'
 import { listRecurringForUser } from '@/lib/db/queries/recurring'
-import {
-  getTotalBalanceInBase,
-  listAccountsWithBalance,
-} from '@/lib/db/queries/accounts'
-import { getDebtsSummary } from '@/lib/db/queries/debts'
-import { getRatesForPairs } from '@/lib/currency/rates'
+import { getCashFlowData } from '@/lib/db/queries/cash-flow'
 import { projectCashFlow } from '@/lib/cash-flow/project'
-import { getDailyVolatility } from '@/lib/cash-flow/volatility'
 import { CashFlowChart } from '@/components/app/cash-flow-chart-lazy'
 import { Amount } from '@/components/app/amount'
 import { EmptyState } from '@/components/app/empty-state'
@@ -27,36 +21,24 @@ type RuleListItem = Awaited<ReturnType<typeof listRecurringForUser>>[number]
 export default async function CashFlowPage() {
   const user = await requireCurrentUser()
 
-  const [rules, accountsList, profile, volatility] = await Promise.all([
-    listRecurringForUser(user.id),
-    listAccountsWithBalance(user.id),
-    getProfile(user.id),
-    getDailyVolatility(user.id),
-  ])
-
+  const profile = await getProfile(user.id)
   const baseCurrency = (profile?.baseCurrency ?? 'COP') as CurrencyCode
+  const today = new Date().toISOString().slice(0, 10)
+
+  const {
+    rules,
+    creditCards,
+    volatility,
+    assetsBase,
+    assetsPartial,
+    debtsSummary,
+    ccRatesObj,
+  } = await getCashFlowData(user.id, baseCurrency, today)
 
   // ── Patrimonio neto ──────────────────────────────────────────────
-  // Activos = cuentas no-crédito en base.
-  // Pasivos = deuda en tarjetas + préstamos/hipotecas activas.
-  const ownedAccounts = accountsList.filter((a) => a.type !== 'credit_card')
-  const creditCards = accountsList.filter((a) => a.type === 'credit_card')
-
-  const [{ total: assetsBase, partial: assetsPartial }, debtsSummary] =
-    await Promise.all([
-      getTotalBalanceInBase(user.id, baseCurrency, ownedAccounts),
-      getDebtsSummary(user.id, baseCurrency),
-    ])
-
-  const today = new Date().toISOString().slice(0, 10)
-  const ccNonBase = creditCards.filter((c) => c.currency !== baseCurrency)
-  const ccRates =
-    ccNonBase.length > 0
-      ? await getRatesForPairs(
-          ccNonBase.map((c) => ({ from: c.currency, to: baseCurrency })),
-          today,
-        )
-      : new Map<string, string>()
+  // Activos = cuentas no-crédito en base (assetsBase, ya en cache). Pasivos =
+  // deuda en tarjetas + préstamos/hipotecas activas.
+  const ccRates = new Map(Object.entries(ccRatesObj))
 
   let ccDebtBase = 0
   let ccPartial = false

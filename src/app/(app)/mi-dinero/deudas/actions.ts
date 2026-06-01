@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { and, eq } from 'drizzle-orm'
 
 import { requireCurrentUser } from '@/lib/auth'
+import { revalidateUserData } from '@/lib/cache/data'
 import { db } from '@/lib/db/client'
 import { debts } from '@/lib/db/schema'
 import { currencyCodes } from '@/lib/currency/currencies'
@@ -120,6 +121,7 @@ export async function createDebt(
 
   revalidatePath('/mi-dinero/deudas')
   revalidatePath('/dashboard')
+  revalidateUserData(user.id)
   return { ok: true, data: { id: row.id } }
 }
 
@@ -161,6 +163,7 @@ export async function updateDebt(
 
   revalidatePath('/mi-dinero/deudas')
   revalidatePath('/dashboard')
+  revalidateUserData(user.id)
   return { ok: true, data: undefined }
 }
 
@@ -177,6 +180,7 @@ export async function archiveDebt(id: string): Promise<ActionResult> {
 
   revalidatePath('/mi-dinero/deudas')
   revalidatePath('/dashboard')
+  revalidateUserData(user.id)
   return { ok: true, data: undefined }
 }
 
@@ -193,5 +197,6 @@ export async function markDebtPaid(id: string): Promise<ActionResult> {
 
   revalidatePath('/mi-dinero/deudas')
   revalidatePath('/dashboard')
+  revalidateUserData(user.id)
   return { ok: true, data: undefined }
 }

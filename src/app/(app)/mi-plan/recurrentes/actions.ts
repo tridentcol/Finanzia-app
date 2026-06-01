@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { and, eq, isNull, or } from 'drizzle-orm'
 
 import { requireCurrentUser } from '@/lib/auth'
+import { revalidateUserData } from '@/lib/cache/data'
 import { db } from '@/lib/db/client'
 import { accounts, categories, recurringRules } from '@/lib/db/schema'
 import { currencyCodes } from '@/lib/currency/currencies'
@@ -104,6 +105,7 @@ export async function createRecurringRule(
     return { ok: false, error: { code: 'insert_failed', message: 'No se pudo crear.' } }
   }
   revalidatePath('/mi-plan/recurrentes')
+  revalidateUserData(user.id)
   return { ok: true, data: { id: row.id } }
 }
 
@@ -204,6 +206,7 @@ export async function updateRecurringRule(
     .where(eq(recurringRules.id, data.id))
 
   revalidatePath('/mi-plan/recurrentes')
+  revalidateUserData(user.id)
   revalidatePath('/mi-dinero/cash-flow')
   return { ok: true, data: undefined }
 }
@@ -219,6 +222,7 @@ export async function toggleRecurringRule(id: string): Promise<ActionResult> {
     .set({ active: !row.active })
     .where(eq(recurringRules.id, id))
   revalidatePath('/mi-plan/recurrentes')
+  revalidateUserData(user.id)
   return { ok: true, data: undefined }
 }
 
@@ -228,6 +232,7 @@ export async function deleteRecurringRule(id: string): Promise<ActionResult> {
     .delete(recurringRules)
     .where(and(eq(recurringRules.id, id), eq(recurringRules.userId, user.id)))
   revalidatePath('/mi-plan/recurrentes')
+  revalidateUserData(user.id)
   return { ok: true, data: undefined }
 }
 
@@ -242,6 +247,7 @@ export async function runRecurringNow(): Promise<
   const today = new Date().toISOString().slice(0, 10)
   const result = await runRecurringForUser(user.id, today)
   revalidatePath('/mi-plan/recurrentes')
+  revalidateUserData(user.id)
   revalidatePath('/mi-dinero/movimientos')
   revalidatePath('/mi-dinero/cuentas')
   return { ok: true, data: result }
