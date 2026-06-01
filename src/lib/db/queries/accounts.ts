@@ -1,7 +1,9 @@
 import 'server-only'
 import { sql } from 'drizzle-orm'
+import { unstable_cache } from 'next/cache'
 
 import { db } from '@/lib/db/client'
+import { userDataTag } from '@/lib/cache/data'
 import type { CurrencyCode } from '@/lib/currency/currencies'
 import { getRatesForPairs } from '@/lib/currency/rates'
 import { convertMoney, fromCents, toCents } from '@/lib/currency/convert'
@@ -341,4 +343,38 @@ export async function getTotalBalanceInBase(
     total += toCents(convertMoney(acc.currentBalance, rate))
   }
   return { total: fromCents(total), partial }
+}
+
+/**
+ * Lecturas crudas de la página /mi-dinero/cuentas: la lista de cuentas con
+ * saldo y el total agregado en moneda base. `ownedAccounts` excluye tarjetas
+ * (viven en /mi-dinero/tarjetas); el total se calcula sólo sobre esas.
+ */
+async function loadCuentasData(userId: string, baseCurrency: CurrencyCode) {
+  const accountsList = await listAccountsWithBalance(userId)
+  const ownedAccounts = accountsList.filter((a) => a.type !== 'credit_card')
+  const { total, partial } = await getTotalBalanceInBase(
+    userId,
+    baseCurrency,
+    ownedAccounts,
+  )
+  return { ownedAccounts, total, partial }
+}
+
+/**
+ * Datos de /mi-dinero/cuentas cacheados cross-request (unstable_cache). La key
+ * incluye userId/baseCurrency/today (este último para que las tasas de hoy se
+ * refresquen al cambiar de día); el tag coarse `data:${userId}` lo bustea
+ * cualquier Server Action que muta. `revalidate: 30` es un backstop.
+ */
+export function getCuentasData(
+  userId: string,
+  baseCurrency: CurrencyCode,
+  today: string,
+) {
+  return unstable_cache(
+    () => loadCuentasData(userId, baseCurrency),
+    ['cuentas-data', userId, baseCurrency, today],
+    { tags: [userDataTag(userId)], revalidate: 30 },
+  )()
 }

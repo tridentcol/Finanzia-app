@@ -1,8 +1,11 @@
 import 'server-only'
 import { and, desc, eq, gte, isNull, lte, sql } from 'drizzle-orm'
+import { unstable_cache } from 'next/cache'
 
 import { db } from '@/lib/db/client'
 import { accounts, categories, transactions } from '@/lib/db/schema'
+import { userDataTag } from '@/lib/cache/data'
+import { listImportBatchesForUser } from '@/lib/db/queries/imports'
 import type { CurrencyCode } from '@/lib/currency/currencies'
 
 export type TransactionListItem = {
@@ -197,4 +200,43 @@ export async function listUserAccountsBasic(userId: string) {
     .from(accounts)
     .where(and(eq(accounts.userId, userId), eq(accounts.archived, false)))
     .orderBy(accounts.createdAt)
+}
+
+async function loadMovimientosData(
+  userId: string,
+  filters: TransactionFilters,
+  skipUnclassified: boolean,
+) {
+  const [list, available, unclassified, userAccounts, batches] = await Promise.all([
+    listTransactionsForUser(userId, filters),
+    listAvailableCategories(userId),
+    skipUnclassified ? Promise.resolve(0) : countUnclassifiedTransactions(userId),
+    listUserAccountsBasic(userId),
+    listImportBatchesForUser(userId, 12),
+  ])
+  return { list, available, unclassified, userAccounts, batches }
+}
+
+/**
+ * Datos de /mi-dinero/movimientos cacheados cross-request (unstable_cache). La
+ * key serializa `filters` (los searchParams ya normalizados en la page) más
+ * `skipUnclassified` — cada combinación de filtros tiene su propia entrada. El
+ * tag coarse `data:${userId}` lo bustea cualquier Server Action que muta, así
+ * que las entradas filtradas nunca quedan stale. `revalidate: 30` es backstop.
+ */
+export function getMovimientosData(
+  userId: string,
+  filters: TransactionFilters,
+  skipUnclassified: boolean,
+) {
+  return unstable_cache(
+    () => loadMovimientosData(userId, filters, skipUnclassified),
+    [
+      'movimientos-data',
+      userId,
+      JSON.stringify(filters),
+      String(skipUnclassified),
+    ],
+    { tags: [userDataTag(userId)], revalidate: 30 },
+  )()
 }

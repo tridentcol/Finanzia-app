@@ -8,7 +8,7 @@ import { getDebtsSummary } from '@/lib/db/queries/debts'
 import { listRecurringForUser } from '@/lib/db/queries/recurring'
 import { getRatesForPairs } from '@/lib/currency/rates'
 import { getDailyVolatility } from '@/lib/cash-flow/volatility'
-import { dashboardTag } from '@/lib/cache/dashboard'
+import { userDataTag } from '@/lib/cache/data'
 import type { CurrencyCode } from '@/lib/currency/currencies'
 
 /**
@@ -55,7 +55,7 @@ async function loadDashboardData(
 /**
  * Datos del dashboard cacheados cross-request (unstable_cache). La key incluye
  * userId/baseCurrency/today (las closure vars NO entran a la key por sí solas);
- * el tag `dashboard:${userId}` lo bustean las Server Actions de saldo al mutar.
+ * el tag coarse `data:${userId}` lo bustea cualquier Server Action que muta.
  * `revalidate: 30` es un backstop: peor caso, datos secundarios 30s viejos.
  */
 export function getDashboardData(
@@ -66,6 +66,6 @@ export function getDashboardData(
   return unstable_cache(
     () => loadDashboardData(userId, baseCurrency, today),
     ['dashboard-data', userId, baseCurrency, today],
-    { tags: [dashboardTag(userId)], revalidate: 30 },
+    { tags: [userDataTag(userId)], revalidate: 30 },
   )()
 }

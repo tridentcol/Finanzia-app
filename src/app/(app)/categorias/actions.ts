@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { and, eq, isNull, or, sql } from 'drizzle-orm'
 
 import { requireCurrentUser } from '@/lib/auth'
+import { revalidateUserData } from '@/lib/cache/data'
 import { db } from '@/lib/db/client'
 import { budgets, categories, transactions } from '@/lib/db/schema'
 
@@ -105,6 +106,7 @@ export async function createCategory(
   revalidatePath('/categorias')
   revalidatePath('/mi-dinero/movimientos')
   revalidatePath('/mi-plan/presupuestos')
+  revalidateUserData(user.id)
   return { ok: true, data: { id: row.id } }
 }
 
@@ -195,6 +197,7 @@ export async function updateCategory(
   revalidatePath('/mi-dinero/movimientos')
   revalidatePath('/mi-plan/presupuestos')
   revalidatePath('/dashboard')
+  revalidateUserData(user.id)
   return { ok: true, data: undefined }
 }
 
@@ -254,6 +257,7 @@ export async function deleteCategory(id: string): Promise<ActionResult> {
     .where(and(eq(categories.id, id), eq(categories.userId, user.id)))
 
   revalidatePath('/categorias')
+  revalidateUserData(user.id)
   return { ok: true, data: undefined }
 }
 
@@ -281,5 +285,6 @@ export async function archiveCategory(id: string): Promise<ActionResult> {
   }
 
   revalidatePath('/categorias')
+  revalidateUserData(user.id)
   return { ok: true, data: undefined }
 }

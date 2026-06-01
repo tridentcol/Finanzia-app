@@ -4,13 +4,11 @@ import Link from 'next/link'
 import { requireCurrentUser } from '@/lib/auth'
 import { getProfile } from '@/lib/db/queries/profile'
 import {
-  countUnclassifiedTransactions,
-  listAvailableCategories,
+  getMovimientosData,
   listTransactionsForUser,
   listUserAccountsBasic,
   type TransactionFilters,
 } from '@/lib/db/queries/transactions'
-import { listImportBatchesForUser } from '@/lib/db/queries/imports'
 import { EmptyState } from '@/components/app/empty-state'
 import { Amount } from '@/components/app/amount'
 import { NewTransactionTrigger } from '@/components/app/new-transaction-trigger'
@@ -105,23 +103,24 @@ export default async function TransaccionesPage({
     Boolean(maxAmount) ||
     Boolean(categoryFilter)
 
-  const [list, available, unclassified, accounts, batches, profile] = await Promise.all([
-    listTransactionsForUser(user.id, {
-      kind: dayFilter ? undefined : kind,
-      accountId: params.accountId,
-      categoryId: categoryFilter,
-      merchantSlug: merchantFilter,
-      searchQuery,
-      from: dayFilter ?? fromFilter,
-      to: dayFilter ?? toFilter,
-      minAmount,
-      maxAmount,
-      limit: dayFilter ? 500 : (merchantFilter || hasCustomFilter) ? 500 : 200,
-    }),
-    listAvailableCategories(user.id),
-    dayFilter ? Promise.resolve(0) : countUnclassifiedTransactions(user.id),
-    listUserAccountsBasic(user.id),
-    listImportBatchesForUser(user.id, 12),
+  const txFilters: TransactionFilters = {
+    kind: dayFilter ? undefined : kind,
+    accountId: params.accountId,
+    categoryId: categoryFilter,
+    merchantSlug: merchantFilter,
+    searchQuery,
+    from: dayFilter ?? fromFilter,
+    to: dayFilter ?? toFilter,
+    minAmount,
+    maxAmount,
+    limit: dayFilter ? 500 : (merchantFilter || hasCustomFilter) ? 500 : 200,
+  }
+
+  const [
+    { list, available, unclassified, userAccounts: accounts, batches },
+    profile,
+  ] = await Promise.all([
+    getMovimientosData(user.id, txFilters, Boolean(dayFilter)),
     getProfile(user.id),
   ])
   const baseCurrency = profile?.baseCurrency ?? 'COP'

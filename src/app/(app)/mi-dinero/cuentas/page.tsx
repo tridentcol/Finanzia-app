@@ -3,10 +3,7 @@ import Link from 'next/link'
 
 import { requireCurrentUser } from '@/lib/auth'
 import { getProfile } from '@/lib/db/queries/profile'
-import {
-  getTotalBalanceInBase,
-  listAccountsWithBalance,
-} from '@/lib/db/queries/accounts'
+import { getCuentasData } from '@/lib/db/queries/accounts'
 import { EmptyState } from '@/components/app/empty-state'
 import { Amount } from '@/components/app/amount'
 import { NewAccountTrigger } from '@/components/app/new-account-trigger'
@@ -38,20 +35,16 @@ export default async function CuentasPage() {
   const user = await requireCurrentUser()
   const profile = await getProfile(user.id)
   const baseCurrency = (profile?.baseCurrency ?? 'COP') as CurrencyCode
+  const today = new Date().toISOString().slice(0, 10)
 
-  const accountsList = await listAccountsWithBalance(user.id)
-
-  // Tarjetas viven en /mi-dinero/tarjetas. Aquí sólo cuentas líquidas y activos.
-  const ownedAccounts = accountsList.filter((a) => a.type !== 'credit_card')
-
-  // Suma de saldos de cuentas en moneda base. El patrimonio neto (activos −
-  // tarjetas − deudas) vive en Cash flow, donde el balance global tiene
-  // contexto y proyección.
-  const { total: totalBase, partial: totalPartial } = await getTotalBalanceInBase(
-    user.id,
-    baseCurrency,
+  // Tarjetas viven en /mi-dinero/tarjetas. Aquí sólo cuentas líquidas y
+  // activos; el total agregado en moneda base se calcula sólo sobre esas. El
+  // patrimonio neto (activos − tarjetas − deudas) vive en Cash flow.
+  const {
     ownedAccounts,
-  )
+    total: totalBase,
+    partial: totalPartial,
+  } = await getCuentasData(user.id, baseCurrency, today)
 
   return (
     <div className="flex min-w-0 flex-col gap-10 lg:gap-12">
