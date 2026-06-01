@@ -1,12 +1,9 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { desc, eq } from 'drizzle-orm'
 
 import { requireCurrentUser } from '@/lib/auth'
-import { db } from '@/lib/db/client'
-import { monthlyReports } from '@/lib/db/schema'
 import {
-  listInsightsForUser,
+  getInsightsData,
   type InsightListItem,
 } from '@/lib/db/queries/insights'
 import { EmptyState } from '@/components/app/empty-state'
@@ -83,17 +80,14 @@ export default async function InsightsPage({
   const user = await requireCurrentUser()
   const params = await searchParams
   const kind = isInsightKind(params.kind) ? params.kind : undefined
+  const today = new Date().toISOString().slice(0, 10)
 
-  const [list, reports] = await Promise.all([
-    listInsightsForUser(user.id, { kind, limit: 80 }),
-    db
-      .select({ period: monthlyReports.period })
-      .from(monthlyReports)
-      .where(eq(monthlyReports.userId, user.id))
-      .orderBy(desc(monthlyReports.period)),
-  ])
-
-  const reportPeriods = new Set(reports.map((r) => r.period))
+  const { list, reportPeriods: reportPeriodsList } = await getInsightsData(
+    user.id,
+    kind,
+    today,
+  )
+  const reportPeriods = new Set(reportPeriodsList)
 
   // Agrupar por mes preservando orden de la query (más reciente primero).
   const groups = new Map<string, InsightListItem[]>()

@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 
 import { requireCurrentUser } from '@/lib/auth'
-import { getAccountById } from '@/lib/db/queries/accounts'
+import { getCardDetailData } from '@/lib/db/queries/account-detail'
 import { Amount } from '@/components/app/amount'
 import { CardVisual } from '@/components/cards/card-visual'
 import { CardActionsMenu } from '@/components/app/card-actions-menu'
@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function TarjetaDetailPage({ params }: Props) {
   const { id } = await params
   const user = await requireCurrentUser()
-  const account = await getAccountById(user.id, id)
+  const account = await getCardDetailData(user.id, id)
 
   if (!account) notFound()
   // Si por alguna razón llegan a este detalle con una cuenta que no es

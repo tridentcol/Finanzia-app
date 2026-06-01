@@ -3,12 +3,7 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 
 import { requireCurrentUser } from '@/lib/auth'
-import { getAccountById } from '@/lib/db/queries/accounts'
-import {
-  listAvailableCategories,
-  listTransactionsForUser,
-  listUserAccountsBasic,
-} from '@/lib/db/queries/transactions'
+import { getCuentaDetailData } from '@/lib/db/queries/account-detail'
 import { Amount } from '@/components/app/amount'
 import { EmptyState } from '@/components/app/empty-state'
 import { NewTransactionTrigger } from '@/components/app/new-transaction-trigger'
@@ -39,7 +34,8 @@ function formatRelativeDate(iso: string): string {
 export default async function CuentaDetailPage({ params }: Props) {
   const { id } = await params
   const user = await requireCurrentUser()
-  const account = await getAccountById(user.id, id)
+  const { account, recent, available, accountsBasic } =
+    await getCuentaDetailData(user.id, id)
 
   if (!account) notFound()
 
@@ -49,12 +45,6 @@ export default async function CuentaDetailPage({ params }: Props) {
   }
 
   const balance = Number.parseFloat(account.currentBalance)
-
-  const [recent, available, accountsBasic] = await Promise.all([
-    listTransactionsForUser(user.id, { accountId: id, limit: 25 }),
-    listAvailableCategories(user.id),
-    listUserAccountsBasic(user.id),
-  ])
 
   const categoryOptions = available.map((c) => ({
     id: c.id,

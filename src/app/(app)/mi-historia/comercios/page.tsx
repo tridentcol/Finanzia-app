@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { requireCurrentUser } from '@/lib/auth'
 import { getProfile } from '@/lib/db/queries/profile'
 import {
-  listMerchantsForUser,
+  getComerciosData,
   resolveRange,
   type MerchantRow,
   type MerchantsRange,
@@ -73,10 +73,11 @@ export default async function ComerciosPage({
   const params = await searchParams
   const scope = isScope(params.scope) ? params.scope : 'this-month'
   const range = resolveRange(scope)
+  const today = new Date().toISOString().slice(0, 10)
 
   const [profile, merchants] = await Promise.all([
     getProfile(user.id),
-    listMerchantsForUser(user.id, range, { limit: 80 }),
+    getComerciosData(user.id, scope, today),
   ])
   const baseCurrency = (profile?.baseCurrency ?? 'COP') as CurrencyCode
 

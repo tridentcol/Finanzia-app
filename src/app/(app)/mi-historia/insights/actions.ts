@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { and, eq } from 'drizzle-orm'
 
 import { requireCurrentUser } from '@/lib/auth'
+import { revalidateUserData } from '@/lib/cache/data'
 import { db } from '@/lib/db/client'
 import { insights } from '@/lib/db/schema'
 import { runDetectorsForUser } from '@/lib/ai/insights'
@@ -27,6 +28,7 @@ export async function dismissInsight(id: string): Promise<ActionResult> {
     .where(and(eq(insights.id, id), eq(insights.userId, user.id)))
   revalidatePath('/mi-historia/insights')
   revalidatePath('/dashboard')
+  revalidateUserData(user.id)
   return { ok: true, data: undefined }
 }
 
@@ -42,6 +44,7 @@ export async function markInsightActed(id: string): Promise<ActionResult> {
     .where(and(eq(insights.id, id), eq(insights.userId, user.id)))
   revalidatePath('/mi-historia/insights')
   revalidatePath('/dashboard')
+  revalidateUserData(user.id)
   return { ok: true, data: undefined }
 }
 
@@ -63,6 +66,7 @@ export async function markInsightRead(id: string): Promise<ActionResult> {
     )
   revalidatePath('/mi-historia/insights')
   revalidatePath('/dashboard')
+  revalidateUserData(user.id)
   return { ok: true, data: undefined }
 }
 
@@ -77,5 +81,6 @@ export async function runInsightsNow(): Promise<
   const result = await runDetectorsForUser(user.id)
   revalidatePath('/mi-historia/insights')
   revalidatePath('/dashboard')
+  revalidateUserData(user.id)
   return { ok: true, data: { generated: result.generated, skipped: result.skipped } }
 }

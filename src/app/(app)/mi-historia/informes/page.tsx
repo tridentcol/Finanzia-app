@@ -1,11 +1,9 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { desc, eq } from 'drizzle-orm'
 
 import { requireCurrentUser } from '@/lib/auth'
-import { db } from '@/lib/db/client'
 import { getProfile } from '@/lib/db/queries/profile'
-import { monthlyReports } from '@/lib/db/schema'
+import { getInformesData } from '@/lib/db/queries/reports'
 import { EmptyState } from '@/components/app/empty-state'
 import { Amount } from '@/components/app/amount'
 import type { CurrencyCode } from '@/lib/currency/currencies'
@@ -42,18 +40,7 @@ export default async function InformesPage() {
   const user = await requireCurrentUser()
 
   const [reports, profile] = await Promise.all([
-    db
-      .select({
-        id: monthlyReports.id,
-        period: monthlyReports.period,
-        totalIncome: monthlyReports.totalIncome,
-        totalExpense: monthlyReports.totalExpense,
-        netSavings: monthlyReports.netSavings,
-        aiSummary: monthlyReports.aiSummary,
-      })
-      .from(monthlyReports)
-      .where(eq(monthlyReports.userId, user.id))
-      .orderBy(desc(monthlyReports.period)),
+    getInformesData(user.id),
     getProfile(user.id),
   ])
 

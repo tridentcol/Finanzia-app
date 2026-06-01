@@ -1,8 +1,10 @@
 import 'server-only'
 import { and, desc, eq, inArray, ne } from 'drizzle-orm'
+import { unstable_cache } from 'next/cache'
 
 import { db } from '@/lib/db/client'
-import { insights } from '@/lib/db/schema'
+import { insights, monthlyReports } from '@/lib/db/schema'
+import { userDataTag } from '@/lib/cache/data'
 
 export type InsightListItem = {
   id: string
@@ -81,4 +83,34 @@ export async function countActiveInsights(userId: string): Promise<number> {
       ),
     )
   return rows.length
+}
+
+/**
+ * Datos de /mi-historia/insights cacheados cross-request (unstable_cache): los
+ * insights del filtro `kind` y los periodos con informe mensual (para los
+ * cross-links "Ver informe"). `reportPeriods` va como array (el Set se arma en
+ * la page). La key incluye kind y today; el tag coarse `data:${userId}` lo
+ * bustea cualquier Server Action que muta. `revalidate: 30` también acota la
+ * frescura frente a los insights que genera el cron nocturno.
+ */
+export function getInsightsData(
+  userId: string,
+  kind: InsightListItem['kind'] | undefined,
+  today: string,
+) {
+  return unstable_cache(
+    async () => {
+      const [list, reports] = await Promise.all([
+        listInsightsForUser(userId, { kind, limit: 80 }),
+        db
+          .select({ period: monthlyReports.period })
+          .from(monthlyReports)
+          .where(eq(monthlyReports.userId, userId))
+          .orderBy(desc(monthlyReports.period)),
+      ])
+      return { list, reportPeriods: reports.map((r) => r.period) }
+    },
+    ['insights-data', userId, kind ?? 'all', today],
+    { tags: [userDataTag(userId)], revalidate: 30 },
+  )()
 }

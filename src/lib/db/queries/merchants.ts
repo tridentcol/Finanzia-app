@@ -1,7 +1,9 @@
 import 'server-only'
 import { sql } from 'drizzle-orm'
+import { unstable_cache } from 'next/cache'
 
 import { db } from '@/lib/db/client'
+import { userDataTag } from '@/lib/cache/data'
 
 /**
  * Agrega gastos por "comercio". Como Finanzia no fuerza un campo `merchant`
@@ -148,4 +150,22 @@ export async function listMerchantsForUser(
     categoryColor: r.category_color,
     categoryIcon: r.category_icon,
   }))
+}
+
+/**
+ * Datos de /mi-historia/comercios cacheados cross-request (unstable_cache). El
+ * rango se resuelve desde `scope` con la fecha de hoy (este mes / este año),
+ * por eso la key incluye scope y today; el tag coarse `data:${userId}` lo
+ * bustea cualquier Server Action que muta. `revalidate: 30` es un backstop.
+ */
+export function getComerciosData(
+  userId: string,
+  scope: MerchantsRange['scope'],
+  today: string,
+) {
+  return unstable_cache(
+    () => listMerchantsForUser(userId, resolveRange(scope), { limit: 80 }),
+    ['comercios-data', userId, scope, today],
+    { tags: [userDataTag(userId)], revalidate: 30 },
+  )()
 }

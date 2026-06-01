@@ -1,14 +1,10 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { and, eq } from 'drizzle-orm'
 
 import { requireCurrentUser } from '@/lib/auth'
-import { db } from '@/lib/db/client'
 import { getProfile } from '@/lib/db/queries/profile'
-import { monthlyReports } from '@/lib/db/schema'
-import { getExpensesByParentCategory } from '@/lib/db/queries/expenses-by-parent'
-import { listInsightsForUser } from '@/lib/db/queries/insights'
+import { getInformeData } from '@/lib/db/queries/reports'
 import { formatMoney } from '@/lib/currency/format'
 import { Amount } from '@/components/app/amount'
 import { CategoryBreakdown } from '@/components/app/category-breakdown'
@@ -39,19 +35,11 @@ export default async function InformePage({ params }: Props) {
   const profile = await getProfile(user.id)
   const currency = (profile?.baseCurrency ?? 'COP') as CurrencyCode
 
-  const [report, expensesByParent, monthInsights] = await Promise.all([
-    db.query.monthlyReports.findFirst({
-      where: and(eq(monthlyReports.userId, user.id), eq(monthlyReports.period, period)),
-    }),
-    getExpensesByParentCategory(user.id, currency, { month: period }),
-    listInsightsForUser(user.id, { includeDismissed: false, limit: 50 }),
-  ])
-
-  // Filter insights by month — their periodEnd cae dentro de este `period`.
-  const insightsOfMonth = monthInsights.filter((ins) => {
-    const bucket = (ins.periodEnd ?? ins.createdAt.toISOString().slice(0, 10)).slice(0, 7)
-    return bucket === period
-  })
+  const { report, expensesByParent, insightsOfMonth } = await getInformeData(
+    user.id,
+    period,
+    currency,
+  )
 
   if (!report) {
     return (
