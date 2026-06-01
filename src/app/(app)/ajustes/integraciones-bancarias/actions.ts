@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
 import { requireCurrentUser } from '@/lib/auth'
+import { revalidateUserData } from '@/lib/cache/data'
 import { db } from '@/lib/db/client'
 import { emailInboxAliases } from '@/lib/db/schema'
 import { SUPPORTED_BANKS } from './bank-config'
@@ -74,6 +75,7 @@ export async function createEmailAlias(
   })
 
   revalidatePath('/ajustes/integraciones-bancarias')
+  revalidateUserData(user.id)
   return { ok: true, data: { aliasSlug } }
 }
 
@@ -89,6 +91,7 @@ export async function deleteEmailAlias(aliasId: string): Promise<ActionResult> {
     .where(and(eq(emailInboxAliases.id, aliasId), eq(emailInboxAliases.userId, user.id)))
 
   revalidatePath('/ajustes/integraciones-bancarias')
+  revalidateUserData(user.id)
   return { ok: true, data: undefined }
 }
 
@@ -107,5 +110,6 @@ export async function updateAliasAccount(
     .where(and(eq(emailInboxAliases.id, aliasId), eq(emailInboxAliases.userId, user.id)))
 
   revalidatePath('/ajustes/integraciones-bancarias')
+  revalidateUserData(user.id)
   return { ok: true, data: undefined }
 }

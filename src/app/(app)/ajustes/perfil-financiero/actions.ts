@@ -257,5 +257,6 @@ export async function updateFinancialPersona(
   }
 
   revalidatePath('/ajustes')
+  revalidateUserData(user.id)
   return { ok: true, data: undefined }
 }

@@ -1,8 +1,10 @@
 import Link from 'next/link'
 import { and, asc, eq, isNull, or } from 'drizzle-orm'
+import { unstable_cache } from 'next/cache'
 
 import { db } from '@/lib/db/client'
 import { categories } from '@/lib/db/schema'
+import { userDataTag } from '@/lib/cache/data'
 import { NewCategoryTrigger } from '@/components/app/new-category-trigger'
 import { CategoryActionsMenu } from '@/components/app/category-actions-menu'
 import { icons, type IconName } from '@/lib/design/icons'
@@ -43,25 +45,32 @@ export async function CategoriasSection({ userId, searchParams }: Props) {
       ? searchParams.kind
       : null
 
-  const rows = await db
-    .select({
-      id: categories.id,
-      userId: categories.userId,
-      name: categories.name,
-      kind: categories.kind,
-      icon: categories.icon,
-      color: categories.color,
-      sortOrder: categories.sortOrder,
-    })
-    .from(categories)
-    .where(
-      and(
-        or(isNull(categories.userId), eq(categories.userId, userId)),
-        eq(categories.archived, false),
-        kindFilter ? eq(categories.kind, kindFilter) : undefined,
-      ),
-    )
-    .orderBy(asc(categories.kind), asc(categories.sortOrder), asc(categories.name))
+  // Cacheado cross-request bajo el tag coarse `data:${userId}`; lo bustean las
+  // Server Actions de categorías. La key incluye el filtro de kind.
+  const rows = await unstable_cache(
+    () =>
+      db
+        .select({
+          id: categories.id,
+          userId: categories.userId,
+          name: categories.name,
+          kind: categories.kind,
+          icon: categories.icon,
+          color: categories.color,
+          sortOrder: categories.sortOrder,
+        })
+        .from(categories)
+        .where(
+          and(
+            or(isNull(categories.userId), eq(categories.userId, userId)),
+            eq(categories.archived, false),
+            kindFilter ? eq(categories.kind, kindFilter) : undefined,
+          ),
+        )
+        .orderBy(asc(categories.kind), asc(categories.sortOrder), asc(categories.name)),
+    ['categorias-section', userId, kindFilter ?? 'all'],
+    { tags: [userDataTag(userId)], revalidate: 30 },
+  )()
 
   // Tuyas primero, después sistema. Dentro de cada grupo: kind, sortOrder.
   const sorted = [...rows].sort((a, b) => {

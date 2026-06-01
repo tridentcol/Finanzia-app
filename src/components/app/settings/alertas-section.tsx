@@ -1,11 +1,11 @@
-import { listAlertsForUser } from '@/lib/db/queries/alerts'
+import { getAlertasData } from '@/lib/db/queries/alerts'
 import { EmptyState } from '@/components/app/empty-state'
 import { AlertList } from '@/components/app/alert-list'
 
 type Props = { userId: string }
 
 export async function AlertasSection({ userId }: Props) {
-  const list = await listAlertsForUser(userId, { limit: 60 })
+  const list = await getAlertasData(userId)
 
   if (list.length === 0) {
     return (

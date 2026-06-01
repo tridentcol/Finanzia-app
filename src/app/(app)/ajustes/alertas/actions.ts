@@ -5,6 +5,7 @@ import { and, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { requireCurrentUser } from '@/lib/auth'
+import { revalidateUserData } from '@/lib/cache/data'
 import { db } from '@/lib/db/client'
 import { alerts } from '@/lib/db/schema'
 
@@ -22,6 +23,7 @@ export async function markAlertRead(id: string): Promise<ActionResult> {
     .set({ read: true })
     .where(and(eq(alerts.id, id), eq(alerts.userId, user.id)))
   revalidatePath('/ajustes/alertas')
+  revalidateUserData(user.id)
   revalidatePath('/dashboard')
   return { ok: true, data: undefined }
 }
@@ -33,6 +35,7 @@ export async function markAllAlertsRead(): Promise<ActionResult> {
     .set({ read: true })
     .where(and(eq(alerts.userId, user.id), eq(alerts.read, false)))
   revalidatePath('/ajustes/alertas')
+  revalidateUserData(user.id)
   revalidatePath('/dashboard')
   return { ok: true, data: undefined }
 }
@@ -44,5 +47,6 @@ export async function deleteAlert(id: string): Promise<ActionResult> {
   }
   await db.delete(alerts).where(and(eq(alerts.id, id), eq(alerts.userId, user.id)))
   revalidatePath('/ajustes/alertas')
+  revalidateUserData(user.id)
   return { ok: true, data: undefined }
 }

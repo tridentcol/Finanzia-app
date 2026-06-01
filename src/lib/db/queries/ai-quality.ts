@@ -1,8 +1,10 @@
 import 'server-only'
 import { sql } from 'drizzle-orm'
+import { unstable_cache } from 'next/cache'
 
 import { db } from '@/lib/db/client'
 import { transactions } from '@/lib/db/schema'
+import { userDataTag } from '@/lib/cache/data'
 
 export type CategorizationQuality = {
   /** Transacciones cuya categoría la sugirió la IA. */
@@ -50,4 +52,18 @@ export async function getCategorizationQuality(
     avgConfidence: r?.avg_conf != null ? Number(r.avg_conf) : null,
     avgConfidenceCorrected: r?.avg_conf_corrected != null ? Number(r.avg_conf_corrected) : null,
   }
+}
+
+/**
+ * Calidad de categorización cacheada cross-request para la sección de ajustes
+ * (unstable_cache). Es una agregación sobre todas las transacciones del
+ * usuario; el tag coarse `data:${userId}` lo bustea cualquier Server Action que
+ * muta (toda mutación de transacciones lo hace). `revalidate: 30` es backstop.
+ */
+export function getCategorizationQualityCached(userId: string) {
+  return unstable_cache(
+    () => getCategorizationQuality(userId),
+    ['categorization-quality', userId],
+    { tags: [userDataTag(userId)], revalidate: 30 },
+  )()
 }

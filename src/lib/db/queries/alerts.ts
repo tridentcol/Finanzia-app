@@ -1,8 +1,10 @@
 import 'server-only'
 import { and, desc, eq, sql } from 'drizzle-orm'
+import { unstable_cache } from 'next/cache'
 
 import { db } from '@/lib/db/client'
 import { alerts } from '@/lib/db/schema'
+import { userDataTag } from '@/lib/cache/data'
 
 export type AlertListItem = {
   id: string
@@ -48,4 +50,18 @@ export async function countUnreadAlerts(userId: string): Promise<number> {
     .from(alerts)
     .where(and(eq(alerts.userId, userId), eq(alerts.read, false)))
   return rows[0]?.c ?? 0
+}
+
+/**
+ * Alertas accionables cacheadas cross-request para la sección de ajustes
+ * (unstable_cache). El tag coarse `data:${userId}` lo bustea cualquier Server
+ * Action que muta (incluidas las de alertas); `revalidate: 30` acota la
+ * frescura frente al cron diario que las genera.
+ */
+export function getAlertasData(userId: string) {
+  return unstable_cache(
+    () => listAlertsForUser(userId, { limit: 60 }),
+    ['alertas-data', userId],
+    { tags: [userDataTag(userId)], revalidate: 30 },
+  )()
 }

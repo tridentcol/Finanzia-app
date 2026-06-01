@@ -1,4 +1,4 @@
-import { getCategorizationQuality } from '@/lib/db/queries/ai-quality'
+import { getCategorizationQualityCached } from '@/lib/db/queries/ai-quality'
 
 function pct(n: number): string {
   return `${Math.round(n * 100)}%`
@@ -9,7 +9,7 @@ function pct(n: number): string {
  * aceptaste vs corregiste. Es la señal para afinar los umbrales del motor.
  */
 export async function CategorizationQualitySection({ userId }: { userId: string }) {
-  const q = await getCategorizationQuality(userId)
+  const q = await getCategorizationQualityCached(userId)
 
   if (q.aiTotal === 0) {
     return (
