@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { and, eq, isNull } from 'drizzle-orm'
 
 import { requireCurrentUser } from '@/lib/auth'
+import { revalidateUserData } from '@/lib/cache/data'
 import { db } from '@/lib/db/client'
 import { profiles, savingsPlans } from '@/lib/db/schema'
 import {
@@ -110,6 +111,7 @@ export async function completeOnboarding(input: OnboardingInput): Promise<Action
     })
 
     revalidatePath('/', 'layout')
+    revalidateUserData(user.id)
     return { ok: true, data: undefined }
   } catch {
     return { ok: false, error: { code: 'DB_ERROR', message: 'Error al guardar. Intenta de nuevo.' } }
@@ -154,6 +156,7 @@ export async function updateSavingsPlan(input: UpdatePlanInput): Promise<ActionR
     })
 
     revalidatePath('/ajustes/perfil-financiero')
+    revalidateUserData(user.id)
     return { ok: true, data: undefined }
   } catch {
     return { ok: false, error: { code: 'DB_ERROR', message: 'Error al guardar. Intenta de nuevo.' } }

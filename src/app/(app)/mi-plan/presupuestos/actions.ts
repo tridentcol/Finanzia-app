@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { and, eq, isNull, or } from 'drizzle-orm'
 
 import { requireCurrentUser } from '@/lib/auth'
+import { revalidateUserData } from '@/lib/cache/data'
 import { db } from '@/lib/db/client'
 import { budgets, categories } from '@/lib/db/schema'
 
@@ -85,6 +86,7 @@ export async function createBudget(
 
   revalidatePath('/mi-plan/presupuestos')
   revalidatePath('/dashboard')
+  revalidateUserData(user.id)
   return { ok: true, data: { id: row.id } }
 }
 
@@ -99,5 +101,6 @@ export async function archiveBudget(id: string): Promise<ActionResult> {
     .where(and(eq(budgets.id, id), eq(budgets.userId, user.id)))
   revalidatePath('/mi-plan/presupuestos')
   revalidatePath('/dashboard')
+  revalidateUserData(user.id)
   return { ok: true, data: undefined }
 }

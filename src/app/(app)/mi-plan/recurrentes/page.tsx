@@ -1,15 +1,7 @@
 import type { Metadata } from 'next'
 
 import { requireCurrentUser } from '@/lib/auth'
-import {
-  getRecurringDriftSnapshots,
-  listRecurringForUser,
-} from '@/lib/db/queries/recurring'
-import { proposeRecurringRules } from '@/lib/recurring/proposals'
-import {
-  listAvailableCategories,
-  listUserAccountsBasic,
-} from '@/lib/db/queries/transactions'
+import { getRecurrentesData } from '@/lib/db/queries/recurring'
 import { EmptyState } from '@/components/app/empty-state'
 import { NewRecurringTrigger } from '@/components/app/new-recurring-trigger'
 import { RecurringList } from '@/components/app/recurring-list'
@@ -21,21 +13,9 @@ export const metadata: Metadata = {
 
 export default async function RecurringPage() {
   const user = await requireCurrentUser()
-  const list = await listRecurringForUser(user.id)
-  const driftRuleIds = list
-    .filter((r) => r.active && r.dayOfMonth !== null)
-    .map((r) => r.id)
-  const [driftSnapshots, proposals, accountsRaw, categoriesRaw] = await Promise.all([
-    getRecurringDriftSnapshots(user.id, driftRuleIds),
-    // Si la propuesta falla por cualquier razón (query, RLS, datos
-    // inconsistentes), la página no debe romper — fallback a [].
-    proposeRecurringRules(user.id).catch((err) => {
-      console.error('proposeRecurringRules failed:', err)
-      return []
-    }),
-    listUserAccountsBasic(user.id),
-    listAvailableCategories(user.id),
-  ])
+  const today = new Date().toISOString().slice(0, 10)
+  const { list, driftSnapshots, proposals, accountsRaw, categoriesRaw } =
+    await getRecurrentesData(user.id, today)
 
   const editableAccounts = accountsRaw.map((a) => ({
     id: a.id,

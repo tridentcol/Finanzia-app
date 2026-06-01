@@ -1,8 +1,11 @@
 import 'server-only'
 import { and, desc, eq, isNull, sql } from 'drizzle-orm'
+import { unstable_cache } from 'next/cache'
 
 import { db } from '@/lib/db/client'
 import { savingsPlans, savingsPeriods, transactions, users } from '@/lib/db/schema'
+import { userDataTag } from '@/lib/cache/data'
+import { listGoalsForUser } from '@/lib/db/queries/goals'
 
 export type SavingsPeriodRow = {
   id: string
@@ -89,4 +92,26 @@ export async function getNetCashFlowForPeriod(
   const income = Number.parseFloat(row?.income ?? '0')
   const expense = Number.parseFloat(row?.expense ?? '0')
   return { income, expense, net: income - expense }
+}
+
+/**
+ * Lecturas crudas de /mi-plan/ahorro: períodos cerrados, hero acumulado y las
+ * metas (para la distribución del ahorro). El plan activo y el perfil se leen
+ * en la page (fuera del cache). La key incluye `today` porque daysToTarget de
+ * las metas depende de la fecha; el tag coarse `data:${userId}` lo bustea
+ * cualquier Server Action que muta. `revalidate: 30` es un backstop.
+ */
+export function getAhorroData(userId: string, today: string) {
+  return unstable_cache(
+    async () => {
+      const [periods, hero, goals] = await Promise.all([
+        listSavingsPeriods(userId),
+        getSavingsHeroData(userId),
+        listGoalsForUser(userId),
+      ])
+      return { periods, hero, goals }
+    },
+    ['ahorro-data', userId, today],
+    { tags: [userDataTag(userId)], revalidate: 30 },
+  )()
 }

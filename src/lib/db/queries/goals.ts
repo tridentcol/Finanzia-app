@@ -1,8 +1,10 @@
 import 'server-only'
 import { and, desc, eq } from 'drizzle-orm'
+import { unstable_cache } from 'next/cache'
 
 import { db } from '@/lib/db/client'
 import { accounts, goals } from '@/lib/db/schema'
+import { userDataTag } from '@/lib/cache/data'
 
 export type GoalWithProgress = {
   id: string
@@ -62,4 +64,18 @@ export async function listGoalsForUser(userId: string): Promise<GoalWithProgress
       daysToTarget,
     }
   })
+}
+
+/**
+ * Metas cacheadas cross-request para /mi-plan/metas (unstable_cache). La key
+ * incluye `today` porque el progreso/daysToTarget de cada meta depende de la
+ * fecha; el tag coarse `data:${userId}` lo bustea cualquier Server Action que
+ * muta. `revalidate: 30` es un backstop.
+ */
+export function getMetasData(userId: string, today: string) {
+  return unstable_cache(
+    () => listGoalsForUser(userId),
+    ['metas-data', userId, today],
+    { tags: [userDataTag(userId)], revalidate: 30 },
+  )()
 }

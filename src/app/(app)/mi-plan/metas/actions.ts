@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { and, eq } from 'drizzle-orm'
 
 import { requireCurrentUser } from '@/lib/auth'
+import { revalidateUserData } from '@/lib/cache/data'
 import { db } from '@/lib/db/client'
 import { accounts, goals } from '@/lib/db/schema'
 import { currencyCodes } from '@/lib/currency/currencies'
@@ -79,6 +80,7 @@ export async function createGoal(
   }
   revalidatePath('/mi-plan/metas')
   revalidatePath('/dashboard')
+  revalidateUserData(user.id)
   return { ok: true, data: { id: row.id } }
 }
 
@@ -123,6 +125,7 @@ export async function adjustGoalProgress(input: {
     .where(eq(goals.id, goal.id))
   revalidatePath('/mi-plan/metas')
   revalidatePath('/dashboard')
+  revalidateUserData(user.id)
   return { ok: true, data: undefined }
 }
 
@@ -137,5 +140,6 @@ export async function archiveGoal(id: string): Promise<ActionResult> {
     .where(and(eq(goals.id, id), eq(goals.userId, user.id)))
   revalidatePath('/mi-plan/metas')
   revalidatePath('/dashboard')
+  revalidateUserData(user.id)
   return { ok: true, data: undefined }
 }

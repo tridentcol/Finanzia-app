@@ -3,8 +3,7 @@ import Link from 'next/link'
 
 import { requireCurrentUser } from '@/lib/auth'
 import { getProfile } from '@/lib/db/queries/profile'
-import { listSavingsPeriods, getSavingsHeroData } from '@/lib/db/queries/savings'
-import { listGoalsForUser } from '@/lib/db/queries/goals'
+import { getAhorroData } from '@/lib/db/queries/savings'
 import { getActiveSavingsPlan } from '@/app/(app)/ajustes/perfil-financiero/actions'
 import { formatMoney } from '@/lib/currency/format'
 import type { CurrencyCode } from '@/lib/currency/currencies'
@@ -89,12 +88,11 @@ function PeriodRow({
 export default async function AhorroPage() {
   const user = await requireCurrentUser()
 
-  const [periods, hero, profile, activePlan, goals] = await Promise.all([
-    listSavingsPeriods(user.id),
-    getSavingsHeroData(user.id),
+  const today = new Date().toISOString().slice(0, 10)
+  const [{ periods, hero, goals }, profile, activePlan] = await Promise.all([
+    getAhorroData(user.id, today),
     getProfile(user.id),
     getActiveSavingsPlan(user.id),
-    listGoalsForUser(user.id),
   ])
 
   const baseCurrency = profile?.baseCurrency ?? 'COP'

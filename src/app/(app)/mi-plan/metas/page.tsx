@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 import { requireCurrentUser } from '@/lib/auth'
-import { listGoalsForUser } from '@/lib/db/queries/goals'
+import { getMetasData } from '@/lib/db/queries/goals'
 import { EmptyState } from '@/components/app/empty-state'
 import { GoalCard } from '@/components/app/goal-card'
 import { NewGoalTrigger } from '@/components/app/new-goal-trigger'
@@ -12,7 +12,8 @@ export const metadata: Metadata = {
 
 export default async function MetasPage() {
   const user = await requireCurrentUser()
-  const list = await listGoalsForUser(user.id)
+  const today = new Date().toISOString().slice(0, 10)
+  const list = await getMetasData(user.id, today)
   const active = list.filter((g) => g.status !== 'abandoned')
 
   return (

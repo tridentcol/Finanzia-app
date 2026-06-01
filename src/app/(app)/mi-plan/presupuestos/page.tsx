@@ -2,7 +2,10 @@ import type { Metadata } from 'next'
 
 import { requireCurrentUser } from '@/lib/auth'
 import { getProfile } from '@/lib/db/queries/profile'
-import { listBudgetsWithProgress } from '@/lib/db/queries/budgets'
+import {
+  getPresupuestosData,
+  listBudgetsWithProgress,
+} from '@/lib/db/queries/budgets'
 import { EmptyState } from '@/components/app/empty-state'
 import { BudgetProgressCard } from '@/components/app/budget-progress'
 import { NewBudgetTrigger } from '@/components/app/new-budget-trigger'
@@ -54,9 +57,10 @@ function normalizeBudgetTotals(
 
 export default async function PresupuestosPage() {
   const user = await requireCurrentUser()
+  const today = new Date().toISOString().slice(0, 10)
   const [profile, budgets] = await Promise.all([
     getProfile(user.id),
-    listBudgetsWithProgress(user.id),
+    getPresupuestosData(user.id, today),
   ])
   const currency = (profile?.baseCurrency ?? 'COP') as CurrencyCode
 

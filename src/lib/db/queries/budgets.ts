@@ -1,7 +1,9 @@
 import 'server-only'
 import { sql } from 'drizzle-orm'
+import { unstable_cache } from 'next/cache'
 
 import { db } from '@/lib/db/client'
+import { userDataTag } from '@/lib/cache/data'
 
 export type BudgetProgress = {
   id: string
@@ -110,4 +112,19 @@ export async function listBudgetsWithProgress(
       status,
     }
   })
+}
+
+/**
+ * Datos de /mi-plan/presupuestos cacheados cross-request (unstable_cache). El
+ * gasto consumido se computa contra el mes actual (CURRENT_DATE en SQL), por
+ * eso la key incluye `today`: al cambiar de mes la entrada se refresca. El tag
+ * coarse `data:${userId}` lo bustea cualquier Server Action que muta.
+ * `revalidate: 30` es un backstop.
+ */
+export function getPresupuestosData(userId: string, today: string) {
+  return unstable_cache(
+    () => listBudgetsWithProgress(userId),
+    ['presupuestos-data', userId, today],
+    { tags: [userDataTag(userId)], revalidate: 30 },
+  )()
 }

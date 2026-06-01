@@ -1,8 +1,15 @@
 import 'server-only'
 import { and, desc, eq, gte, inArray, isNotNull, isNull } from 'drizzle-orm'
+import { unstable_cache } from 'next/cache'
 
 import { db } from '@/lib/db/client'
 import { accounts, categories, recurringRules, transactions } from '@/lib/db/schema'
+import { userDataTag } from '@/lib/cache/data'
+import {
+  listAvailableCategories,
+  listUserAccountsBasic,
+} from '@/lib/db/queries/transactions'
+import { proposeRecurringRules } from '@/lib/recurring/proposals'
 
 export type RecurringRuleListItem = {
   id: string
@@ -150,4 +157,36 @@ export async function getRecurringDriftSnapshots(
     toleranceDays: v.toleranceDays,
     occurrences: v.occurrences,
   }))
+}
+
+/**
+ * Lecturas crudas de /mi-plan/recurrentes: las reglas, sus snapshots de drift,
+ * las propuestas heurísticas y los catálogos de cuentas/categorías para los
+ * formularios. `proposeRecurringRules` cae a [] si falla (igual que en la page).
+ * La key incluye `today` porque el drift y las propuestas dependen de la fecha;
+ * el tag coarse `data:${userId}` lo bustea cualquier Server Action que muta.
+ * `revalidate: 30` es un backstop.
+ */
+export function getRecurrentesData(userId: string, today: string) {
+  return unstable_cache(
+    async () => {
+      const list = await listRecurringForUser(userId)
+      const driftRuleIds = list
+        .filter((r) => r.active && r.dayOfMonth !== null)
+        .map((r) => r.id)
+      const [driftSnapshots, proposals, accountsRaw, categoriesRaw] =
+        await Promise.all([
+          getRecurringDriftSnapshots(userId, driftRuleIds),
+          proposeRecurringRules(userId).catch((err) => {
+            console.error('proposeRecurringRules failed:', err)
+            return []
+          }),
+          listUserAccountsBasic(userId),
+          listAvailableCategories(userId),
+        ])
+      return { list, driftSnapshots, proposals, accountsRaw, categoriesRaw }
+    },
+    ['recurrentes-data', userId, today],
+    { tags: [userDataTag(userId)], revalidate: 30 },
+  )()
 }
