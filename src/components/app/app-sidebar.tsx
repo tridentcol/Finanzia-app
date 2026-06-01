@@ -25,25 +25,28 @@ import { BrandWordmark } from '@/components/brand/brand-wordmark'
 const navItemClass =
   'hover:!bg-[var(--nav-hover-bg)] data-[active=true]:!bg-[var(--nav-active-bg)] data-[active=true]:!text-[var(--nav-active-fg)] data-[active=true]:!font-medium'
 
-type NavItem = { label: string; href: string; icon: IconName }
+// `href` apunta al landing REAL de cada sección (no al root que redirige), para
+// que `prefetch` precargue el RSC con datos → navegación instantánea. El estado
+// activo usa `section` (prefijo que comparten todas las sub-rutas). Un href a
+// `/mi-dinero` (redirect 308) solo prefetchearía el redirect, no el dato.
+type NavItem = { label: string; href: string; section: string; icon: IconName }
 
 // Top-level items — 4 secciones posesivas. La sub-navegación vive in-page con
-// SectionTabs sticky bajo el topbar; no la duplicamos aquí. Click en un item
-// top-level lleva al index de la sección, que redirige al primer sub-tab.
+// SectionTabs sticky bajo el topbar; no la duplicamos aquí.
 const TOP_ITEMS: NavItem[] = [
-  { label: 'Hoy', href: '/dashboard', icon: 'home' },
-  { label: 'Mi dinero', href: '/mi-dinero', icon: 'wallet' },
-  { label: 'Mi plan', href: '/mi-plan', icon: 'target' },
-  { label: 'Mi historia', href: '/mi-historia', icon: 'book-open' },
+  { label: 'Hoy', href: '/dashboard', section: '/dashboard', icon: 'home' },
+  { label: 'Mi dinero', href: '/mi-dinero/cuentas', section: '/mi-dinero', icon: 'wallet' },
+  { label: 'Mi plan', href: '/mi-plan/presupuestos', section: '/mi-plan', icon: 'target' },
+  { label: 'Mi historia', href: '/mi-historia/insights', section: '/mi-historia', icon: 'book-open' },
 ]
 
 const FOOTER_ITEMS: NavItem[] = [
-  { label: 'Ajustes', href: '/ajustes', icon: 'settings' },
+  { label: 'Ajustes', href: '/ajustes', section: '/ajustes', icon: 'settings' },
 ]
 
-function isActive(pathname: string, href: string): boolean {
-  if (href === '/dashboard') return pathname === '/dashboard'
-  return pathname === href || pathname.startsWith(`${href}/`)
+function isActive(pathname: string, section: string): boolean {
+  if (section === '/dashboard') return pathname === '/dashboard'
+  return pathname === section || pathname.startsWith(`${section}/`)
 }
 
 export function AppSidebar() {
@@ -77,7 +80,7 @@ export function AppSidebar() {
             <SidebarMenu>
               {TOP_ITEMS.map((item) => {
                 const Icon = icons[item.icon]
-                const active = isActive(pathname, item.href)
+                const active = isActive(pathname, item.section)
                 return (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton

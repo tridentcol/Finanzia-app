@@ -9,7 +9,12 @@ import { cn } from '@/lib/utils'
 
 type NavItem = {
   label: string
+  /** Destino real (NO el root que redirige). Apuntar al landing concreto hace
+   *  que `prefetch` precargue el RSC con datos → navegación instantánea. Un href
+   *  a `/mi-dinero` (redirect 308) solo prefetchea el redirect, no el dato. */
   href: string
+  /** Prefijo de sección para el estado activo (todas las sub-rutas lo comparten). */
+  section: string
   icon: IconName
 }
 
@@ -17,18 +22,18 @@ type NavItem = {
 // el atajo a "preguntar a Finanzia" desde cualquier pantalla. Registrar
 // movimiento subió al cluster del topbar.
 const LEFT_ITEMS: NavItem[] = [
-  { label: 'Hoy', href: '/dashboard', icon: 'home' },
-  { label: 'Mi dinero', href: '/mi-dinero', icon: 'wallet' },
+  { label: 'Hoy', href: '/dashboard', section: '/dashboard', icon: 'home' },
+  { label: 'Mi dinero', href: '/mi-dinero/cuentas', section: '/mi-dinero', icon: 'wallet' },
 ]
 
 const RIGHT_ITEMS: NavItem[] = [
-  { label: 'Mi plan', href: '/mi-plan', icon: 'target' },
-  { label: 'Mi historia', href: '/mi-historia', icon: 'book-open' },
+  { label: 'Mi plan', href: '/mi-plan/presupuestos', section: '/mi-plan', icon: 'target' },
+  { label: 'Mi historia', href: '/mi-historia/insights', section: '/mi-historia', icon: 'book-open' },
 ]
 
-function isActive(pathname: string, href: string): boolean {
-  if (href === '/dashboard') return pathname === '/dashboard'
-  return pathname === href || pathname.startsWith(`${href}/`)
+function isActive(pathname: string, section: string): boolean {
+  if (section === '/dashboard') return pathname === '/dashboard'
+  return pathname === section || pathname.startsWith(`${section}/`)
 }
 
 /**
@@ -55,7 +60,7 @@ export function MobileNav() {
 
   function renderNavItem(item: NavItem) {
     const Icon = icons[item.icon]
-    const active = isActive(pathname, item.href)
+    const active = isActive(pathname, item.section)
     return (
       <Link
         key={item.href}
