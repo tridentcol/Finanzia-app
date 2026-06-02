@@ -4,8 +4,10 @@ import { requireCurrentUser } from '@/lib/auth'
 import { getProfile } from '@/lib/db/queries/profile'
 import { listRecurringForUser } from '@/lib/db/queries/recurring'
 import { getCashFlowData } from '@/lib/db/queries/cash-flow'
+import { getMetasData } from '@/lib/db/queries/goals'
 import { projectCashFlow } from '@/lib/cash-flow/project'
 import { CashFlowChart } from '@/components/app/cash-flow-chart-lazy'
+import { WhatIfPanel, type WhatIfGoal } from '@/components/app/what-if-panel'
 import { Amount } from '@/components/app/amount'
 import { EmptyState } from '@/components/app/empty-state'
 import { InfoHint } from '@/components/app/info-hint'
@@ -146,6 +148,29 @@ export default async function CashFlowPage() {
 
   const expensesBreakdown = breakdownByCategory(expenseRules, false)
   const incomesBreakdown = breakdownByCategory(incomeRules, true)
+
+  // ── Escenarios (what-if) ──────────────────────────────────────────
+  // Metas activas con saldo restante para simular dirigir un ahorro extra.
+  const goals = await getMetasData(user.id, today)
+  const whatIfGoals: WhatIfGoal[] = goals
+    .filter((g) => g.status === 'active')
+    .map((g) => ({
+      id: g.id,
+      name: g.name,
+      remaining: Math.max(
+        0,
+        Number.parseFloat(g.targetAmount) - Number.parseFloat(g.currentAmount),
+      ),
+      currency: g.currency as CurrencyCode,
+      daysToTarget: g.daysToTarget,
+    }))
+    .filter((g) => g.remaining > 0)
+  // Tope del slider: redondea el gasto recurrente mensual a múltiplos de 50k
+  // (no podés recortar más de lo que gastas). Floor sensato si no hay gasto.
+  const maxDelta = Math.max(
+    50_000,
+    Math.ceil((expensesBreakdown.sum || 0) / 50_000) * 50_000,
+  )
 
   // Próximos eventos para la lista de detalle.
   const upcoming = points
@@ -297,6 +322,14 @@ export default async function CashFlowPage() {
               )}
             </p>
           </section>
+
+          {/* Escenarios what-if — simular recortes y su efecto en saldo y metas */}
+          <WhatIfPanel
+            balance90={balance90}
+            maxDelta={maxDelta}
+            goals={whatIfGoals}
+            baseCurrency={baseCurrency}
+          />
 
           {/* Breakdowns paralelos: ingresos y gastos recurrentes */}
           {(incomesBreakdown.entries.length > 0 ||
