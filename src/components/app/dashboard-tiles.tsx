@@ -49,18 +49,16 @@ function Tile({
       className="border-border-default bg-surface hover:bg-surface-hover/60 group flex min-w-0 flex-col gap-2 rounded-[12px] border p-4 transition-colors"
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="text-text-tertiary truncate text-[10px] uppercase tracking-[0.1em]">
+        <span className="text-text-tertiary truncate text-[10px] tracking-[0.1em] uppercase">
           {label}
         </span>
         <ArrowRight
           strokeWidth={1.5}
-          className="size-3.5 shrink-0 text-transparent transition-colors group-hover:text-text-tertiary"
+          className="group-hover:text-text-tertiary size-3.5 shrink-0 text-transparent transition-colors"
         />
       </div>
       <div className="min-w-0">{children}</div>
-      {hint && (
-        <span className="text-text-tertiary truncate text-[11px]">{hint}</span>
-      )}
+      {hint && <span className="text-text-tertiary truncate text-[11px]">{hint}</span>}
     </Link>
   )
 }
@@ -89,7 +87,9 @@ export function DashboardTiles({
     tiles.push(
       <Tile key="salud" label="Salud" href="/mi-historia/insights">
         <div className="flex items-baseline gap-2">
-          <span className={cn('tabular text-2xl leading-none font-semibold', bandText[health.band])}>
+          <span
+            className={cn('tabular text-2xl leading-none font-semibold', bandText[health.band])}
+          >
             {health.score}
           </span>
           <span className={cn('text-[13px] font-medium', bandText[health.band])}>
@@ -108,9 +108,7 @@ export function DashboardTiles({
         href={nextThing.href}
         hint={`${nextThing.kind === 'debt' ? 'Próximo pago' : 'Próximo cargo'} · ${nextThing.when}`}
       >
-        <span className="text-text block truncate text-base font-medium">
-          {nextThing.title}
-        </span>
+        <span className="text-text block truncate text-base font-medium">{nextThing.title}</span>
       </Tile>,
     )
   }
@@ -132,19 +130,12 @@ export function DashboardTiles({
   if (debtTotal !== null && debtTotal > 0) {
     tiles.push(
       <Tile key="deuda" label="Deuda" href="/mi-dinero/deudas" hint="total adeudado">
-        <Amount
-          value={debtTotal.toFixed(2)}
-          currency={baseCurrency}
-          compact
-          className="text-xl"
-        />
+        <Amount value={debtTotal.toFixed(2)} currency={baseCurrency} compact className="text-xl" />
       </Tile>,
     )
   }
 
   if (tiles.length === 0) return null
 
-  return (
-    <div className="grid grid-cols-1 gap-3 min-[380px]:grid-cols-2">{tiles}</div>
-  )
+  return <div className="grid grid-cols-1 gap-3 min-[380px]:grid-cols-2">{tiles}</div>
 }

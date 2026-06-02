@@ -10,10 +10,7 @@ import { getLatestCheckin } from '@/lib/db/queries/checkin'
 import { getHealthScore } from '@/lib/db/queries/health'
 import { projectCashFlow } from '@/lib/cash-flow/project'
 import { CheckinCard } from '@/components/app/checkin-card'
-import {
-  DashboardTiles,
-  type DashboardNextThing,
-} from '@/components/app/dashboard-tiles'
+import { DashboardTiles, type DashboardNextThing } from '@/components/app/dashboard-tiles'
 import { Amount } from '@/components/app/amount'
 import { PrivacyProvider, PRIVACY_COOKIE } from '@/components/app/privacy'
 import { HideBalancesToggle } from '@/components/app/hide-balances-toggle'
@@ -39,9 +36,7 @@ function relativeDateLabel(iso: string): string {
   today.setHours(0, 0, 0, 0)
   const target = new Date(`${iso}T00:00:00`)
   target.setHours(0, 0, 0, 0)
-  const diff = Math.round(
-    (target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
-  )
+  const diff = Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
   if (diff < 0) return 'vencido'
   if (diff === 0) return 'hoy'
   if (diff === 1) return 'mañana'
@@ -71,20 +66,11 @@ export default async function DashboardPage() {
   // lógica derivada de fecha/hora (saludo, proyección) se computa abajo, fuera
   // del cache.
   const today = new Date().toISOString().slice(0, 10)
-  const [
-    {
-      accountsList,
-      recent,
-      debtsSummary,
-      recurringRules,
-      volatility,
-      ratesObj,
-    },
-    health,
-  ] = await Promise.all([
-    getDashboardData(user.id, baseCurrency, today),
-    getHealthScore(user.id, baseCurrency, today),
-  ])
+  const [{ accountsList, recent, debtsSummary, recurringRules, volatility, ratesObj }, health] =
+    await Promise.all([
+      getDashboardData(user.id, baseCurrency, today),
+      getHealthScore(user.id, baseCurrency, today),
+    ])
   const rates = new Map<string, string>(Object.entries(ratesObj))
 
   const ownedAccounts = accountsList.filter((a) => a.type !== 'credit_card')
@@ -126,12 +112,10 @@ export default async function DashboardPage() {
   // Proyección a 30 días — alimenta tanto "Lo siguiente" (primer evento)
   // como el CashFlowTeaser que muestra el saldo proyectado.
   const cashFlowPoints =
-    activeRules.length > 0
-      ? projectCashFlow(recurringRules, totalNum, 30, { volatility })
-      : null
-  const nextRecurringEvent = cashFlowPoints
-    ?.slice(1)
-    .flatMap((p) => p.events.map((e) => ({ ...e, date: p.date })))[0] ?? null
+    activeRules.length > 0 ? projectCashFlow(recurringRules, totalNum, 30, { volatility }) : null
+  const nextRecurringEvent =
+    cashFlowPoints?.slice(1).flatMap((p) => p.events.map((e) => ({ ...e, date: p.date })))[0] ??
+    null
 
   const nextThing: DashboardNextThing | null = (() => {
     if (debtsSummary.nextPayment) {
@@ -162,8 +146,7 @@ export default async function DashboardPage() {
     cashFlowPoints && cashFlowPoints.length > 0
       ? cashFlowPoints[cashFlowPoints.length - 1]!.balance
       : null
-  const debtTotal =
-    Number.parseFloat(debtsSummary.totalBalanceInBase) + creditCardDebtInBase
+  const debtTotal = Number.parseFloat(debtsSummary.totalBalanceInBase) + creditCardDebtInBase
 
   // Saludo contextual.
   const userTz = profile?.timezone ?? undefined
@@ -182,122 +165,115 @@ export default async function DashboardPage() {
 
   return (
     <PrivacyProvider initialHidden={balancesHidden}>
-    <div className="flex min-w-0 flex-col gap-10 lg:gap-12">
-      {/* Hero — saludo + saldo + lo siguiente, todo junto en un bloque
+      <div className="flex min-w-0 flex-col gap-10 lg:gap-12">
+        {/* Hero — saludo + saldo + lo siguiente, todo junto en un bloque
           editorial corto */}
-      <header className="flex min-w-0 flex-col gap-1.5">
-        <p className="text-text-tertiary text-[11px] uppercase tracking-[0.12em]">
-          {greeting}
-        </p>
-        <div className="flex items-center gap-2">
-          <p className="text-text-secondary text-sm">Saldo en cuentas</p>
-          <HideBalancesToggle />
-        </div>
-        <Amount
-          value={totalBase}
-          currency={baseCurrency}
-          display
-          kind={parseFloat(totalBase) < 0 ? 'negative' : 'neutral'}
-          className="block truncate text-[28px] sm:text-4xl md:text-5xl lg:text-6xl"
-        />
-        <p className="text-text-tertiary text-xs">
-          {ownedAccounts.length}{' '}
-          {ownedAccounts.length === 1 ? 'cuenta' : 'cuentas'} · {baseCurrency}
-          {totalPartial && ' · conversión parcial'}
-        </p>
-      </header>
-
-      {!hasAccounts ? (
-        <EmptyState
-          headline="Empieza por registrar tu primera cuenta."
-          body="Una vez creada, podrás añadir movimientos manualmente o importarlos. Finanzia se ocupa del orden."
-          action={<NewAccountTrigger />}
-        />
-      ) : (
-        <>
-          {/* Tiles compactos: salud, lo siguiente, flujo, deuda. Cada uno
-              enlaza a su sección dedicada (ahí vive el detalle). */}
-          <DashboardTiles
-            health={health}
-            nextThing={nextThing}
-            projectedBalance={projectedBalance}
-            debtTotal={debtTotal}
-            baseCurrency={baseCurrency}
+        <header className="flex min-w-0 flex-col gap-1.5">
+          <p className="text-text-tertiary text-[11px] tracking-[0.12em] uppercase">{greeting}</p>
+          <div className="flex items-center gap-2">
+            <p className="text-text-secondary text-sm">Saldo en cuentas</p>
+            <HideBalancesToggle />
+          </div>
+          <Amount
+            value={totalBase}
+            currency={baseCurrency}
+            display
+            kind={parseFloat(totalBase) < 0 ? 'negative' : 'neutral'}
+            className="block truncate text-[28px] sm:text-4xl md:text-5xl lg:text-6xl"
           />
+          <p className="text-text-tertiary text-xs">
+            {ownedAccounts.length} {ownedAccounts.length === 1 ? 'cuenta' : 'cuentas'} ·{' '}
+            {baseCurrency}
+            {totalPartial && ' · conversión parcial'}
+          </p>
+        </header>
 
-          {/* Check-in semanal proactivo — el copiloto te busca con la foto de
+        {!hasAccounts ? (
+          <EmptyState
+            headline="Empieza por registrar tu primera cuenta."
+            body="Una vez creada, podrás añadir movimientos manualmente o importarlos. Finanzia se ocupa del orden."
+            action={<NewAccountTrigger />}
+          />
+        ) : (
+          <>
+            {/* Tiles compactos: salud, lo siguiente, flujo, deuda. Cada uno
+              enlaza a su sección dedicada (ahí vive el detalle). */}
+            <DashboardTiles
+              health={health}
+              nextThing={nextThing}
+              projectedBalance={projectedBalance}
+              debtTotal={debtTotal}
+              baseCurrency={baseCurrency}
+            />
+
+            {/* Check-in semanal proactivo — el copiloto te busca con la foto de
               tu semana (presencia de IA). */}
-          <CheckinCard checkin={checkin} baseCurrency={baseCurrency} />
+            <CheckinCard checkin={checkin} baseCurrency={baseCurrency} />
 
-          {/* Últimos movimientos — lista corta; el detalle vive en /movimientos */}
-          <section className="flex flex-col gap-4">
-            <header className="flex items-center justify-between">
-              <h2 className="text-text text-sm font-semibold">
-                Últimos movimientos
-              </h2>
-              <Link
-                href="/mi-dinero/movimientos"
-                className="text-text-secondary hover:text-text text-[13px] transition-colors"
-              >
-                Ver todos
-              </Link>
-            </header>
+            {/* Últimos movimientos — lista corta; el detalle vive en /movimientos */}
+            <section className="flex flex-col gap-4">
+              <header className="flex items-center justify-between">
+                <h2 className="text-text text-sm font-semibold">Últimos movimientos</h2>
+                <Link
+                  href="/mi-dinero/movimientos"
+                  className="text-text-secondary hover:text-text text-[13px] transition-colors"
+                >
+                  Ver todos
+                </Link>
+              </header>
 
-            {recent.length === 0 ? (
-              <EmptyState
-                headline="Aún no hay movimientos."
-                body="Registra el primero a mano, o importa un extracto y Finanzia construye tu bitácora de una."
-                action={
-                  <div className="flex flex-wrap items-center gap-2">
-                    <NewTransactionTrigger label="Registrar movimiento" />
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href="/mi-dinero/movimientos?import=open">Importar CSV</Link>
-                    </Button>
-                  </div>
-                }
-              />
-            ) : (
-              <ul className="border-border-default bg-surface flex flex-col rounded-[12px] border">
-                {recent.slice(0, 3).map((tx, idx, arr) => (
-                  <li
-                    key={tx.id}
-                    className={`flex items-center justify-between gap-4 px-5 py-3 ${
-                      idx !== arr.length - 1
-                        ? 'border-border-default/60 border-b'
-                        : ''
-                    }`}
-                  >
-                    <div className="flex min-w-0 flex-col">
-                      <span className="text-text truncate text-sm">
-                        {tx.description}
-                      </span>
-                      <span className="text-text-tertiary text-[11px]">
-                        {tx.account.name}
-                        {tx.category && ` · ${tx.category.name}`}
-                      </span>
+              {recent.length === 0 ? (
+                <EmptyState
+                  headline="Aún no hay movimientos."
+                  body="Registra el primero a mano, o importa un extracto y Finanzia construye tu bitácora de una."
+                  action={
+                    <div className="flex flex-wrap items-center gap-2">
+                      <NewTransactionTrigger label="Registrar movimiento" />
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href="/mi-dinero/movimientos?import=open">Importar CSV</Link>
+                      </Button>
                     </div>
-                    <div className="flex shrink-0 flex-col items-end">
-                      <Amount
-                        value={tx.amountOriginal}
-                        currency={tx.currency}
-                        kind={kindToTone[tx.kind]}
-                        showPositiveSign={tx.kind === 'income'}
-                        className="text-sm"
-                      />
-                      {tx.currency !== baseCurrency && (
-                        <span className="text-text-tertiary tabular text-[11px]">
-                          ≈ {formatMoney(tx.amountBase, { currency: baseCurrency, compact: true })}
+                  }
+                />
+              ) : (
+                <ul className="border-border-default bg-surface flex flex-col rounded-[12px] border">
+                  {recent.slice(0, 3).map((tx, idx, arr) => (
+                    <li
+                      key={tx.id}
+                      className={`flex items-center justify-between gap-4 px-5 py-3 ${
+                        idx !== arr.length - 1 ? 'border-border-default/60 border-b' : ''
+                      }`}
+                    >
+                      <div className="flex min-w-0 flex-col">
+                        <span className="text-text truncate text-sm">{tx.description}</span>
+                        <span className="text-text-tertiary text-[11px]">
+                          {tx.account.name}
+                          {tx.category && ` · ${tx.category.name}`}
                         </span>
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        </>
-      )}
-    </div>
+                      </div>
+                      <div className="flex shrink-0 flex-col items-end">
+                        <Amount
+                          value={tx.amountOriginal}
+                          currency={tx.currency}
+                          kind={kindToTone[tx.kind]}
+                          showPositiveSign={tx.kind === 'income'}
+                          className="text-sm"
+                        />
+                        {tx.currency !== baseCurrency && (
+                          <span className="text-text-tertiary tabular text-[11px]">
+                            ≈{' '}
+                            {formatMoney(tx.amountBase, { currency: baseCurrency, compact: true })}
+                          </span>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          </>
+        )}
+      </div>
     </PrivacyProvider>
   )
 }

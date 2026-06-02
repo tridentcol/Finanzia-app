@@ -2,10 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 
 import { requireCurrentUser } from '@/lib/auth'
-import {
-  getInsightsData,
-  type InsightListItem,
-} from '@/lib/db/queries/insights'
+import { getInsightsData, type InsightListItem } from '@/lib/db/queries/insights'
 import { getHealthScore } from '@/lib/db/queries/health'
 import { getProfile } from '@/lib/db/queries/profile'
 import { EmptyState } from '@/components/app/empty-state'
@@ -76,11 +73,7 @@ function monthLabel(period: string): string {
   return `${label} ${year ?? ''}`.trim()
 }
 
-export default async function InsightsPage({
-  searchParams,
-}: {
-  searchParams: SearchParams
-}) {
+export default async function InsightsPage({ searchParams }: { searchParams: SearchParams }) {
   const user = await requireCurrentUser()
   const params = await searchParams
   const kind = isInsightKind(params.kind) ? params.kind : undefined
@@ -104,95 +97,96 @@ export default async function InsightsPage({
     arr.push(ins)
     groups.set(key, arr)
   }
-  const orderedGroups = Array.from(groups.entries()).sort(([a], [b]) =>
-    b.localeCompare(a),
-  )
+  const orderedGroups = Array.from(groups.entries()).sort(([a], [b]) => b.localeCompare(a))
 
   return (
     <div className="flex min-w-0 flex-col gap-10 lg:gap-12">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div className="flex min-w-0 flex-col gap-1.5">
-          <p className="text-text-secondary text-sm">Insights</p>
-          <h1 className="editorial text-text text-3xl italic tracking-tight sm:text-4xl">
-            Lo que Finanzia notó por ti
-          </h1>
-          <p className="text-text-tertiary mt-1 max-w-prose text-[13px]">
-            Anomalías, tendencias y proyecciones que el motor destila cada noche
-            de tu historial. Agrupadas por mes para que veas el pulso.
-          </p>
-        </div>
-        <RunInsightsButton />
-      </header>
-
+      {/* Salud financiera — el titular: la síntesis de todas las señales.
+          Solo en la vista sin filtro (el score es global, no por tipo). */}
       {health && <HealthCard health={health} />}
 
-      <nav
-        aria-label="Filtros"
-        className="border-border-default flex max-w-full items-center gap-1 self-start overflow-x-auto rounded-[8px] border p-0.5"
-      >
-        {kindFilters.map((f) => {
-          const selected = (f.value ?? null) === (kind ?? null)
-          return (
-            <Link
-              key={f.label}
-              href={`/mi-historia/insights${kindParam(f.value)}`}
-              className={cn(
-                'shrink-0 rounded-[6px] px-3 py-1.5 text-[13px] whitespace-nowrap transition-colors',
-                selected
-                  ? 'bg-surface-hover text-text'
-                  : 'text-text-secondary hover:text-text hover:bg-surface-hover/60',
-              )}
-            >
-              {f.label}
-            </Link>
-          )
-        })}
-      </nav>
+      {/* Señales — la evidencia detrás del score. Su propio encabezado y filtro
+          dejan claro que el filtro es del feed, no navegación de la sección. */}
+      <section className="flex min-w-0 flex-col gap-5">
+        <header className="flex flex-wrap items-end justify-between gap-4">
+          <div className="flex min-w-0 flex-col gap-1.5">
+            <h1 className="editorial text-text text-2xl tracking-tight italic sm:text-3xl">
+              Lo que Finanzia notó
+            </h1>
+            <p className="text-text-tertiary max-w-prose text-[13px]">
+              Las señales detrás de tu salud: anomalías, tendencias y proyecciones que el motor
+              destila cada noche, agrupadas por mes.
+            </p>
+          </div>
+          <RunInsightsButton />
+        </header>
 
-      {list.length === 0 ? (
-        <EmptyState
-          headline={
-            kind ? 'No hay lecturas en este filtro.' : 'Sin lecturas todavía.'
-          }
-          body="Cada noche Finanzia revisa tu historial y destila patrones, anomalías y proyecciones. También puedes correr el análisis ahora."
-          action={<RunInsightsButton />}
-        />
-      ) : (
-        <div className="flex flex-col gap-10 lg:gap-12">
-          {orderedGroups.map(([period, items]) => {
-            const hasReport = reportPeriods.has(period)
+        <nav
+          aria-label="Filtrar señales"
+          className="border-border-default flex max-w-full items-center gap-1 self-start overflow-x-auto rounded-[8px] border p-0.5"
+        >
+          {kindFilters.map((f) => {
+            const selected = (f.value ?? null) === (kind ?? null)
             return (
-              <section key={period} className="flex flex-col gap-4">
-                <header className="border-border-default/60 flex flex-wrap items-baseline justify-between gap-3 border-b pb-2">
-                  <h2 className="editorial text-text text-xl italic capitalize sm:text-2xl">
-                    {monthLabel(period)}
-                  </h2>
-                  <div className="flex items-center gap-3 text-[12px]">
-                    <span className="text-text-tertiary tabular">
-                      {items.length} {items.length === 1 ? 'lectura' : 'lecturas'}
-                    </span>
-                    {hasReport && (
-                      <Link
-                        href={`/mi-historia/informes/${period}`}
-                        className="text-text-secondary hover:text-text underline-offset-2 transition-colors hover:underline"
-                      >
-                        Ver informe del mes →
-                      </Link>
-                    )}
-                  </div>
-                </header>
-                <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                  {items.map((insight) => (
-                    <li key={insight.id}>
-                      <InsightCard insight={insight} />
-                    </li>
-                  ))}
-                </ul>
-              </section>
+              <Link
+                key={f.label}
+                href={`/mi-historia/insights${kindParam(f.value)}`}
+                className={cn(
+                  'shrink-0 rounded-[6px] px-3 py-1.5 text-[13px] whitespace-nowrap transition-colors',
+                  selected
+                    ? 'bg-surface-hover text-text'
+                    : 'text-text-secondary hover:text-text hover:bg-surface-hover/60',
+                )}
+              >
+                {f.label}
+              </Link>
             )
           })}
-        </div>
-      )}
+        </nav>
+
+        {list.length === 0 ? (
+          <EmptyState
+            headline={kind ? 'No hay lecturas en este filtro.' : 'Sin lecturas todavía.'}
+            body="Cada noche Finanzia revisa tu historial y destila patrones, anomalías y proyecciones. También puedes correr el análisis ahora."
+            action={<RunInsightsButton />}
+          />
+        ) : (
+          <div className="flex flex-col gap-10 lg:gap-12">
+            {orderedGroups.map(([period, items]) => {
+              const hasReport = reportPeriods.has(period)
+              return (
+                <section key={period} className="flex flex-col gap-4">
+                  <header className="border-border-default/60 flex flex-wrap items-baseline justify-between gap-3 border-b pb-2">
+                    <h2 className="editorial text-text text-xl capitalize italic sm:text-2xl">
+                      {monthLabel(period)}
+                    </h2>
+                    <div className="flex items-center gap-3 text-[12px]">
+                      <span className="text-text-tertiary tabular">
+                        {items.length} {items.length === 1 ? 'lectura' : 'lecturas'}
+                      </span>
+                      {hasReport && (
+                        <Link
+                          href={`/mi-historia/informes/${period}`}
+                          className="text-text-secondary hover:text-text underline-offset-2 transition-colors hover:underline"
+                        >
+                          Ver informe del mes →
+                        </Link>
+                      )}
+                    </div>
+                  </header>
+                  <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    {items.map((insight) => (
+                      <li key={insight.id}>
+                        <InsightCard insight={insight} />
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )
+            })}
+          </div>
+        )}
+      </section>
     </div>
   )
 }
