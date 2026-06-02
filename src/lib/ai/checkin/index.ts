@@ -12,13 +12,22 @@ import { listRecurringForUser } from '@/lib/db/queries/recurring'
 import { listGoalsForUser } from '@/lib/db/queries/goals'
 import { listInsightsForUser } from '@/lib/db/queries/insights'
 
-/** Ventana de la semana: termina hoy (el domingo que corre el cron) y abarca
- *  los 7 días previos. Determinista a partir de `todayIso`. */
+/** Ventana de la semana CALENDARIO presente: lunes a domingo (ISO week) que
+ *  contiene a `todayIso`. Determinista. Cuando el cron corre el domingo, el
+ *  domingo es el fin de semana; con "Generar ahora" a mitad de semana, la
+ *  ventana sigue siendo la semana en curso (los días futuros aún no tienen
+ *  movimientos, así que no inflan los totales). */
 export function weekWindow(todayIso: string): { weekStart: string; weekEnd: string } {
   const today = new Date(`${todayIso}T12:00:00Z`)
-  const start = new Date(today)
-  start.setUTCDate(start.getUTCDate() - 6)
-  return { weekStart: start.toISOString().slice(0, 10), weekEnd: todayIso }
+  const sinceMonday = (today.getUTCDay() + 6) % 7 // 0=lunes … 6=domingo
+  const monday = new Date(today)
+  monday.setUTCDate(monday.getUTCDate() - sinceMonday)
+  const sunday = new Date(monday)
+  sunday.setUTCDate(sunday.getUTCDate() + 6)
+  return {
+    weekStart: monday.toISOString().slice(0, 10),
+    weekEnd: sunday.toISOString().slice(0, 10),
+  }
 }
 
 type WeekAggRow = {
@@ -187,9 +196,7 @@ async function buildNarrative(
 
   const fmt = (v: string) =>
     `${Math.round(Number.parseFloat(v)).toLocaleString('es-CO')} ${baseCurrency}`
-  const cats = highlights.topCategories
-    .map((c) => `${c.name}: ${fmt(c.amount)}`)
-    .join(', ')
+  const cats = highlights.topCategories.map((c) => `${c.name}: ${fmt(c.amount)}`).join(', ')
   const vs = highlights.vsAverage
     ? `${highlights.vsAverage.deltaPct >= 0 ? '+' : ''}${highlights.vsAverage.deltaPct}% vs promedio`
     : 'sin base de comparación'
@@ -230,9 +237,7 @@ export async function generateWeeklyCheckin(
     where: eq(profiles.userId, userId),
   })
   const baseCurrency = profile?.baseCurrency ?? 'COP'
-  const persona = parsePersona(
-    (profile?.aiProfile as Record<string, unknown> | null)?.persona,
-  )
+  const persona = parsePersona((profile?.aiProfile as Record<string, unknown> | null)?.persona)
 
   const todayIso = new Date().toISOString().slice(0, 10)
   const { weekStart, weekEnd } = weekWindow(todayIso)
