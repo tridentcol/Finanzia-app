@@ -34,15 +34,20 @@ export function CheckinCard({
   baseCurrency: CurrencyCode
 }) {
   const [pending, startTransition] = useTransition()
+  // Optimismo local para ocultar al archivar sin esperar el round-trip. El
+  // estado real lo manda el server (`checkin.status`); al generar lo reseteamos.
   const [dismissed, setDismissed] = useState(false)
 
   function generate() {
+    setDismissed(false)
     startTransition(async () => {
       await runWeeklyCheckinNow()
     })
   }
 
-  if (!checkin || dismissed) {
+  const archived = (checkin != null && checkin.status === 'read') || dismissed
+
+  if (!checkin || archived) {
     return (
       <section className="border-border-default bg-surface flex flex-wrap items-center justify-between gap-3 rounded-[12px] border p-5">
         <div className="flex min-w-0 items-center gap-3">
@@ -50,7 +55,7 @@ export function CheckinCard({
             <Sparkles strokeWidth={1.5} className="h-4 w-4 text-[color:var(--accent-ai)]" />
           </span>
           <p className="text-text-secondary text-sm">
-            {dismissed ? 'Check-in archivado.' : 'Tu check-in semanal aparecerá aquí cada domingo.'}
+            {archived ? 'Check-in archivado.' : 'Tu check-in semanal aparecerá aquí cada domingo.'}
           </p>
         </div>
         <button
