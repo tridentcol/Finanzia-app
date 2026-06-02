@@ -2,7 +2,8 @@ import 'server-only'
 import { tool } from 'ai'
 import { z } from 'zod'
 
-import { listAccountsWithBalance, getAccountById } from '@/lib/db/queries/accounts'
+import { listAccountsWithBalance } from '@/lib/db/queries/accounts'
+import { getAccountById } from '@/lib/db/queries/account-detail'
 import { analyzePurchase } from '@/lib/cards/purchase-analysis'
 import type { CopilotContext } from '../context'
 
