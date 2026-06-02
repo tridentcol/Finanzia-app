@@ -13,7 +13,9 @@ import type {
  * se marca "na"). Pura: sin I/O, totalmente testeable.
  */
 
-const clamp = (n: number, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, n))
+/** Acota a [lo, hi] y redondea a entero — los scores que se muestran son enteros. */
+const clamp = (n: number, lo = 0, hi = 100) =>
+  Math.round(Math.max(lo, Math.min(hi, n)))
 const pct = (n: number) => Math.round(n * 100)
 
 function statusFor(score: number): HealthStatus {
