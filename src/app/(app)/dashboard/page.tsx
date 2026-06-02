@@ -10,18 +10,17 @@ import { getLatestCheckin } from '@/lib/db/queries/checkin'
 import { getHealthScore } from '@/lib/db/queries/health'
 import { projectCashFlow } from '@/lib/cash-flow/project'
 import { CheckinCard } from '@/components/app/checkin-card'
-import { HealthSummaryCard } from '@/components/app/health-summary-card'
+import {
+  DashboardTiles,
+  type DashboardNextThing,
+} from '@/components/app/dashboard-tiles'
 import { Amount } from '@/components/app/amount'
 import { PrivacyProvider, PRIVACY_COOKIE } from '@/components/app/privacy'
 import { HideBalancesToggle } from '@/components/app/hide-balances-toggle'
-import { CashFlowTeaser } from '@/components/app/cash-flow-teaser-lazy'
-import { DebtsSummaryCard } from '@/components/app/debts-summary-card'
 import { EmptyState } from '@/components/app/empty-state'
-import { InsightCard } from '@/components/app/insight-card'
 import { NewAccountTrigger } from '@/components/app/new-account-trigger'
 import { NewTransactionTrigger } from '@/components/app/new-transaction-trigger'
 import { Button } from '@/components/ui/button'
-import { icons } from '@/lib/design/icons'
 import { formatMoney } from '@/lib/currency/format'
 import type { CurrencyCode } from '@/lib/currency/currencies'
 
@@ -76,7 +75,6 @@ export default async function DashboardPage() {
     {
       accountsList,
       recent,
-      unreadInsights,
       debtsSummary,
       recurringRules,
       volatility,
@@ -123,7 +121,6 @@ export default async function DashboardPage() {
   }
 
   const hasAccounts = accountsList.length > 0
-  const featuredInsight = unreadInsights[0] ?? null
   const activeRules = recurringRules.filter((r) => r.active)
 
   // Proyección a 30 días — alimenta tanto "Lo siguiente" (primer evento)
@@ -136,15 +133,7 @@ export default async function DashboardPage() {
     ?.slice(1)
     .flatMap((p) => p.events.map((e) => ({ ...e, date: p.date })))[0] ?? null
 
-  type NextThing = {
-    kind: 'debt' | 'recurring'
-    title: string
-    when: string
-    amount?: string
-    currency?: CurrencyCode
-    href: string
-  }
-  const nextThing: NextThing | null = (() => {
+  const nextThing: DashboardNextThing | null = (() => {
     if (debtsSummary.nextPayment) {
       return {
         kind: 'debt',
@@ -168,6 +157,14 @@ export default async function DashboardPage() {
     return null
   })()
 
+  // Cifras para los tiles compactos.
+  const projectedBalance =
+    cashFlowPoints && cashFlowPoints.length > 0
+      ? cashFlowPoints[cashFlowPoints.length - 1]!.balance
+      : null
+  const debtTotal =
+    Number.parseFloat(debtsSummary.totalBalanceInBase) + creditCardDebtInBase
+
   // Saludo contextual.
   const userTz = profile?.timezone ?? undefined
   const hourFmt = new Intl.DateTimeFormat('en-US', {
@@ -182,9 +179,6 @@ export default async function DashboardPage() {
       : hour >= 12 && hour < 19
         ? 'Buenas tardes'
         : 'Buenas noches'
-
-  const ArrowRight = icons['arrow-right']
-  const Bell = icons.bell
 
   return (
     <PrivacyProvider initialHidden={balancesHidden}>
@@ -221,82 +215,21 @@ export default async function DashboardPage() {
         />
       ) : (
         <>
-          {/* Salud financiera — síntesis de tu estado, enlaza al detalle. */}
-          <HealthSummaryCard health={health} />
+          {/* Tiles compactos: salud, lo siguiente, flujo, deuda. Cada uno
+              enlaza a su sección dedicada (ahí vive el detalle). */}
+          <DashboardTiles
+            health={health}
+            nextThing={nextThing}
+            projectedBalance={projectedBalance}
+            debtTotal={debtTotal}
+            baseCurrency={baseCurrency}
+          />
 
           {/* Check-in semanal proactivo — el copiloto te busca con la foto de
               tu semana (presencia de IA). */}
           <CheckinCard checkin={checkin} baseCurrency={baseCurrency} />
 
-          {/* Insight destacado primero — si Finanzia notó algo, es lo
-              primero que ves. */}
-          {featuredInsight && (
-            <section className="flex flex-col gap-3">
-              <header className="flex items-baseline justify-between">
-                <h2 className="text-text text-sm font-semibold">
-                  Lo que Finanzia notó
-                </h2>
-                <Link
-                  href="/mi-historia/insights"
-                  className="text-text-secondary hover:text-text text-[13px] transition-colors"
-                >
-                  Ver todas
-                </Link>
-              </header>
-              <InsightCard insight={featuredInsight} />
-            </section>
-          )}
-
-          {/* Lo siguiente — un solo widget con el próximo pago o recurrente */}
-          {nextThing && (
-            <section className="flex flex-col gap-3">
-              <h2 className="text-text text-sm font-semibold">Lo siguiente</h2>
-              <Link
-                href={nextThing.href}
-                className="border-border-default bg-surface hover:bg-surface-hover/60 group flex items-center justify-between gap-4 rounded-[12px] border p-4 transition-colors"
-              >
-                <div className="flex min-w-0 items-center gap-3">
-                  <span className="border-border-default flex h-9 w-9 shrink-0 items-center justify-center rounded-md border">
-                    <Bell strokeWidth={1.5} className="text-text-tertiary size-4" />
-                  </span>
-                  <div className="flex min-w-0 flex-col">
-                    <span className="text-text truncate text-sm font-medium">
-                      {nextThing.title}
-                    </span>
-                    <span className="text-text-tertiary text-[12px]">
-                      {nextThing.kind === 'debt' ? 'Próximo pago' : 'Próximo movimiento'}{' '}
-                      · {nextThing.when}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex shrink-0 items-center gap-3">
-                  {nextThing.amount && nextThing.currency && (
-                    <span className="text-text amount tabular text-sm">
-                      {formatMoney(nextThing.amount, {
-                        currency: nextThing.currency,
-                        compact: true,
-                      })}
-                    </span>
-                  )}
-                  <ArrowRight
-                    strokeWidth={1.5}
-                    className="text-text-tertiary group-hover:text-text size-4 transition-colors"
-                  />
-                </div>
-              </Link>
-            </section>
-          )}
-
-          {/* Cash flow teaser solo si hay reglas activas */}
-          {activeRules.length > 0 && cashFlowPoints && (
-            <CashFlowTeaser
-              points={cashFlowPoints}
-              currency={baseCurrency}
-              startingBalance={totalNum}
-            />
-          )}
-
-          {/* Últimos movimientos */}
+          {/* Últimos movimientos — lista corta; el detalle vive en /movimientos */}
           <section className="flex flex-col gap-4">
             <header className="flex items-center justify-between">
               <h2 className="text-text text-sm font-semibold">
@@ -325,11 +258,11 @@ export default async function DashboardPage() {
               />
             ) : (
               <ul className="border-border-default bg-surface flex flex-col rounded-[12px] border">
-                {recent.map((tx, idx) => (
+                {recent.slice(0, 3).map((tx, idx, arr) => (
                   <li
                     key={tx.id}
                     className={`flex items-center justify-between gap-4 px-5 py-3 ${
-                      idx !== recent.length - 1
+                      idx !== arr.length - 1
                         ? 'border-border-default/60 border-b'
                         : ''
                     }`}
@@ -362,13 +295,6 @@ export default async function DashboardPage() {
               </ul>
             )}
           </section>
-
-          {/* Deuda — solo si hay algo que reportar */}
-          <DebtsSummaryCard
-            summary={debtsSummary}
-            creditCardDebtInBase={creditCardDebtInBase}
-            currency={baseCurrency}
-          />
         </>
       )}
     </div>
