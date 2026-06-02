@@ -33,6 +33,7 @@ DECLARE
     'savings_plans',
     'savings_periods',
     'monthly_reports',
+    'weekly_checkins',
     'email_inbox_aliases',
     'credit_card_profiles'
   ];
@@ -183,6 +184,13 @@ CREATE POLICY savings_periods_isolation ON savings_periods
 -- ----- monthly_reports -----
 DROP POLICY IF EXISTS monthly_reports_isolation ON monthly_reports;
 CREATE POLICY monthly_reports_isolation ON monthly_reports
+  FOR ALL
+  USING (user_id = (SELECT id FROM users WHERE clerk_id = auth.jwt() ->> 'sub'))
+  WITH CHECK (user_id = (SELECT id FROM users WHERE clerk_id = auth.jwt() ->> 'sub'));
+
+-- ----- weekly_checkins -----
+DROP POLICY IF EXISTS weekly_checkins_isolation ON weekly_checkins;
+CREATE POLICY weekly_checkins_isolation ON weekly_checkins
   FOR ALL
   USING (user_id = (SELECT id FROM users WHERE clerk_id = auth.jwt() ->> 'sub'))
   WITH CHECK (user_id = (SELECT id FROM users WHERE clerk_id = auth.jwt() ->> 'sub'));

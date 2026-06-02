@@ -647,6 +647,57 @@ export const monthlyReports = pgTable(
 )
 
 // ============================================================
+// weekly_checkins  (copiloto proactivo — digest semanal)
+// ============================================================
+
+/** Datos estructurados que la UI del check-in renderiza como tarjetas. Solo
+ *  agregados (nunca transacciones individuales) — privacidad + lo que el LLM ve. */
+export type CheckinHighlights = {
+  /** Totales de la semana en moneda base. */
+  net: { income: string; expense: string; net: string }
+  /** Gasto de la semana vs promedio de las 4 semanas previas. */
+  vsAverage: { weekExpense: string; avgWeekExpense: string; deltaPct: number } | null
+  /** Top categorías de gasto de la semana. */
+  topCategories: Array<{ name: string; amount: string }>
+  /** Recurrentes que vencen en los próximos 7 días. */
+  upcomingRecurring: Array<{
+    description: string
+    amount: string
+    currency: string
+    date: string
+  }>
+  /** Metas activas en riesgo (ritmo insuficiente para la fecha). */
+  goalsAtRisk: Array<{ name: string; percent: number; daysToTarget: number | null }>
+  /** Títulos de los insights destacados de la semana. */
+  insightTitles: string[]
+}
+
+export const weeklyCheckins = pgTable(
+  'weekly_checkins',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    /** Lunes ISO de la semana (YYYY-MM-DD). */
+    weekStart: date('week_start').notNull(),
+    /** Domingo de la semana (YYYY-MM-DD). */
+    weekEnd: date('week_end').notNull(),
+    /** Narrativa breve generada por LLM con la persona del usuario; cae a un
+     *  resumen determinista si no hay key o falla. */
+    aiSummary: text('ai_summary'),
+    highlights: jsonb('highlights').$type<CheckinHighlights>().notNull(),
+    /** 'unread' | 'read'. */
+    status: text('status').$type<'unread' | 'read'>().notNull().default('unread'),
+    generatedAt: timestamp('generated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex('idx_weekly_checkins_user_week').on(t.userId, t.weekStart),
+    index('idx_weekly_checkins_user').on(t.userId, t.weekStart),
+  ],
+)
+
+// ============================================================
 // email_inbox_aliases  (parseo de alertas bancarias por email)
 // ============================================================
 
@@ -904,3 +955,5 @@ export type EmailInboxAlias = typeof emailInboxAliases.$inferSelect
 export type NewEmailInboxAlias = typeof emailInboxAliases.$inferInsert
 export type MonthlyReport = typeof monthlyReports.$inferSelect
 export type NewMonthlyReport = typeof monthlyReports.$inferInsert
+export type WeeklyCheckin = typeof weeklyCheckins.$inferSelect
+export type NewWeeklyCheckin = typeof weeklyCheckins.$inferInsert

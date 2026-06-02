@@ -6,7 +6,9 @@ import { cookies } from 'next/headers'
 import { requireCurrentUser } from '@/lib/auth'
 import { getProfile } from '@/lib/db/queries/profile'
 import { getDashboardData } from '@/lib/db/queries/dashboard'
+import { getLatestCheckin } from '@/lib/db/queries/checkin'
 import { projectCashFlow } from '@/lib/cash-flow/project'
+import { CheckinCard } from '@/components/app/checkin-card'
 import { Amount } from '@/components/app/amount'
 import { PrivacyProvider, PRIVACY_COOKIE } from '@/components/app/privacy'
 import { HideBalancesToggle } from '@/components/app/hide-balances-toggle'
@@ -55,7 +57,11 @@ export default async function DashboardPage() {
   // cookies() (modo privacidad, evita el flash de saldos) y el perfil son
   // independientes entre sí: se resuelven en paralelo. `getProfile` está
   // memoizado por request, así que comparte el fetch con el layout `(app)`.
-  const [cookieStore, profile] = await Promise.all([cookies(), getProfile(user.id)])
+  const [cookieStore, profile, checkin] = await Promise.all([
+    cookies(),
+    getProfile(user.id),
+    getLatestCheckin(user.id),
+  ])
   const balancesHidden = cookieStore.get(PRIVACY_COOKIE)?.value === '1'
   const baseCurrency = (profile?.baseCurrency ?? 'COP') as CurrencyCode
 
@@ -207,6 +213,10 @@ export default async function DashboardPage() {
         />
       ) : (
         <>
+          {/* Check-in semanal proactivo — el copiloto te busca con la foto de
+              tu semana (presencia de IA). */}
+          <CheckinCard checkin={checkin} baseCurrency={baseCurrency} />
+
           {/* Insight destacado primero — si Finanzia notó algo, es lo
               primero que ves. */}
           {featuredInsight && (
