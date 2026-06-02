@@ -95,19 +95,16 @@ export function MobileNav() {
   }
 
   // Fondo SÓLIDO (no backdrop-blur): iOS en standalone repinta mal los
-  // elementos `fixed` con backdrop-filter durante scroll/navegación → la barra
-  // "salta" y se estira. translateZ(0) la promueve a su propia capa de
-  // composición y la mantiene quieta. El safe-area va como padding-bottom (el
-  // home indicator de iOS), no comprime los items.
+  // elementos `fixed` con backdrop-filter durante scroll → la barra "salta".
+  // NO usar `transform` aquí: en iOS un transform sobre un elemento
+  // `position: fixed` ROMPE el fixed (la barra se desancla del viewport y
+  // scrollea con el contenido → "se sube" en páginas largas). El safe-area va
+  // como padding-bottom (home indicator iOS), no comprime los items.
   return (
     <nav
       aria-label="Navegación principal móvil"
       className="border-border-default bg-surface fixed inset-x-0 bottom-0 z-40 border-t md:hidden"
-      style={{
-        paddingBottom: 'var(--safe-bottom)',
-        transform: 'translateZ(0)',
-        WebkitBackfaceVisibility: 'hidden',
-      }}
+      style={{ paddingBottom: 'var(--safe-bottom)' }}
     >
       {/* Inner row con altura fija — el safe-area inset queda como padding del
           <nav> outer, no comprime los items (home indicator iOS standalone). */}
