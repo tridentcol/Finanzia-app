@@ -28,7 +28,12 @@ const LEFT_ITEMS: NavItem[] = [
 
 const RIGHT_ITEMS: NavItem[] = [
   { label: 'Mi plan', href: '/mi-plan/presupuestos', section: '/mi-plan', icon: 'target' },
-  { label: 'Mi historia', href: '/mi-historia/insights', section: '/mi-historia', icon: 'book-open' },
+  {
+    label: 'Mi historia',
+    href: '/mi-historia/insights',
+    section: '/mi-historia',
+    icon: 'book-open',
+  },
 ]
 
 function isActive(pathname: string, section: string): boolean {
@@ -89,11 +94,20 @@ export function MobileNav() {
     )
   }
 
+  // Fondo SÓLIDO (no backdrop-blur): iOS en standalone repinta mal los
+  // elementos `fixed` con backdrop-filter durante scroll/navegación → la barra
+  // "salta" y se estira. translateZ(0) la promueve a su propia capa de
+  // composición y la mantiene quieta. El safe-area va como padding-bottom (el
+  // home indicator de iOS), no comprime los items.
   return (
     <nav
       aria-label="Navegación principal móvil"
-      className="border-border-default bg-surface/95 fixed inset-x-0 bottom-0 z-40 border-t backdrop-blur-md md:hidden"
-      style={{ paddingBottom: 'var(--safe-bottom)' }}
+      className="border-border-default bg-surface fixed inset-x-0 bottom-0 z-40 border-t md:hidden"
+      style={{
+        paddingBottom: 'var(--safe-bottom)',
+        transform: 'translateZ(0)',
+        WebkitBackfaceVisibility: 'hidden',
+      }}
     >
       {/* Inner row con altura fija — el safe-area inset queda como padding del
           <nav> outer, no comprime los items (home indicator iOS standalone). */}
