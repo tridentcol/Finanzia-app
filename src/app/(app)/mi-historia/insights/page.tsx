@@ -6,9 +6,13 @@ import {
   getInsightsData,
   type InsightListItem,
 } from '@/lib/db/queries/insights'
+import { getHealthScore } from '@/lib/db/queries/health'
+import { getProfile } from '@/lib/db/queries/profile'
 import { EmptyState } from '@/components/app/empty-state'
+import { HealthCard } from '@/components/app/health-card'
 import { InsightCard } from '@/components/app/insight-card'
 import { RunInsightsButton } from '@/components/app/run-insights-button'
+import type { CurrencyCode } from '@/lib/currency/currencies'
 import { cn } from '@/lib/utils'
 
 export const metadata: Metadata = {
@@ -82,12 +86,15 @@ export default async function InsightsPage({
   const kind = isInsightKind(params.kind) ? params.kind : undefined
   const today = new Date().toISOString().slice(0, 10)
 
-  const { list, reportPeriods: reportPeriodsList } = await getInsightsData(
-    user.id,
-    kind,
-    today,
-  )
+  const [{ list, reportPeriods: reportPeriodsList }, profile] = await Promise.all([
+    getInsightsData(user.id, kind, today),
+    getProfile(user.id),
+  ])
   const reportPeriods = new Set(reportPeriodsList)
+  const baseCurrency = (profile?.baseCurrency ?? 'COP') as CurrencyCode
+  // El score de salud es la síntesis de las señales; encabeza la página. Solo
+  // se muestra en la vista sin filtro (es global, no por tipo de insight).
+  const health = kind ? null : await getHealthScore(user.id, baseCurrency, today)
 
   // Agrupar por mes preservando orden de la query (más reciente primero).
   const groups = new Map<string, InsightListItem[]>()
@@ -116,6 +123,8 @@ export default async function InsightsPage({
         </div>
         <RunInsightsButton />
       </header>
+
+      {health && <HealthCard health={health} />}
 
       <nav
         aria-label="Filtros"
