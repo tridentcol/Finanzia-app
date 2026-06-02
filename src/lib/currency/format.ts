@@ -23,10 +23,7 @@ export type FormatMoneyOptions = {
   compact?: boolean
 }
 
-export function formatMoney(
-  value: string | number,
-  options: FormatMoneyOptions = {},
-): string {
+export function formatMoney(value: string | number, options: FormatMoneyOptions = {}): string {
   const {
     currency = 'COP',
     locale = 'es-CO',
@@ -40,11 +37,18 @@ export function formatMoney(
 
   const meta = currencies[currency]
 
+  // En notación compacta NO usamos los decimales de la moneda (COP=0): eso
+  // redondea 2.700.000 a "3 M" y se aleja de la realidad. Usamos 1 decimal
+  // para que se lea "2,7 M". En notación estándar respetamos los decimales
+  // de la moneda como siempre.
+  const fractionDigits = compact
+    ? { minimumFractionDigits: 0, maximumFractionDigits: 1 }
+    : { minimumFractionDigits: meta.decimals, maximumFractionDigits: meta.decimals }
+
   const intl = new Intl.NumberFormat(locale, {
     style: withoutSymbol ? 'decimal' : 'currency',
     currency,
-    minimumFractionDigits: meta.decimals,
-    maximumFractionDigits: meta.decimals,
+    ...fractionDigits,
     signDisplay: showPositiveSign ? 'exceptZero' : 'auto',
     notation: compact ? 'compact' : 'standard',
   })
