@@ -7,8 +7,10 @@ import { requireCurrentUser } from '@/lib/auth'
 import { getProfile } from '@/lib/db/queries/profile'
 import { getDashboardData } from '@/lib/db/queries/dashboard'
 import { getLatestCheckin } from '@/lib/db/queries/checkin'
+import { getHealthScore } from '@/lib/db/queries/health'
 import { projectCashFlow } from '@/lib/cash-flow/project'
 import { CheckinCard } from '@/components/app/checkin-card'
+import { HealthSummaryCard } from '@/components/app/health-summary-card'
 import { Amount } from '@/components/app/amount'
 import { PrivacyProvider, PRIVACY_COOKIE } from '@/components/app/privacy'
 import { HideBalancesToggle } from '@/components/app/hide-balances-toggle'
@@ -70,15 +72,21 @@ export default async function DashboardPage() {
   // lógica derivada de fecha/hora (saludo, proyección) se computa abajo, fuera
   // del cache.
   const today = new Date().toISOString().slice(0, 10)
-  const {
-    accountsList,
-    recent,
-    unreadInsights,
-    debtsSummary,
-    recurringRules,
-    volatility,
-    ratesObj,
-  } = await getDashboardData(user.id, baseCurrency, today)
+  const [
+    {
+      accountsList,
+      recent,
+      unreadInsights,
+      debtsSummary,
+      recurringRules,
+      volatility,
+      ratesObj,
+    },
+    health,
+  ] = await Promise.all([
+    getDashboardData(user.id, baseCurrency, today),
+    getHealthScore(user.id, baseCurrency, today),
+  ])
   const rates = new Map<string, string>(Object.entries(ratesObj))
 
   const ownedAccounts = accountsList.filter((a) => a.type !== 'credit_card')
@@ -213,6 +221,9 @@ export default async function DashboardPage() {
         />
       ) : (
         <>
+          {/* Salud financiera — síntesis de tu estado, enlaza al detalle. */}
+          <HealthSummaryCard health={health} />
+
           {/* Check-in semanal proactivo — el copiloto te busca con la foto de
               tu semana (presencia de IA). */}
           <CheckinCard checkin={checkin} baseCurrency={baseCurrency} />
