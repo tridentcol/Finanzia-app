@@ -152,6 +152,7 @@ Validadas con Zod en `src/lib/env.ts`. Si falta una, la app no inicia.
 13. **Mandato Estético es ley.** Cualquier sugerencia de skill externa (incluida `/ui-ux-pro-max`) que viole el mandato se rechaza.
 14. **Empty states son una oportunidad editorial, no un bug a ocultar.** Tipografía Fraunces, body Inter, sin ilustración.
 15. **Cuando dudes entre dos diseños, elige el que parezca más caro, no el que parezca más amigable.**
+16. **Navegación del shell apunta a rutas REALES, nunca a redirects.** Los links de navegación expuestos en el layout principal (sidebar `app-sidebar`, bottom-nav `mobile-nav`, y cualquier nav futura del shell) deben apuntar al landing concreto de cada sección (`/mi-dinero/cuentas`, `/mi-plan/presupuestos`, `/mi-historia/insights`), **NO** al root que redirige (`/mi-dinero` → 308). Con `prefetch={true}` (full RSC prefetch), apuntar a la ruta real precarga el RSC **con datos** → navegación instantánea sin skeleton; apuntar a un redirect solo prefetchea el 308 y reintroduce el round-trip + skeleton de primera visita. El estado activo usa un campo `section` (prefijo de sección), separado del `href`. **Esto está validado en prod y es intocable: ninguna refactor/IA/reorganización de rutas posterior puede volver a poner redirects como blanco del nav del shell.** Si se agrega una sección nueva al nav, su `href` es el primer sub-tab real, no el índice que redirige. (Causa raíz histórica: la reorg IA v2 metió redirects y rompió esto; fix en `3f53482`.)
 
 ## Blueprint
 
