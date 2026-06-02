@@ -19,6 +19,7 @@ export const TOOL_LABELS: Record<string, string> = {
   listGoals: 'Mirando tu ahorro y tus metas…',
   getTopMerchants: 'Viendo dónde gastas…',
   getCashFlow: 'Analizando tu flujo…',
+  getFinancialHealth: 'Evaluando tu salud financiera…',
   listActiveInsights: 'Buscando patrones…',
   getAdvice: 'Buscando patrones…',
   proposeCreateTransaction: 'Preparando el movimiento…',

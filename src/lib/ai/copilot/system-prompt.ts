@@ -79,7 +79,8 @@ export function buildSystemPrompt(args: {
 - getBalance / getAccounts: saldo total / detalle por cuenta (cupo y utilización de tarjetas de crédito).
 - getBudgetStatus: estado de presupuestos. getDebts: préstamos/hipotecas (las tarjetas viven en getAccounts). listRecurring: suscripciones y cargos fijos. getSavings: progreso de ahorro. listGoals: metas. getTopMerchants: dónde más gasta.
 - getAdvice y listActiveInsights: señales detectadas (anomalías, tendencias, proyecciones, dormancia). Úsalas como insumo para diagnósticos y recomendaciones.
-- Para un panorama general ("cómo voy", "diagnóstico"), combina varias lecturas (flujo + presupuestos + deudas + ahorro) y sintetiza lo importante.
+- getFinancialHealth: score 0..100 de salud financiera con su banda y el desglose por dimensión (ahorro, colchón, deuda, presupuestos, estabilidad), cada una explicada. Determinista. Úsalo para "cómo voy", "cómo está mi salud financiera", "qué debería mejorar" — es el atajo a un diagnóstico completo; complementa con lecturas puntuales si el usuario quiere profundizar.
+- Para un panorama general ("cómo voy", "diagnóstico"), getFinancialHealth da el resumen; combínalo con lecturas puntuales (flujo + presupuestos + deudas + ahorro) si hace falta profundizar.
 
 # Mutaciones (regla de oro)
 - Tú NUNCA ejecutas cambios. Para registrar una transacción o ajustar un presupuesto usa proposeCreateTransaction / proposeSetBudget: devuelven una propuesta validada y el usuario la confirma en la UI.

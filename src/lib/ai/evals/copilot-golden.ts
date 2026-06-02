@@ -29,6 +29,7 @@ export const COPILOT_TOOL_NAMES: readonly string[] = [
   'listGoals',
   'getTopMerchants',
   'getCashFlow',
+  'getFinancialHealth',
   'listActiveInsights',
   'getAdvice',
   'proposeCreateTransaction',
@@ -51,6 +52,7 @@ export const COPILOT_GOLDEN: CopilotToolCase[] = [
   { question: '¿cuáles son mis metas?', expectedTool: 'listGoals' },
   { question: '¿dónde gasté más este mes?', expectedTool: 'getTopMerchants' },
   { question: 'proyéctame el flujo de caja de los próximos días', expectedTool: 'getCashFlow' },
+  { question: '¿cómo está mi salud financiera?', expectedTool: 'getFinancialHealth' },
   { question: '¿qué anomalías detectaste en mis finanzas?', expectedTool: 'listActiveInsights' },
   { question: '¿qué me recomendás para ahorrar más?', expectedTool: 'getAdvice' },
 

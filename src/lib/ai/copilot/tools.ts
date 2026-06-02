@@ -14,6 +14,7 @@ import { listGoalsTool } from './tools/list-goals'
 import { getAccountsTool } from './tools/get-accounts'
 import { getTopMerchantsTool } from './tools/get-top-merchants'
 import { getCashFlowTool } from './tools/get-cash-flow'
+import { getFinancialHealthTool } from './tools/get-financial-health'
 import { getAdviceTool } from './tools/get-advice'
 import { queryTransactionsTool } from './tools/query-transactions'
 import { proposeCreateTransactionTool } from './tools/propose-create-transaction'
@@ -47,6 +48,7 @@ export function buildCopilotTools(ctx: CopilotContext) {
     listGoals: listGoalsTool(ctx),
     getTopMerchants: getTopMerchantsTool(ctx),
     getCashFlow: getCashFlowTool(ctx),
+    getFinancialHealth: getFinancialHealthTool(ctx),
     listActiveInsights: listActiveInsightsTool(ctx),
     getAdvice: getAdviceTool(ctx),
     // --- Mutaciones (propuesta + confirmación UI) ---
