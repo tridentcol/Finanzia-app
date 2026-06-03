@@ -44,9 +44,7 @@ const ENTRIES: TitleEntry[] = [
 ]
 
 function resolveTitle(pathname: string): string {
-  const hit = ENTRIES.find(
-    (e) => pathname === e.match || pathname.startsWith(`${e.match}/`),
-  )
+  const hit = ENTRIES.find((e) => pathname === e.match || pathname.startsWith(`${e.match}/`))
   if (!hit) return 'Finanzia'
   return hit.sub ? `${hit.section} · ${hit.sub}` : hit.section
 }
@@ -74,7 +72,7 @@ export function Topbar({ unreadAlerts = 0 }: { unreadAlerts?: number }) {
 
   return (
     <>
-      <header className="border-border-default bg-background sticky top-0 z-30 flex min-h-[var(--topbar-h)] items-center justify-between gap-2 border-b px-4 pt-[var(--safe-top)] md:gap-3 lg:px-6">
+      <header className="border-border-default bg-background sticky top-0 z-30 flex min-h-[var(--topbar-h)] items-center justify-between gap-2 border-b px-4 pt-[env(safe-area-inset-top)] md:gap-3 lg:px-6">
         <div className="flex min-w-0 items-center gap-2">
           <SidebarTrigger className="-ml-1 hidden md:inline-flex" />
           <BrandMark size={22} className="shrink-0 md:hidden" />
@@ -111,7 +109,11 @@ export function Topbar({ unreadAlerts = 0 }: { unreadAlerts?: number }) {
             aria-label="Preguntar a Finanzia"
             className="border-border-default bg-surface hover:bg-surface-hover text-text-secondary hover:text-text hidden h-9 items-center gap-2 rounded-[8px] border px-2 text-sm transition-colors md:inline-flex lg:px-2.5"
           >
-            <Spark strokeWidth={1.5} className="size-[14px]" style={{ color: 'var(--accent-ai)' }} />
+            <Spark
+              strokeWidth={1.5}
+              className="size-[14px]"
+              style={{ color: 'var(--accent-ai)' }}
+            />
             <span className="hidden lg:inline">Preguntar</span>
           </Link>
 
@@ -153,7 +155,7 @@ export function Topbar({ unreadAlerts = 0 }: { unreadAlerts?: number }) {
             {unread > 0 && (
               <span
                 aria-hidden
-                className="border-background absolute right-1.5 top-1.5 size-2.5 rounded-full border-2"
+                className="border-background absolute top-1.5 right-1.5 size-2.5 rounded-full border-2"
                 style={{ background: 'var(--brand-purple-strong)' }}
               />
             )}

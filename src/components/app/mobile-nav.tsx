@@ -104,7 +104,7 @@ export function MobileNav() {
     <nav
       aria-label="Navegación principal móvil"
       className="border-border-default bg-surface fixed inset-x-0 bottom-0 z-40 border-t md:hidden"
-      style={{ paddingBottom: 'var(--safe-bottom)' }}
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       {/* Inner row con altura fija — el safe-area inset queda como padding del
           <nav> outer, no comprime los items (home indicator iOS standalone). */}

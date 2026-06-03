@@ -56,7 +56,7 @@ export default async function AppLayout({
         <main
           id="main-content"
           tabIndex={-1}
-          className="mx-auto w-full max-w-[1120px] px-4 pt-6 pb-[calc(var(--mobile-nav-total)+24px)] sm:px-6 md:pb-10 lg:px-8 lg:py-10"
+          className="mx-auto w-full max-w-[1120px] px-4 pt-6 pb-[calc(var(--mobile-nav-h)+env(safe-area-inset-bottom)+24px)] sm:px-6 md:pb-10 lg:px-8 lg:py-10"
         >
           <PageTransition>{children}</PageTransition>
         </main>

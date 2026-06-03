@@ -29,12 +29,11 @@ export function SectionTabs({ tabs, ariaLabel }: Props) {
   return (
     <nav
       aria-label={ariaLabel}
-      className="border-border-default bg-background sticky top-[var(--topbar-total)] z-20 -mx-4 border-b sm:-mx-6 lg:-mx-8"
+      className="border-border-default bg-background sticky top-[calc(var(--topbar-h)+env(safe-area-inset-top))] z-20 -mx-4 border-b sm:-mx-6 lg:-mx-8"
     >
-      <div className="mx-auto flex max-w-[1120px] gap-1 overflow-x-auto px-2 sm:px-4 lg:px-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+      <div className="mx-auto flex max-w-[1120px] [scrollbar-width:none] gap-1 overflow-x-auto px-2 [-ms-overflow-style:none] sm:px-4 lg:px-6 [&::-webkit-scrollbar]:hidden">
         {tabs.map((tab) => {
-          const active =
-            pathname === tab.href || pathname.startsWith(`${tab.href}/`)
+          const active = pathname === tab.href || pathname.startsWith(`${tab.href}/`)
           return (
             <Link
               key={tab.href}
@@ -43,9 +42,7 @@ export function SectionTabs({ tabs, ariaLabel }: Props) {
               aria-current={active ? 'page' : undefined}
               className={cn(
                 'relative inline-flex h-11 shrink-0 items-center px-3 text-[13px] font-medium tracking-tight transition-colors',
-                active
-                  ? 'text-text'
-                  : 'text-text-tertiary hover:text-text-secondary',
+                active ? 'text-text' : 'text-text-tertiary hover:text-text-secondary',
               )}
             >
               {tab.label}
