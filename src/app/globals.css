@@ -1,8 +1,14 @@
-@import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
 
 @custom-variant dark (&:is(.dark *));
+
+/* PWA instalada (standalone). `StandaloneDetector` setea
+   <html data-standalone="true">. Permite gatear el app-shell nativo (columna
+   100lvh, scroll interno) SOLO cuando corre instalada; en navegador el shell
+   sigue con scroll del body y nav fija, conviviendo con la toolbar del browser. */
+@custom-variant standalone (&:is([data-standalone="true"] *));
 
 /* ============================================================
    Tokens — Finanzia Noir
@@ -110,7 +116,7 @@
 
 :root {
   --topbar-h: 56px;
-  --mobile-nav-h: 64px;
+  --mobile-nav-h: 54px;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --topbar-total: calc(var(--topbar-h) + var(--safe-top));
@@ -125,29 +131,29 @@
    ============================================================ */
 
 :root {
-  --bg: #FAFAFC;             /* warm-grey del handoff */
-  --surface: #FFFFFF;        /* paper */
-  --surface-elevated: #FFFFFF;
-  --surface-hover: #F2EDFF;  /* purple-cream — tinte de marca muy sutil */
-  --border-default: #EFEAF7; /* rule */
-  --border-emphasis: #DDD6FE;/* purple-pale */
-  --text: #15102A;           /* ink */
-  --text-secondary: #3A2F58; /* graphite */
-  --text-tertiary: #6E6293;  /* muted — WCAG AA ≥4.5:1 sobre paper/cream */
-  --accent-ai: #7C6FCD;
-  --positive: #2F7D5E;
-  --negative: #B5413A;
-  --warning: #A37535;
+  --bg: #fafafc; /* warm-grey del handoff */
+  --surface: #ffffff; /* paper */
+  --surface-elevated: #ffffff;
+  --surface-hover: #f2edff; /* purple-cream — tinte de marca muy sutil */
+  --border-default: #efeaf7; /* rule */
+  --border-emphasis: #ddd6fe; /* purple-pale */
+  --text: #15102a; /* ink */
+  --text-secondary: #3a2f58; /* graphite */
+  --text-tertiary: #6e6293; /* muted — WCAG AA ≥4.5:1 sobre paper/cream */
+  --accent-ai: #7c6fcd;
+  --positive: #2f7d5e;
+  --negative: #b5413a;
+  --warning: #a37535;
 
   /* Brand purples (Horizonte) — paleta canónica del handoff. */
-  --purple-deepest: #2D1370;
-  --purple-deeper: #3B1781;
-  --purple-deep: #4C1D95;
-  --purple-mid: #6D28D9;
-  --purple-base: #7C3AED;
-  --purple-light: #A78BFA;
-  --purple-pale: #DDD6FE;
-  --purple-cream: #F2EDFF;
+  --purple-deepest: #2d1370;
+  --purple-deeper: #3b1781;
+  --purple-deep: #4c1d95;
+  --purple-mid: #6d28d9;
+  --purple-base: #7c3aed;
+  --purple-light: #a78bfa;
+  --purple-pale: #ddd6fe;
+  --purple-cream: #f2edff;
 
   /* Aliases legacy mantenidos para compat con componentes existentes. */
   --brand-purple-strong: var(--purple-base);
@@ -198,29 +204,29 @@
    ============================================================ */
 
 .dark {
-  --bg: #04030C;             /* negro absoluto con tinte purple imperceptible */
-  --surface: #0B0917;        /* cards/sidebar — apenas elevado */
-  --surface-elevated: #131022;/* popovers/modals */
-  --surface-hover: #0F0C1D;
-  --border-default: #1B1632; /* visible pero muy discreto */
-  --border-emphasis: #2E2750;
-  --text: #F5F0FF;           /* blanco cremoso para no glare */
-  --text-secondary: #9F92BD;
-  --text-tertiary: #8678AE;  /* muted — WCAG AA ≥4.5:1 sobre surfaces dark */
-  --accent-ai: #B8A6F5;
-  --positive: #7FB89F;
-  --negative: #C97A72;
-  --warning: #CFAA7E;
+  --bg: #04030c; /* negro absoluto con tinte purple imperceptible */
+  --surface: #0b0917; /* cards/sidebar — apenas elevado */
+  --surface-elevated: #131022; /* popovers/modals */
+  --surface-hover: #0f0c1d;
+  --border-default: #1b1632; /* visible pero muy discreto */
+  --border-emphasis: #2e2750;
+  --text: #f5f0ff; /* blanco cremoso para no glare */
+  --text-secondary: #9f92bd;
+  --text-tertiary: #8678ae; /* muted — WCAG AA ≥4.5:1 sobre surfaces dark */
+  --accent-ai: #b8a6f5;
+  --positive: #7fb89f;
+  --negative: #c97a72;
+  --warning: #cfaa7e;
 
   /* Brand purples — paleta canónica del handoff, igual que en light. */
-  --purple-deepest: #2D1370;
-  --purple-deeper: #3B1781;
-  --purple-deep: #4C1D95;
-  --purple-mid: #6D28D9;
-  --purple-base: #7C3AED;
-  --purple-light: #A78BFA;
-  --purple-pale: #DDD6FE;
-  --purple-cream: #F2EDFF;
+  --purple-deepest: #2d1370;
+  --purple-deeper: #3b1781;
+  --purple-deep: #4c1d95;
+  --purple-mid: #6d28d9;
+  --purple-base: #7c3aed;
+  --purple-light: #a78bfa;
+  --purple-pale: #ddd6fe;
+  --purple-cream: #f2edff;
 
   /* Aliases legacy. En dark el símbolo invierte: anillos en light, centro
      en base, para legibilidad sobre el bg morado profundo. */
@@ -273,7 +279,7 @@
   }
   html {
     font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
-    font-feature-settings: "ss01", "cv11";
+    font-feature-settings: 'ss01', 'cv11';
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
   }
@@ -287,7 +293,7 @@
   [data-amount] {
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
-    font-feature-settings: "tnum", "zero", "cv01";
+    font-feature-settings: 'tnum', 'zero', 'cv01';
   }
 
   /* Tipografía editorial — solo en empty states y onboarding (regla 14). */
@@ -303,7 +309,7 @@
     font-family: var(--font-sans);
     font-weight: 600;
     letter-spacing: -0.03em;
-    font-variation-settings: "opsz" 28;
+    font-variation-settings: 'opsz' 28;
   }
 
   /* Modo PWA standalone — overrides puntuales activados por
@@ -321,8 +327,14 @@
      la animación corre una vez en ~0ms con fill-mode none → el punto queda
      estático a opacity 1 (sólido, discreto). */
   @keyframes copilot-typing {
-    0%, 80%, 100% { opacity: 0.3; }
-    40% { opacity: 1; }
+    0%,
+    80%,
+    100% {
+      opacity: 0.3;
+    }
+    40% {
+      opacity: 1;
+    }
   }
   .copilot-typing-dot {
     animation: copilot-typing 1.2s var(--ease-smooth) infinite;
@@ -345,7 +357,7 @@
     padding-left: 1.5rem;
   }
   .md-prose ul > li::before {
-    content: "·";
+    content: '·';
     position: absolute;
     left: 0.4rem;
     color: var(--text-secondary);
@@ -362,7 +374,7 @@
     counter-increment: md-step;
   }
   .md-prose ol > li::before {
-    content: counter(md-step) ".";
+    content: counter(md-step) '.';
     position: absolute;
     left: 0;
     top: 0;
@@ -411,7 +423,7 @@
   visibility: hidden;
 }
 [data-balances-hidden] .amount::after {
-  content: "•••••";
+  content: '•••••';
   position: absolute;
   inset: 0;
   display: flex;

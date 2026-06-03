@@ -32,18 +32,17 @@ export default async function AppLayout({
   ])
   const sidebarDefault = cookieStore.get('sidebar_state')?.value !== 'false'
 
-  // App-shell nativo en mobile: el wrapper es una COLUMNA del alto de la
-  // pantalla que NO scrollea. El topbar y la bottom-nav son items de flex (no
-  // fixed, no sticky), y SOLO el contenido (`#main-content`) scrollea entre
-  // ellos. Así la nav es físicamente el último elemento de la columna → siempre
-  // pegada al borde inferior. Altura = `100lvh` (NO `100dvh`): en iOS standalone
-  // con status bar black-translucent, `dvh` mide la pantalla MENOS el status bar
-  // (medido: dvh=848 vs pantalla=896) → dejaba 48px de hueco abajo; `lvh` es la
-  // pantalla completa (896). Desktop sin cambios: todo va con `max-md:`.
+  // App-shell: SOLO en PWA instalada (standalone:) el shell es una COLUMNA del
+  // alto de pantalla que no scrollea, con topbar/nav como items de flex y el
+  // contenido scrolleando en medio → la nav queda pegada al borde inferior.
+  // Altura `100lvh` (NO `100dvh`): en iOS standalone black-translucent dvh mide
+  // la pantalla MENOS el status bar (medido: 848 vs 896) → dejaba hueco abajo.
+  // En NAVEGADOR (base, sin standalone:) se mantiene el scroll del body + nav
+  // fija, que convive con la toolbar del browser. Desktop sin cambios (max-md:).
   return (
     <SidebarProvider
       defaultOpen={sidebarDefault}
-      className="max-md:h-[100lvh] max-md:flex-col max-md:overflow-hidden"
+      className="standalone:max-md:h-[100lvh] standalone:max-md:flex-col standalone:max-md:overflow-hidden"
     >
       <a
         href="#main-content"
@@ -52,12 +51,12 @@ export default async function AppLayout({
         Ir al contenido
       </a>
       <AppSidebar />
-      <SidebarInset className="max-md:min-h-0">
+      <SidebarInset className="standalone:max-md:min-h-0">
         <Topbar unreadAlerts={unreadAlerts} />
         <main
           id="main-content"
           tabIndex={-1}
-          className="mx-auto w-full max-w-[1120px] px-4 pt-6 pb-8 max-md:min-h-0 max-md:flex-1 max-md:overflow-y-auto max-md:overscroll-y-contain sm:px-6 md:py-10 md:pb-10 lg:px-8"
+          className="standalone:max-md:min-h-0 standalone:max-md:flex-1 standalone:max-md:overflow-y-auto standalone:max-md:overscroll-y-contain standalone:max-md:pb-8 mx-auto w-full max-w-[1120px] px-4 pt-6 pb-[calc(var(--mobile-nav-h)+env(safe-area-inset-bottom)+24px)] sm:px-6 md:py-10 md:pb-10 lg:px-8"
         >
           <PageTransition>{children}</PageTransition>
         </main>

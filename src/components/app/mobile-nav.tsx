@@ -75,7 +75,7 @@ export function MobileNav() {
         aria-current={active ? 'page' : undefined}
         aria-label={item.label}
         className={cn(
-          'relative flex flex-1 flex-col items-center justify-center gap-1 px-1 transition-colors',
+          'relative flex flex-1 flex-col items-center justify-center gap-0.5 px-1 transition-colors',
           active ? 'text-text' : 'text-text-tertiary',
         )}
       >
@@ -94,15 +94,16 @@ export function MobileNav() {
     )
   }
 
-  // NO es `fixed`: es el último item de la columna-shell del layout (mobile),
-  // así queda físicamente pegada al borde inferior sin depender de
-  // position:fixed/safe-area (que iOS rompe). Fondo sólido (sin backdrop-blur,
+  // En NAVEGADOR (base) la barra es `fixed bottom-0` (el body scrollea). En PWA
+  // instalada (`standalone:`) deja de ser fixed y pasa a ser el último item de
+  // la columna-shell (`static shrink-0`) → pegada al borde inferior sin depender
+  // de position:fixed/safe-area (que iOS rompe). Fondo sólido (sin backdrop-blur,
   // que iOS repinta mal). El safe-area inferior (home indicator) va como
   // padding-bottom; la fila de items tiene altura fija dentro.
   return (
     <nav
       aria-label="Navegación principal móvil"
-      className="border-border-default bg-surface shrink-0 border-t md:hidden"
+      className="border-border-default bg-surface standalone:max-md:static standalone:max-md:shrink-0 fixed inset-x-0 bottom-0 z-40 border-t md:hidden"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       {/* Inner row con altura fija — el safe-area inset queda como padding del
@@ -111,18 +112,18 @@ export function MobileNav() {
         {LEFT_ITEMS.map(renderNavItem)}
 
         {/* FAB central — abre el copiloto. Lavanda accent-ai (presencia de IA),
-            56px encajado, sin sombra/glow (eso violaría el mandato). Icono
-            oscuro para contraste sobre el lavanda (igual que el badge de
-            alertas). */}
-        <div className="flex w-[72px] shrink-0 items-center justify-center">
+            encajado en la barra compacta, sin sombra/glow (eso violaría el
+            mandato). Icono oscuro para contraste sobre el lavanda (igual que el
+            badge de alertas). */}
+        <div className="flex w-[64px] shrink-0 items-center justify-center">
           <Link
             href="/copilot"
             prefetch
             aria-label="Preguntar a Finanzia"
-            className="flex h-14 w-14 items-center justify-center rounded-full transition-transform motion-safe:active:scale-95"
+            className="flex h-12 w-12 items-center justify-center rounded-full transition-transform motion-safe:active:scale-95"
             style={{ background: 'var(--accent-ai)', color: '#0A0A0B' }}
           >
-            <Spark strokeWidth={2} className="size-6" />
+            <Spark strokeWidth={2} className="size-5" />
           </Link>
         </div>
 
