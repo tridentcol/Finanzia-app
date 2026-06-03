@@ -164,9 +164,12 @@ export default async function CashFlowPage() {
       daysToTarget: g.daysToTarget,
     }))
     .filter((g) => g.remaining > 0)
-  // Tope del slider: redondea el gasto recurrente mensual a múltiplos de 50k
-  // (no podés recortar más de lo que gastas). Floor sensato si no hay gasto.
-  const maxDelta = Math.max(50_000, Math.ceil((expensesBreakdown.sum || 0) / 50_000) * 50_000)
+  // Topes de las palancas del simulador. Recorte: el gasto recurrente mensual
+  // (no podés recortar más de lo que gastas). Ingreso extra: escala del ingreso
+  // recurrente, con piso en el recorte. Movimiento único: escala del saldo.
+  const maxCut = Math.max(50_000, Math.ceil((expensesBreakdown.sum || 0) / 50_000) * 50_000)
+  const maxIncome = Math.max(maxCut, Math.ceil(incomeNext30 / 50_000) * 50_000)
+  const maxOneOff = Math.max(500_000, Math.ceil(startingBalance / 100_000) * 100_000)
 
   // Próximos eventos para la lista de detalle.
   const upcoming = points
@@ -306,11 +309,17 @@ export default async function CashFlowPage() {
             </p>
           </section>
 
-          {/* Escenarios what-if — simular recortes y su efecto en saldo y metas */}
+          {/* Escenarios what-if — palancas (recorte, ingreso, movimiento único)
+              y su efecto en saldo, runway y todas las metas. */}
           <WhatIfPanel
+            startingBalance={startingBalance}
+            monthlyIncome={incomeNext30}
+            monthlyExpense={expenseNext30}
             balance90={balance90}
-            maxDelta={maxDelta}
             goals={whatIfGoals}
+            maxCut={maxCut}
+            maxIncome={maxIncome}
+            maxOneOff={maxOneOff}
             baseCurrency={baseCurrency}
           />
 
