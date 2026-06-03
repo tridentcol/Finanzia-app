@@ -72,7 +72,7 @@ export function Topbar({ unreadAlerts = 0 }: { unreadAlerts?: number }) {
 
   return (
     <>
-      <header className="border-border-default bg-background sticky top-0 z-30 flex min-h-[var(--topbar-h)] items-center justify-between gap-2 border-b px-4 pt-[env(safe-area-inset-top)] md:gap-3 lg:px-6">
+      <header className="border-border-default bg-background sticky top-0 z-30 flex min-h-[var(--topbar-h)] shrink-0 items-center justify-between gap-2 border-b px-4 pt-[env(safe-area-inset-top)] md:gap-3 lg:px-6">
         <div className="flex min-w-0 items-center gap-2">
           <SidebarTrigger className="-ml-1 hidden md:inline-flex" />
           <BrandMark size={22} className="shrink-0 md:hidden" />

@@ -28,9 +28,9 @@ export function ScrollToTop() {
 
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const behavior: ScrollBehavior = reducedMotion ? 'auto' : 'smooth'
-    // En mobile el scroller es `#app-scroll` (el body no scrollea, ver layout);
+    // En mobile el scroller es `#main-content` (el body no scrollea, ver layout);
     // en desktop scrollea el window. Reseteamos ambos: el que no aplique es no-op.
-    document.getElementById('app-scroll')?.scrollTo({ top: 0, left: 0, behavior })
+    document.getElementById('main-content')?.scrollTo({ top: 0, left: 0, behavior })
     window.scrollTo({ top: 0, left: 0, behavior })
     // searchParams en deps para satisfacer el linter; el check anterior
     // garantiza que solo actuamos cuando cambió el path.

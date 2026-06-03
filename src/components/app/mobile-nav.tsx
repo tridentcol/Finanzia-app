@@ -94,16 +94,15 @@ export function MobileNav() {
     )
   }
 
-  // Fondo SÓLIDO (no backdrop-blur): iOS en standalone repinta mal los
-  // elementos `fixed` con backdrop-filter durante scroll → la barra "salta".
-  // NO usar `transform` aquí: en iOS un transform sobre un elemento
-  // `position: fixed` ROMPE el fixed (la barra se desancla del viewport y
-  // scrollea con el contenido → "se sube" en páginas largas). El safe-area va
-  // como padding-bottom (home indicator iOS), no comprime los items.
+  // NO es `fixed`: es el último item de la columna-shell del layout (mobile),
+  // así queda físicamente pegada al borde inferior sin depender de
+  // position:fixed/safe-area (que iOS rompe). Fondo sólido (sin backdrop-blur,
+  // que iOS repinta mal). El safe-area inferior (home indicator) va como
+  // padding-bottom; la fila de items tiene altura fija dentro.
   return (
     <nav
       aria-label="Navegación principal móvil"
-      className="border-border-default bg-surface fixed inset-x-0 bottom-0 z-40 border-t md:hidden"
+      className="border-border-default bg-surface shrink-0 border-t md:hidden"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       {/* Inner row con altura fija — el safe-area inset queda como padding del

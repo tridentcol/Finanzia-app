@@ -32,14 +32,17 @@ export default async function AppLayout({
   ])
   const sidebarDefault = cookieStore.get('sidebar_state')?.value !== 'false'
 
-  // En mobile el shell mide 100dvh y NO scrollea el body: scrollea el
-  // contenedor interno (`#app-scroll`). Así la bottom-nav `fixed` queda anclada
-  // al viewport estable y no se despega en iOS standalone (el body scroll es lo
-  // que rompe `position: fixed` en iOS). Desktop sin cambios.
+  // App-shell nativo en mobile: el wrapper es una COLUMNA del alto de la
+  // pantalla (100dvh) que NO scrollea. El topbar y la bottom-nav son items de
+  // flex (no fixed, no sticky), y SOLO el contenido (`#main-content`) scrollea
+  // entre ellos. Así la nav es físicamente el último elemento de la columna →
+  // siempre pegada al borde inferior, sin hueco posible (iOS rompe
+  // position:fixed/safe-area de formas impredecibles). Desktop sin cambios:
+  // todas las reglas mobile van con `max-md:`.
   return (
     <SidebarProvider
       defaultOpen={sidebarDefault}
-      className="max-md:h-[100dvh] max-md:overflow-hidden"
+      className="max-md:h-[100dvh] max-md:flex-col max-md:overflow-hidden"
     >
       <a
         href="#main-content"
@@ -48,15 +51,12 @@ export default async function AppLayout({
         Ir al contenido
       </a>
       <AppSidebar />
-      <SidebarInset
-        id="app-scroll"
-        className="max-md:min-h-0 max-md:overflow-y-auto max-md:overscroll-y-contain"
-      >
+      <SidebarInset className="max-md:min-h-0">
         <Topbar unreadAlerts={unreadAlerts} />
         <main
           id="main-content"
           tabIndex={-1}
-          className="mx-auto w-full max-w-[1120px] px-4 pt-6 pb-[calc(var(--mobile-nav-h)+env(safe-area-inset-bottom)+24px)] sm:px-6 md:pb-10 lg:px-8 lg:py-10"
+          className="mx-auto w-full max-w-[1120px] px-4 pt-6 pb-8 max-md:min-h-0 max-md:flex-1 max-md:overflow-y-auto max-md:overscroll-y-contain sm:px-6 md:py-10 md:pb-10 lg:px-8"
         >
           <PageTransition>{children}</PageTransition>
         </main>
