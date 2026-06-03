@@ -64,7 +64,7 @@ export function ShellDebug() {
       <div
         style={{
           position: 'fixed',
-          top: 0,
+          top: 140,
           left: 0,
           zIndex: 99999,
           maxWidth: '70vw',
