@@ -15,7 +15,6 @@ import { NewDebtDialog } from '@/components/app/new-debt-dialog'
 import { DialogsBundle } from '@/components/app/dialogs-bundle'
 import { OnboardingOverlay } from '@/components/app/onboarding-overlay'
 import { StandaloneDetector } from '@/components/app/standalone-detector'
-import { ShellDebug } from '@/components/app/shell-debug'
 import { PageTransition } from '@/components/app/page-transition'
 import { countUnreadAlerts } from '@/lib/db/queries/alerts'
 
@@ -34,16 +33,17 @@ export default async function AppLayout({
   const sidebarDefault = cookieStore.get('sidebar_state')?.value !== 'false'
 
   // App-shell nativo en mobile: el wrapper es una COLUMNA del alto de la
-  // pantalla (100dvh) que NO scrollea. El topbar y la bottom-nav son items de
-  // flex (no fixed, no sticky), y SOLO el contenido (`#main-content`) scrollea
-  // entre ellos. Así la nav es físicamente el último elemento de la columna →
-  // siempre pegada al borde inferior, sin hueco posible (iOS rompe
-  // position:fixed/safe-area de formas impredecibles). Desktop sin cambios:
-  // todas las reglas mobile van con `max-md:`.
+  // pantalla que NO scrollea. El topbar y la bottom-nav son items de flex (no
+  // fixed, no sticky), y SOLO el contenido (`#main-content`) scrollea entre
+  // ellos. Así la nav es físicamente el último elemento de la columna → siempre
+  // pegada al borde inferior. Altura = `100lvh` (NO `100dvh`): en iOS standalone
+  // con status bar black-translucent, `dvh` mide la pantalla MENOS el status bar
+  // (medido: dvh=848 vs pantalla=896) → dejaba 48px de hueco abajo; `lvh` es la
+  // pantalla completa (896). Desktop sin cambios: todo va con `max-md:`.
   return (
     <SidebarProvider
       defaultOpen={sidebarDefault}
-      className="max-md:h-[100dvh] max-md:flex-col max-md:overflow-hidden"
+      className="max-md:h-[100lvh] max-md:flex-col max-md:overflow-hidden"
     >
       <a
         href="#main-content"
@@ -73,7 +73,6 @@ export default async function AppLayout({
       </Suspense>
       <OnboardingOverlay isOnboarded={!!profile?.onboardedAt} />
       <StandaloneDetector />
-      <ShellDebug />
     </SidebarProvider>
   )
 }
