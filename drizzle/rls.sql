@@ -34,6 +34,7 @@ DECLARE
     'savings_periods',
     'monthly_reports',
     'weekly_checkins',
+    'net_worth_snapshots',
     'email_inbox_aliases',
     'credit_card_profiles'
   ];
@@ -191,6 +192,13 @@ CREATE POLICY monthly_reports_isolation ON monthly_reports
 -- ----- weekly_checkins -----
 DROP POLICY IF EXISTS weekly_checkins_isolation ON weekly_checkins;
 CREATE POLICY weekly_checkins_isolation ON weekly_checkins
+  FOR ALL
+  USING (user_id = (SELECT id FROM users WHERE clerk_id = auth.jwt() ->> 'sub'))
+  WITH CHECK (user_id = (SELECT id FROM users WHERE clerk_id = auth.jwt() ->> 'sub'));
+
+-- ----- net_worth_snapshots -----
+DROP POLICY IF EXISTS net_worth_snapshots_isolation ON net_worth_snapshots;
+CREATE POLICY net_worth_snapshots_isolation ON net_worth_snapshots
   FOR ALL
   USING (user_id = (SELECT id FROM users WHERE clerk_id = auth.jwt() ->> 'sub'))
   WITH CHECK (user_id = (SELECT id FROM users WHERE clerk_id = auth.jwt() ->> 'sub'));

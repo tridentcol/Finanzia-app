@@ -89,16 +89,9 @@ export const debtType = pgEnum('debt_type', [
 
 export const debtStatus = pgEnum('debt_status', ['active', 'paid', 'defaulted'])
 
-export const integrationProvider = pgEnum('integration_provider', [
-  'anthropic',
-  'openai',
-])
+export const integrationProvider = pgEnum('integration_provider', ['anthropic', 'openai'])
 
-export const integrationStatus = pgEnum('integration_status', [
-  'active',
-  'invalid',
-  'disabled',
-])
+export const integrationStatus = pgEnum('integration_status', ['active', 'invalid', 'disabled'])
 
 // ============================================================
 // users
@@ -206,9 +199,7 @@ export const accounts = pgTable(
     name: text('name').notNull(),
     type: accountType('type').notNull(),
     currency: text('currency').notNull(),
-    initialBalance: numeric('initial_balance', { precision: 15, scale: 2 })
-      .notNull()
-      .default('0'),
+    initialBalance: numeric('initial_balance', { precision: 15, scale: 2 }).notNull().default('0'),
     creditLimit: numeric('credit_limit', { precision: 15, scale: 2 }),
     statementDay: smallint('statement_day'),
     paymentDay: smallint('payment_day'),
@@ -603,12 +594,8 @@ export const userIntegrations = pgTable(
       .default(sql`ARRAY[]::text[]`),
     status: integrationStatus('status').notNull().default('active'),
     lastValidatedAt: timestamp('last_validated_at', { withTimezone: true }),
-    createdAt: timestamp('created_at', { withTimezone: true })
-      .defaultNow()
-      .notNull(),
-    updatedAt: timestamp('updated_at', { withTimezone: true })
-      .defaultNow()
-      .notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [
     primaryKey({ columns: [t.userId, t.provider] }),
@@ -632,12 +619,21 @@ export const monthlyReports = pgTable(
     totalIncome: numeric('total_income', { precision: 15, scale: 2 }).notNull().default('0'),
     totalExpense: numeric('total_expense', { precision: 15, scale: 2 }).notNull().default('0'),
     netSavings: numeric('net_savings', { precision: 15, scale: 2 }).notNull().default('0'),
-    topCategories: jsonb('top_categories').$type<Array<{ name: string; amount: string; count: number }>>().notNull().default([]),
-    topMerchants: jsonb('top_merchants').$type<Array<{ name: string; amount: string; count: number }>>().notNull().default([]),
+    topCategories: jsonb('top_categories')
+      .$type<Array<{ name: string; amount: string; count: number }>>()
+      .notNull()
+      .default([]),
+    topMerchants: jsonb('top_merchants')
+      .$type<Array<{ name: string; amount: string; count: number }>>()
+      .notNull()
+      .default([]),
     /** Resumen narrativo generado por LLM (opcional). */
     aiSummary: text('ai_summary'),
     /** Hábitos identificados por LLM. */
-    aiHabits: jsonb('ai_habits').$type<Array<{ title: string; body: string; kind: 'positive' | 'negative' | 'neutral' }>>().notNull().default([]),
+    aiHabits: jsonb('ai_habits')
+      .$type<Array<{ title: string; body: string; kind: 'positive' | 'negative' | 'neutral' }>>()
+      .notNull()
+      .default([]),
     generatedAt: timestamp('generated_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [
@@ -694,6 +690,36 @@ export const weeklyCheckins = pgTable(
   (t) => [
     uniqueIndex('idx_weekly_checkins_user_week').on(t.userId, t.weekStart),
     index('idx_weekly_checkins_user').on(t.userId, t.weekStart),
+  ],
+)
+
+// ============================================================
+// net_worth_snapshots  (patrimonio neto en el tiempo)
+// ============================================================
+
+export const netWorthSnapshots = pgTable(
+  'net_worth_snapshots',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    /** Fecha del snapshot (fin de mes histórico o captura del día), YYYY-MM-DD. */
+    date: date('date').notNull(),
+    /** Patrimonio neto en moneda base = activos − deudas. */
+    net: numeric('net', { precision: 15, scale: 2 }).notNull(),
+    /** Activos (cuentas no-crédito) en base. Null en filas de backfill (solo neto). */
+    assets: numeric('assets', { precision: 15, scale: 2 }),
+    /** Deudas (tarjetas + préstamos) en base. Null en filas de backfill. */
+    debts: numeric('debts', { precision: 15, scale: 2 }),
+    currency: text('currency').notNull(),
+    /** 'cron' | 'backfill' | 'manual'. backfill = neto reconstruido del ledger (aprox). */
+    source: text('source').$type<'cron' | 'backfill' | 'manual'>().notNull().default('cron'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex('idx_net_worth_snapshots_user_date').on(t.userId, t.date),
+    index('idx_net_worth_snapshots_user').on(t.userId, t.date),
   ],
 )
 
