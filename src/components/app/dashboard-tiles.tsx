@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { ReactNode } from 'react'
 
 import { Amount } from '@/components/app/amount'
+import { MicroSparkline } from '@/components/app/micro-sparkline'
 import { BAND_LABEL } from '@/lib/health/score'
 import type { HealthBand, HealthScore } from '@/lib/health/types'
 import { icons } from '@/lib/design/icons'
@@ -72,12 +73,15 @@ export function DashboardTiles({
   health,
   nextThing,
   projectedBalance,
+  flowSeries,
   debtTotal,
   baseCurrency,
 }: {
   health: HealthScore
   nextThing: DashboardNextThing | null
   projectedBalance: number | null
+  /** Saldo proyectado día a día (30d) — alimenta el micro-sparkline del tile. */
+  flowSeries: number[] | null
   debtTotal: number | null
   baseCurrency: CurrencyCode
 }) {
@@ -123,6 +127,9 @@ export function DashboardTiles({
           kind={projectedBalance < 0 ? 'negative' : 'neutral'}
           className="text-xl"
         />
+        {flowSeries && flowSeries.length >= 2 && (
+          <MicroSparkline values={flowSeries} className="text-text-tertiary mt-2 h-6 w-full" />
+        )}
       </Tile>,
     )
   }

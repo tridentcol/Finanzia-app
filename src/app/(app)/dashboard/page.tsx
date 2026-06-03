@@ -8,9 +8,11 @@ import { getProfile } from '@/lib/db/queries/profile'
 import { getDashboardData } from '@/lib/db/queries/dashboard'
 import { getLatestCheckin } from '@/lib/db/queries/checkin'
 import { getHealthScore } from '@/lib/db/queries/health'
+import { getNetWorthSeries } from '@/lib/db/queries/net-worth'
 import { projectCashFlow } from '@/lib/cash-flow/project'
 import { CheckinCard } from '@/components/app/checkin-card'
 import { DashboardTiles, type DashboardNextThing } from '@/components/app/dashboard-tiles'
+import { NetWorthSparkline } from '@/components/app/net-worth-sparkline'
 import { Amount } from '@/components/app/amount'
 import { PrivacyProvider, PRIVACY_COOKIE } from '@/components/app/privacy'
 import { HideBalancesToggle } from '@/components/app/hide-balances-toggle'
@@ -66,11 +68,15 @@ export default async function DashboardPage() {
   // lógica derivada de fecha/hora (saludo, proyección) se computa abajo, fuera
   // del cache.
   const today = new Date().toISOString().slice(0, 10)
-  const [{ accountsList, recent, debtsSummary, recurringRules, volatility, ratesObj }, health] =
-    await Promise.all([
-      getDashboardData(user.id, baseCurrency, today),
-      getHealthScore(user.id, baseCurrency, today),
-    ])
+  const [
+    { accountsList, recent, debtsSummary, recurringRules, volatility, ratesObj },
+    health,
+    netWorth,
+  ] = await Promise.all([
+    getDashboardData(user.id, baseCurrency, today),
+    getHealthScore(user.id, baseCurrency, today),
+    getNetWorthSeries(user.id, baseCurrency, today),
+  ])
   const rates = new Map<string, string>(Object.entries(ratesObj))
 
   const ownedAccounts = accountsList.filter((a) => a.type !== 'credit_card')
@@ -146,7 +152,13 @@ export default async function DashboardPage() {
     cashFlowPoints && cashFlowPoints.length > 0
       ? cashFlowPoints[cashFlowPoints.length - 1]!.balance
       : null
+  // Saldo proyectado día a día → micro-sparkline del tile de flujo.
+  const flowSeries = cashFlowPoints ? cashFlowPoints.map((p) => p.balance) : null
   const debtTotal = Number.parseFloat(debtsSummary.totalBalanceInBase) + creditCardDebtInBase
+
+  // Patrimonio neto (héroe) + su trayectoria para el sparkline.
+  const netNow = netWorth.now.net
+  const netPoints = netWorth.points.map((p) => ({ date: p.date, net: p.net }))
 
   // Saludo contextual.
   const userTz = profile?.timezone ?? undefined
@@ -166,24 +178,30 @@ export default async function DashboardPage() {
   return (
     <PrivacyProvider initialHidden={balancesHidden}>
       <div className="flex min-w-0 flex-col gap-10 lg:gap-12">
-        {/* Hero — saludo + saldo + lo siguiente, todo junto en un bloque
-          editorial corto */}
+        {/* Hero — saludo + patrimonio neto con su trayectoria; el saldo en
+          cuentas baja a la línea de contexto. Bloque editorial corto. */}
         <header className="flex min-w-0 flex-col gap-1.5">
           <p className="text-text-tertiary text-[11px] tracking-[0.12em] uppercase">{greeting}</p>
           <div className="flex items-center gap-2">
-            <p className="text-text-secondary text-sm">Saldo en cuentas</p>
+            <p className="text-text-secondary text-sm">Patrimonio neto</p>
             <HideBalancesToggle />
           </div>
           <Amount
-            value={totalBase}
+            value={netNow.toFixed(2)}
             currency={baseCurrency}
             display
-            kind={parseFloat(totalBase) < 0 ? 'negative' : 'neutral'}
+            kind={netNow < 0 ? 'negative' : 'neutral'}
             className="block truncate text-[28px] sm:text-4xl md:text-5xl lg:text-6xl"
           />
+          {netPoints.length >= 2 && (
+            <NetWorthSparkline points={netPoints} baseCurrency={baseCurrency} />
+          )}
           <p className="text-text-tertiary text-xs">
-            {ownedAccounts.length} {ownedAccounts.length === 1 ? 'cuenta' : 'cuentas'} ·{' '}
-            {baseCurrency}
+            Saldo en cuentas{' '}
+            <span className="tabular">
+              {formatMoney(totalBase, { currency: baseCurrency, compact: true })}
+            </span>{' '}
+            · {ownedAccounts.length} {ownedAccounts.length === 1 ? 'cuenta' : 'cuentas'}
             {totalPartial && ' · conversión parcial'}
           </p>
         </header>
@@ -202,6 +220,7 @@ export default async function DashboardPage() {
               health={health}
               nextThing={nextThing}
               projectedBalance={projectedBalance}
+              flowSeries={flowSeries}
               debtTotal={debtTotal}
               baseCurrency={baseCurrency}
             />
